@@ -1,5 +1,8 @@
 module EpistemicNetworkAnalysis
 
-greet() = print("Hello World!")
+using DataFrames
+using Makie
+
+include("./ENAModel.jl")
 
 end # module
