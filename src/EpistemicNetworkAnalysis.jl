@@ -4,10 +4,14 @@ using DataFrames
 using Statistics
 using LinearAlgebra
 using GLM
+using CSV
 # TODO using Lasso
 using Makie
 
-# TODO sample dataset
 include("./ENAModel.jl")
+include("./RSData.jl")
+include("./examples.jl")
+
+temp_example()
 
 end # module

@@ -7,7 +7,7 @@ struct ENAModel
     groupVar::Union{Nothing,Symbol}
     treatmentGroup::Any # if groupVar == treatmentGroup, then 1
     controlGroup::Any # if groupVar == treatmentGroup, then 0; if neither, leave it out
-    confounds::Array{Symbol,1}
+    confounds::Union{Nothing,Array{Symbol,1}}
     metadata::Array{Symbol,1}
     # plots::Dict{String,Scene} # dropping this in favor of doing it with display/plot methods, for now maybe
     rotateBy::Function
@@ -17,9 +17,9 @@ struct ENAModel
     codeModel::DataFrame # all the code-level data we compute
 end
 
-function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, unitVar::Symbol,
-    metadata::Array{Symbol,1}=Symbol[], windowSize::Int=4, confounds::Union{Array{Symbol,1},Nothing}=nothing,
-    groupVar::Union{Symbol,Nothing}=nothing, treatmentGroup::Any=nothing, controlGroup::Any=nothing,
+function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, unitVar::Symbol;
+    metadata::Array{Symbol,1}=Symbol[], windowSize::Int=4, confounds::Union{Nothing,Array{Symbol,1}}=nothing,
+    groupVar::Union{Nothing,Symbol}=nothing, treatmentGroup::Any=nothing, controlGroup::Any=nothing,
     rotateBy::Function=svd_rotation!)
 
     # Preparing model structures
@@ -30,23 +30,27 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
                          if i < j)
 
     ## Unit model
-    unitModel = DataFrame()
-    if !isnothing(groupVar) && !isnothing(confounds)
-        unitModel = by(data, unitVar,
-                       [m=>first for m in metadata]...,
-                       groupVar=>first,
-                       [c=>first for c in confounds]...)
-    elseif !isnothing(groupVar)
-        unitModel = by(data, unitVar,
-                       [m=>first for m in metadata]...,
-                       groupVar=>first)
-    elseif !isnothing(confounds)
-        unitModel = by(data, unitVar,
-                       [m=>first for m in metadata]...,
-                       [c=>first for c in confounds]...)
+    unitModel = by(data, unitVar, first)
+    if !isempty(metadata)
+        if !isnothing(groupVar) && !isnothing(confounds)
+            unitModel = unitModel[:, [unitVar, metadata..., groupVar, confounds...]]
+        elseif !isnothing(groupVar)
+            unitModel = unitModel[:, [unitVar, metadata..., groupVar]]
+        elseif !isnothing(confounds)
+            unitModel = unitModel[:, [unitVar, metadata..., confounds...]]
+        else
+            unitModel = unitModel[:, [unitVar, metadata...]]
+        end
     else
-        unitModel = by(data, unitVar,
-                       [m=>first for m in metadata]...)
+        if !isnothing(groupVar) && !isnothing(confounds)
+            unitModel = unitModel[:, [unitVar, groupVar, confounds...]]
+        elseif !isnothing(groupVar)
+            unitModel = unitModel[:, [unitVar, groupVar]]
+        elseif !isnothing(confounds)
+            unitModel = unitModel[:, [unitVar, confounds...]]
+        else
+            unitModel = unitModel[:, [unitVar]]
+        end
     end
 
     unitModel = hcat(unitModel, DataFrame(Dict(r => Real[0 for i in 1:nrow(unitModel)]
@@ -58,7 +62,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
                                           fit_y=Real[0 for i in 1:nrow(unitModel)])) 
     
     ## Network model
-    networkModel = DataFrame(relationship=keys(relationships),
+    networkModel = DataFrame(relationship=collect(keys(relationships)),
                              thickness=Real[0 for r in relationships], # how thick to make the line
                              weight_x=Real[0 for r in relationships], # the weight I contribute to dim_x's
                              weight_y=Real[0 for r in relationships]) # the weight I contribute to dim_y's
@@ -135,26 +139,29 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         config[:confounds] = confounds
     end
 
-    rotateBy(networkModel, unitModel, config)
+    rotateBy(networkModel, unitModel, codes, relationships, config)
 
     # Layout step
     # TODO compute dim_x and dim_y of the unit-level model
     # TODO fit the x and y positions of the unit-level model and code-level model
     # TODO compute the dot sizes for the code-level model
+
+    return ENAModel(data, codes, conversations, unitVar, windowSize, groupVar, treatmentGroup, controlGroup,
+                    confounds, metadata, rotateBy, collect(keys(relationships)), unitModel, networkModel, codeModel)
 end
 
-function svd_rotation!(networkModel, unitModel, config)
+function svd_rotation!(networkModel, unitModel, codes, relationships, config)
     # TODO compute the thickness and weights of the network-level model
-    if haskey(config, :confounds)
+    if haskey(config, :confounds) # TODO do this with type annotations, when nothing do x, when something do such and such
         # TODO use AC-PCA when confounds present
     else
         # TODO use PCA otherwise
     end
 end
 
-function means_rotation!(networkModel, unitModel, config)
+function means_rotation!(networkModel, unitModel, codes, relationships, config)
     # TODO compute the thickness and weights of the network-level model
-    if haskey(config, :confounds) && haskey(config, :groupVar)
+    if haskey(config, :confounds) && haskey(config, :groupVar) # TODO do this with type annotations? when nothing do x, when something do such and such?
         # TODO use moderated MR1 when confounds present
     elseif haskey(config, :groupVar)
         # TODO use default MR1 otherwise (this can probably be generalized into the above)
