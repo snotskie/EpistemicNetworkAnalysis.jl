@@ -2,10 +2,11 @@ struct ENAModel
     data::DataFrame # the raw data
     codes::Array{Symbol,1}
     conversations::Array{Symbol,1}
-    units::Array{Symbol,1}
+    unitVar::Symbol
     windowSize::Int
     groupVar::Union{Nothing,Symbol}
-    treatmentGroup::Any # if groupVar == treatmentGroup, then 1, else 0
+    treatmentGroup::Any # if groupVar == treatmentGroup, then 1
+    controlGroup::Any # if groupVar == treatmentGroup, then 0; if neither, leave it out
     confounds::Array{Symbol,1}
     metadata::Array{Symbol,1}
     # plots::Dict{String,Scene} # dropping this in favor of doing it with display/plot methods, for now maybe
@@ -16,83 +17,110 @@ struct ENAModel
     codeModel::DataFrame # all the code-level data we compute
 end
 
-function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1},
+function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, unitVar::Symbol,
     metadata::Array{Symbol,1}=Symbol[], windowSize::Int=4, confounds::Union{Array{Symbol,1},Nothing}=nothing,
-    groupVar::Union{Symbol,Nothing}=nothing, treatmentGroup::Any=nothing, rotateBy::Function=svd_rotation)
+    groupVar::Union{Symbol,Nothing}=nothing, treatmentGroup::Any=nothing, controlGroup::Any=nothing,
+    rotateBy::Function=svd_rotation!)
 
     # Preparing model structures
+    ## Relationships between codes
     relationships = Dict(Symbol(string(code1, "_", code2)) => (i, j)
                          for (i, code1) in enumerate(codes)
                          for (j, code2) in enumerate(codes)
                          if i < j)
 
-    unitModel = data[[], [units..., conversations..., metadata...]]
-    if !isnothing(groupVar)
-        unitModel = hcat(unitModel, data[[], groupVar])
+    ## Unit model
+    unitModel = DataFrame()
+    if !isnothing(groupVar) && !isnothing(confounds)
+        unitModel = by(data, unitVar,
+                       [m=>first for m in metadata]...,
+                       groupVar=>first,
+                       [c=>first for c in confounds]...)
+    elseif !isnothing(groupVar)
+        unitModel = by(data, unitVar,
+                       [m=>first for m in metadata]...,
+                       groupVar=>first)
+    elseif !isnothing(confounds)
+        unitModel = by(data, unitVar,
+                       [m=>first for m in metadata]...,
+                       [c=>first for c in confounds]...)
+    else
+        unitModel = by(data, unitVar,
+                       [m=>first for m in metadata]...)
     end
 
-    if !isnothing(confounds)
-        unitModel = hcat(unitModel, data[[], [confounds...]])
-    end
-
-    unitModel = hcat(unitModel, data[[], [codes...]])
-    unitModel = hcat(unitModel, DataFrame(Dict(r => Real[]
+    unitModel = hcat(unitModel, DataFrame(Dict(r => Real[0 for i in 1:nrow(unitModel)]
                                                for r in keys(relationships))))
 
-    unitModel = hcat(unitModel, DataFrame(dim_x=Real[], dim_y=Real[], # real sum of my counts times relationship weights
-                                          fit_x=Real[], fit_y=Real[])) # fitted sum of the above
+    unitModel = hcat(unitModel, DataFrame(dim_x=Real[0 for i in 1:nrow(unitModel)], # real sum of my counts times relationship weights
+                                          dim_y=Real[0 for i in 1:nrow(unitModel)], 
+                                          fit_x=Real[0 for i in 1:nrow(unitModel)], # fitted sum of the above
+                                          fit_y=Real[0 for i in 1:nrow(unitModel)])) 
     
+    ## Network model
     networkModel = DataFrame(relationship=keys(relationships),
                              thickness=Real[0 for r in relationships], # how thick to make the line
                              weight_x=Real[0 for r in relationships], # the weight I contribute to dim_x's
                              weight_y=Real[0 for r in relationships]) # the weight I contribute to dim_y's
     
+    ## Code model
     codeModel = DataFrame(code=codes,
                           thickness=Real[0 for c in codes], # how thick to make the dot
                           fit_x=Real[0 for c in codes], # where to plot this code on the fitted plot's x-axis
                           fit_y=Real[0 for c in codes]) # where to plot this code on the fitted plot's y-axis
 
     # Accumulation step
-    for convo in groupby(data, [conversations..., units...])
-        counts = [[0 for j in codes] for i in codes]
-        howrecents = [Inf for i in codes]
+    ## Raw counts for all the units
+    counts = Dict(unit => [[0 for j in codes] for i in codes]
+                  for unit in unitModel[!, unitVar])
 
-        ## Raw counts
-        for line in eachrow(convo)
-            for (i, code) in enumerate(codes)
-                if line[code] > 0
-                    howrecents[i] = 0
-                else
-                    howrecents[i] += 1
-                end
-            end
+    prev_convo = data[1, conversations]
+    howrecents = [Inf for c in codes]
+    for line in eachrow(data)
+        if prev_convo != line[conversations]
+            prev_convo = line[conversations]
+            howrecents .= Inf
+        end
 
-            for r in keys(relationships)
-                i, j = relationships[r]
-                if howrecents[i] == 0 && howrecents[j] <= windowSize
-                    counts[i][j] += 1
-                elseif howrecents[j] == 0 && howrecents[i] <= windowSize
-                    counts[i][j] += 1
-                end
+        for (i, code) in enumerate(codes)
+            if line[code] > 0
+                howrecents[i] = 0
+            else
+                howrecents[i] += 1
             end
         end
 
-        ## Put raw counts into the data frame
-        row = convo[1, [units..., conversations..., metadata..., codes...]]
+        unit = line[unitVar]
         for r in keys(relationships)
             i, j = relationships[r]
-            row = hcat(row, DataFrame(Dict(r => Real[counts[i][j]])))
+            if howrecents[i] == 0 && howrecents[j] <= windowSize
+                counts[unit][i][j] += 1
+            elseif howrecents[j] == 0 && howrecents[i] <= windowSize
+                counts[unit][i][j] += 1
+            end
         end
+    end
 
-        ## Sphere normalize the raw counts
-        s = std(row[keys(relationships)])
-        row[keys(relationships)] = map(row[keys(relationships)]) do raw
-            return raw/s
+    ## Normalize and overwrite the model's placeholders
+    for unitRow in eachrow(unitModel)
+        unit = unitRow[unitVar]
+        vector = [counts[unit][i][j] for (i,j) in values(relationships)]
+        s = std(vector)
+        vector /= s
+        for (k, r) in enumerate(keys(relationships))
+            unitRow[r] = vector[k]
         end
+    end
 
-        ## Add the row to the unitModel data frame
-        row = hcat(row, DataFrame(dim_x=Real[0], dim_y=Real[0], fit_x=Real[0], fit_y=Real[0]))
-        push!(unitModel, row)
+    ## Simplify the unitModel down to just those in the treatment/control when groupVar is present
+    if !isnothing(groupVar)
+        filter!(unitModel) do unitRow
+            if unitRow[groupVar] in [treatmentGroup, controlGroup]
+                return true
+            else
+                return false
+            end
+        end
     end
 
     # Rotation step
@@ -100,26 +128,37 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     if !isnothing(groupVar)
         config[:groupVar] = groupVar
         config[:treatmentGroup] = treatmentGroup
+        config[:controlGroup] = controlGroup
     end
 
     if !isnothing(confounds)
         config[:confounds] = confounds
     end
 
-    networkModel = rotateBy(unitModel, networkModel, config)
+    rotateBy(networkModel, unitModel, config)
 
     # Layout step
+    # TODO compute dim_x and dim_y of the unit-level model
     # TODO fit the x and y positions of the unit-level model and code-level model
     # TODO compute the dot sizes for the code-level model
 end
 
-function svd_rotation(unitModel, networkModel, config)
+function svd_rotation!(networkModel, unitModel, config)
     # TODO compute the thickness and weights of the network-level model
-    # TODO use LASSO when confounds present
+    if haskey(config, :confounds)
+        # TODO use AC-PCA when confounds present
+    else
+        # TODO use PCA otherwise
+    end
 end
 
-function means_rotation(unitModel, networkModel, config)
+function means_rotation!(networkModel, unitModel, config)
     # TODO compute the thickness and weights of the network-level model
-    # TODO use moderated MR1 when confounds present
-    # HERE
+    if haskey(config, :confounds) && haskey(config, :groupVar)
+        # TODO use moderated MR1 when confounds present
+    elseif haskey(config, :groupVar)
+        # TODO use default MR1 otherwise (this can probably be generalized into the above)
+    else
+        error("means_rotation requires a groupVar")
+    end
 end
