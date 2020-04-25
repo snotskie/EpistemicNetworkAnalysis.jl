@@ -2,7 +2,7 @@ struct ENAModel
     data::DataFrame # the raw data
     codes::Array{Symbol,1}
     conversations::Array{Symbol,1}
-    unitVar::Symbol
+    units::Array{Symbol,1}
     windowSize::Int
     groupVar::Union{Nothing,Symbol}
     treatmentGroup::Any # if groupVar == treatmentGroup, then 1
@@ -17,7 +17,7 @@ struct ENAModel
     codeModel::DataFrame # all the code-level data we compute
 end
 
-function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, unitVar::Symbol;
+function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
     metadata::Array{Symbol,1}=Symbol[], windowSize::Int=4, confounds::Union{Nothing,Array{Symbol,1}}=nothing,
     groupVar::Union{Nothing,Symbol}=nothing, treatmentGroup::Any=nothing, controlGroup::Any=nothing,
     rotateBy::Function=svd_rotation!)
@@ -30,7 +30,11 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
                          if i < j)
 
     ## Unit model
-    unitModel = by(data, unitVar, first)
+    unitVar = :ENA_UNIT
+    unitJoinedData = hcat(data, DataFrame(unitVar => map(eachrow(data)) do dataRow # TODO do this automatically when a group var, simplify the units param down to just a unitVar scalar again?
+        return join(dataRow[units], ".")
+    end))
+    unitModel = by(unitJoinedData, unitVar, first)
     if !isempty(metadata)
         if !isnothing(groupVar) && !isnothing(confounds)
             unitModel = unitModel[:, [unitVar, metadata..., groupVar, confounds...]]
@@ -78,9 +82,9 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     counts = Dict(unit => [[0 for j in codes] for i in codes]
                   for unit in unitModel[!, unitVar])
 
-    prev_convo = data[1, conversations]
+    prev_convo = unitJoinedData[1, conversations]
     howrecents = [Inf for c in codes]
-    for line in eachrow(data)
+    for line in eachrow(unitJoinedData)
         if prev_convo != line[conversations]
             prev_convo = line[conversations]
             howrecents .= Inf
@@ -97,9 +101,9 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         unit = line[unitVar]
         for r in keys(relationships)
             i, j = relationships[r]
-            if howrecents[i] == 0 && howrecents[j] <= windowSize
+            if howrecents[i] == 0 && howrecents[j] < windowSize
                 counts[unit][i][j] += 1
-            elseif howrecents[j] == 0 && howrecents[i] <= windowSize
+            elseif howrecents[j] == 0 && howrecents[i] < windowSize
                 counts[unit][i][j] += 1
             end
         end
@@ -109,7 +113,8 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     for unitRow in eachrow(unitModel)
         unit = unitRow[unitVar]
         vector = [counts[unit][i][j] for (i,j) in values(relationships)]
-        s = std(vector)
+        # s = std(vector, corrected=false)
+        s = sqrt(sum(vector .^ 2))
         vector /= s
         for (k, r) in enumerate(keys(relationships))
             unitRow[r] = vector[k]
@@ -139,32 +144,86 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         config[:confounds] = confounds
     end
 
-    rotateBy(networkModel, unitModel, codes, relationships, config)
+    rotateBy(networkModel, unitModel, config)
 
     # Layout step
     # TODO compute dim_x and dim_y of the unit-level model
     # TODO fit the x and y positions of the unit-level model and code-level model
     # TODO compute the dot sizes for the code-level model
 
-    return ENAModel(data, codes, conversations, unitVar, windowSize, groupVar, treatmentGroup, controlGroup,
+    return ENAModel(unitJoinedData, codes, conversations, units, windowSize, groupVar, treatmentGroup, controlGroup,
                     confounds, metadata, rotateBy, collect(keys(relationships)), unitModel, networkModel, codeModel)
 end
 
-function svd_rotation!(networkModel, unitModel, codes, relationships, config)
+function svd_rotation!(networkModel, unitModel, config)
     # TODO compute the thickness and weights of the network-level model
-    if haskey(config, :confounds) # TODO do this with type annotations, when nothing do x, when something do such and such
+    if haskey(config, :confounds)
         # TODO use AC-PCA when confounds present
     else
         # TODO use PCA otherwise
     end
 end
 
-function means_rotation!(networkModel, unitModel, codes, relationships, config)
-    # TODO compute the thickness and weights of the network-level model
-    if haskey(config, :confounds) && haskey(config, :groupVar) # TODO do this with type annotations? when nothing do x, when something do such and such?
-        # TODO use moderated MR1 when confounds present
-    elseif haskey(config, :groupVar)
-        # TODO use default MR1 otherwise (this can probably be generalized into the above)
+function means_rotation!(networkModel, unitModel, config)
+    ## Must have group variable to use (m)mr1
+    if haskey(config, :groupVar)
+
+        ## Tidy up the unit model to just those in the control/treatment group
+        filteredUnitModel = filter(unitModel) do unitRow
+            if unitRow[config[:groupVar]] == config[:controlGroup]
+                return true
+            elseif unitRow[config[:groupVar]] == config[:treatmentGroup]
+                return true
+            else
+                return false
+            end
+        end
+
+        ## When confounds present, drop rows with missing confound data
+        if haskey(config, :confounds)
+            goodRows = completecases(filteredUnitModel[!, [config[:confounds]...]])
+            filteredUnitModel = filteredUnitModel[goodRows, :]
+        end
+
+        ## Convert the control/treatment label to just 0/1
+        factors = map(eachrow(filteredUnitModel)) do filteredRow
+            if filteredRow[config[:groupVar]] == config[:controlGroup]
+                return 0.0
+            else
+                return 1.0
+            end
+        end
+
+        factoredUnitModel = hcat(filteredUnitModel, DataFrame(:factoredGroupVar => factors))
+
+        ## Predictors for the linear model. When confounds present, moderate the model.
+        X = DataFrame(:Intercept => [1 for i in 1:nrow(factoredUnitModel)])
+        X = hcat(X, factoredUnitModel[!, :factoredGroupVar])
+        if haskey(config, :confounds)
+            # TODO figure out the difference between here and the R version, which is correct
+            interactions = factoredUnitModel[!, [config[:confounds]...]] .* factoredUnitModel[!, :factoredGroupVar]
+            X = hcat(X, factoredUnitModel[!, [config[:confounds]...]])
+            X = hcat(X, interactions, makeunique=true)
+        end
+
+        X = Matrix{Float64}(X)
+        print(X) # TEMP
+
+        ## For each relationship, find the (moderated) difference of means
+        for networkRow in eachrow(networkModel)
+            r = networkRow[:relationship]
+            y = Vector{Float64}(factoredUnitModel[!, r])
+            ols = lm(X, y)
+            print(ols) # TEMP
+            slope = coef(ols)[2] # TODO quadruple check that this is the right one
+            networkRow[:thickness] = slope # TODO check that this is the right way to do this; negative means blue, positive means red
+            networkRow[:weight_x] = slope
+        end
+
+        s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
+        networkModel[!, :weight_x] /= s
+
+        # TODO weight_y as an ortho svd
     else
         error("means_rotation requires a groupVar")
     end
