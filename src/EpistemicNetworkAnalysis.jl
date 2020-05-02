@@ -3,6 +3,7 @@ module EpistemicNetworkAnalysis
 using DataFrames
 using Statistics
 using LinearAlgebra
+using MultivariateStats
 using GLM
 using CSV
 # TODO using Lasso

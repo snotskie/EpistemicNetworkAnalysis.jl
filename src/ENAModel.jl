@@ -200,14 +200,13 @@ function means_rotation!(networkModel, unitModel, config)
         X = DataFrame(:Intercept => [1 for i in 1:nrow(factoredUnitModel)])
         X = hcat(X, factoredUnitModel[!, :factoredGroupVar])
         if haskey(config, :confounds)
-            # TODO figure out the difference between here and the R version, which is correct
+            # TODO think of a more consistent way to specify columns. right now, confounds must be simple numeric, but groups can be whatever data type, factored into a 0, 1, or drop
             interactions = factoredUnitModel[!, [config[:confounds]...]] .* factoredUnitModel[!, :factoredGroupVar]
             X = hcat(X, factoredUnitModel[!, [config[:confounds]...]])
             X = hcat(X, interactions, makeunique=true)
         end
 
         X = Matrix{Float64}(X)
-        print(X) # TEMP
 
         ## For each relationship, find the (moderated) difference of means
         for networkRow in eachrow(networkModel)
@@ -215,15 +214,32 @@ function means_rotation!(networkModel, unitModel, config)
             y = Vector{Float64}(factoredUnitModel[!, r])
             ols = lm(X, y)
             print(ols) # TEMP
-            slope = coef(ols)[2] # TODO quadruple check that this is the right one
+            slope = coef(ols)[2]
             networkRow[:thickness] = slope # TODO check that this is the right way to do this; negative means blue, positive means red
             networkRow[:weight_x] = slope
         end
 
+        ## Normalize the differences of the means
         s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
         networkModel[!, :weight_x] /= s
 
-        # TODO weight_y as an ortho svd
+        ## Find the first svd dim of the data orthogonal to the x weights, use these as the y weights
+        # TODO HERE
+        weights = Vector{Float64}(networkModel[!, :weight_x])
+        rawCounts = Matrix{Float64}(factoredUnitModel[!, [networkRow[:relationship] for networkRow in eachrow(networkModel)]])
+        meanCenteredCounts = rawCounts .- transpose(collect(mean(rawCounts[:, i]) for i in 1:size(rawCounts)[2])) # TODO say this simpler
+        display(meanCenteredCounts) # 47 x 15
+        display(weights) # 15 x 1
+        display(transpose(weights)) # 1 x 15
+        display(qr(weights).Q) # 15 x 15
+        deflatedCounts = (meanCenteredCounts - meanCenteredCounts*weights*transpose(weights)) * qr(weights).Q[:, 2:end] # TODO why the 2:end in the original?
+        display(deflatedCounts) # 47 x 14
+        pcaModel = fit(PPCA, transpose(deflatedCounts)) # TODO why do I have to transpose this in Julia? what's wrong here?
+        display(loadings(pcaModel)) # 14 x ?
+        # orthosvd = qr(weights).Q[:, 2:end] * (pcaModel.proj .* transpose(pcaModel.prinvars .^ 0.5)) # TODO check
+        orthosvd = qr(weights).Q[:, 2:end] * loadings(pcaModel) # 15 x ? # TODO check
+        display(orthosvd)
+        networkModel[!, :weight_y] = orthosvd[:, 2] # TODO check
     else
         error("means_rotation requires a groupVar")
     end
