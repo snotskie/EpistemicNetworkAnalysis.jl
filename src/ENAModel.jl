@@ -213,7 +213,7 @@ function means_rotation!(networkModel, unitModel, config)
             r = networkRow[:relationship]
             y = Vector{Float64}(factoredUnitModel[!, r])
             ols = lm(X, y)
-            print(ols) # TEMP
+            # print(ols) # TEMP
             slope = coef(ols)[2]
             networkRow[:thickness] = slope # TODO check that this is the right way to do this; negative means blue, positive means red
             networkRow[:weight_x] = slope
@@ -224,22 +224,18 @@ function means_rotation!(networkModel, unitModel, config)
         networkModel[!, :weight_x] /= s
 
         ## Find the first svd dim of the data orthogonal to the x weights, use these as the y weights
-        # TODO HERE
-        weights = Vector{Float64}(networkModel[!, :weight_x])
-        rawCounts = Matrix{Float64}(factoredUnitModel[!, [networkRow[:relationship] for networkRow in eachrow(networkModel)]])
-        meanCenteredCounts = rawCounts .- transpose(collect(mean(rawCounts[:, i]) for i in 1:size(rawCounts)[2])) # TODO say this simpler
-        display(meanCenteredCounts) # 47 x 15
-        display(weights) # 15 x 1
-        display(transpose(weights)) # 1 x 15
-        display(qr(weights).Q) # 15 x 15
-        deflatedCounts = (meanCenteredCounts - meanCenteredCounts*weights*transpose(weights)) * qr(weights).Q[:, 2:end] # TODO why the 2:end in the original?
-        display(deflatedCounts) # 47 x 14
-        pcaModel = fit(PPCA, transpose(deflatedCounts)) # TODO why do I have to transpose this in Julia? what's wrong here?
-        display(loadings(pcaModel)) # 14 x ?
-        # orthosvd = qr(weights).Q[:, 2:end] * (pcaModel.proj .* transpose(pcaModel.prinvars .^ 0.5)) # TODO check
-        orthosvd = qr(weights).Q[:, 2:end] * loadings(pcaModel) # 15 x ? # TODO check
+        # TODO HERE: checking each of these against R one at a time
+        weights = Vector{Float64}(networkModel[!, :weight_x]) # CHECKED same as R
+        rawCounts = Matrix{Float64}(factoredUnitModel[!, [networkRow[:relationship] for networkRow in eachrow(networkModel)]]) # CHECKED same as R
+        meanCenteredCounts = rawCounts .- transpose(collect(mean(rawCounts[:, i]) for i in 1:size(rawCounts)[2])) # TODO say this simpler # CHECKED same as R
+        XBar = (meanCenteredCounts - meanCenteredCounts*weights*transpose(weights)) * qr(weights).Q[:, 2:end] # 2:end to remove the x-axis (the 1 col) from the deflation
+        display(XBar) # TODO HERE
+        pcaModel = fit(PCA, Matrix{Float64}(transpose(XBar)), # TODO check what config of Julia's PCA runs the same algorithm as R's prcomp(X, scale=FALSE)
+            pratio=1.0, mean=0, method=:svd)
+        display(projection(pcaModel))
+        orthosvd = qr(weights).Q[:, 2:end] * projection(pcaModel) # 2:end to remove the x-axis (the 1 col) from the reinflation
         display(orthosvd)
-        networkModel[!, :weight_y] = orthosvd[:, 2] # TODO check
+        networkModel[!, :weight_y] = orthosvd[:, 2]
     else
         error("means_rotation requires a groupVar")
     end

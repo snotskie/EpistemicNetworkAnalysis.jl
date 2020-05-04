@@ -24,7 +24,7 @@ function temp_example()
 
     myENA = ENAModel(RSdata, codes, conversations, units,
                      groupVar=groupVar, controlGroup=controlGroup, treatmentGroup=treatmentGroup,
-                     confounds=confounds,
+                    #  confounds=confounds,
                      rotateBy=means_rotation!)
         
     print(myENA.unitModel[!, [:ENA_UNIT, :Data_Collaboration]])
