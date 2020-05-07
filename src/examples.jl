@@ -25,13 +25,14 @@ function temp_example()
     myENA = ENAModel(RSdata, codes, conversations, units,
                      groupVar=groupVar, controlGroup=controlGroup, treatmentGroup=treatmentGroup,
                     #  confounds=confounds,
-                     rotateBy=means_rotation!)
+                    #  rotateBy=means_rotation!
+                     )
         
     print(myENA.unitModel[!, [:ENA_UNIT, :Data_Collaboration]])
     print(myENA.networkModel)
 end
 
-# MR1 in Julia: MATCH
+# MR1 in Julia: X=MATCH, Y=APPROX
 # │ Row │ relationship                                          │ thickness    │ weight_x    │ weight_y │
 # │     │ Symbol                                                │ Real         │ Float64     │ Real     │
 # ├─────┼───────────────────────────────────────────────────────┼──────────────┼─────────────┼──────────┤
@@ -51,7 +52,7 @@ end
 # │ 14  │ Performance_Parameters_Collaboration                  │ -0.0330796   │ -0.170993   │ 0        │
 # │ 15  │ Technical_Constraints_Design_Reasoning                │ -0.0232809   │ -0.120342   │ 0        │
 
-# MR1 in R: MATCH
+# MR1 in R: X=MATCH, Y=APPROX
 # codes	MMR1	SVD2	SVD3	SVD4	SVD5	SVD6	SVD7	SVD8	SVD9	SVD10	SVD11	SVD12	SVD13	SVD14	SVD15
 # <ena.mtdt>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>
 # Data & Technical.Constraints                           	-0.397538600	0.05923297	0.40699051	-0.005182994	-0.338915642	-0.472034727	0.32207047	0.21063367	-0.29269678	0.099797253	-0.08582129	-0.16219275	-0.054639072	-0.21985444	-0.07991101
@@ -70,7 +71,7 @@ end
 # Client.and.Consultant.Requests & Collaboration         	0.009235566	-0.08319042	-0.09352695	-0.148545480	0.001183287	0.147285482	-0.01388922	0.08100281	-0.10111698	-0.202307248	-0.05644526	-0.53520580	0.036215709	0.24600858	-0.72877723
 # Design.Reasoning & Collaboration                       	-0.150853866	-0.30682848	-0.08531594	-0.404381180	0.279871548	0.371516733	0.42664313	0.33554681	-0.15931847	-0.154015690	0.01346263	-0.06203900	0.168863909	-0.20220285	0.28070155
 
-# MMR1 in Julia: MATCH
+# MMR1 in Julia: X=MATCH, Y=APPROX
 # │ Row │ relationship                                          │ thickness  │ weight_x   │ weight_y │
 # │     │ Symbol                                                │ Real       │ Float64    │ Real     │
 # ├─────┼───────────────────────────────────────────────────────┼────────────┼────────────┼──────────┤
@@ -90,7 +91,7 @@ end
 # │ 14  │ Performance_Parameters_Collaboration                  │ -0.0143781 │ -0.0278005 │ 0        │
 # │ 15  │ Technical_Constraints_Design_Reasoning                │ 0.19613    │ 0.379223   │ 0        │
 
-# MMR1 in R: MATCH
+# MMR1 in R: X=MATCH, Y=APPROX
 # codes	MMR1	SVD2	SVD3	SVD4	SVD5	SVD6	SVD7	SVD8	SVD9	SVD10	SVD11	SVD12	SVD13	SVD14	SVD15
 # <ena.mtdt>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>	<en.dmnsn>
 # Data & Technical.Constraints                           	-0.399681667	0.296224528	0.327010445	-0.1567488049	-0.21172555	-0.566148677	-0.083361574	0.21705996	-0.35285654	-0.09118961	-0.102869944	-0.06294312	-0.02668616	-0.22967246	0.027466941

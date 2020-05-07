@@ -155,13 +155,22 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
                     confounds, metadata, rotateBy, collect(keys(relationships)), unitModel, networkModel, codeModel)
 end
 
+# TODO verify this
 function svd_rotation!(networkModel, unitModel, config)
-    # TODO compute the thickness and weights of the network-level model
     if haskey(config, :confounds)
-        # TODO use AC-PCA when confounds present
+        goodRows = completecases(unitModel[!, config[:confounds]])
+        filteredUnitModel = unitModel[goodRows, :]
+        controlModel = filteredUnitModel[!, config[:confounds]]
+        pcaModel = help_ac_svd(networkModel, filteredUnitModel, controlModel)
+        networkModel[!, :weight_x] = pcaModel[:, 1]
+        networkModel[!, :weight_y] = pcaModel[:, 2]
     else
-        # TODO use PCA otherwise
+        pcaModel = help_ac_svd(networkModel, unitModel)
+        networkModel[!, :weight_x] = pcaModel[:, 1]
+        networkModel[!, :weight_y] = pcaModel[:, 2]
     end
+
+    # TODO compute the thickness of the relationships
 end
 
 function means_rotation!(networkModel, unitModel, config)
@@ -181,7 +190,7 @@ function means_rotation!(networkModel, unitModel, config)
 
         ## When confounds present, drop rows with missing confound data
         if haskey(config, :confounds)
-            goodRows = completecases(filteredUnitModel[!, [config[:confounds]...]])
+            goodRows = completecases(filteredUnitModel[!, config[:confounds]])
             filteredUnitModel = filteredUnitModel[goodRows, :]
         end
 
@@ -224,19 +233,32 @@ function means_rotation!(networkModel, unitModel, config)
         networkModel[!, :weight_x] /= s
 
         ## Find the first svd dim of the data orthogonal to the x weights, use these as the y weights
-        # TODO HERE: checking each of these against R one at a time
-        weights = Vector{Float64}(networkModel[!, :weight_x]) # CHECKED same as R
-        rawCounts = Matrix{Float64}(factoredUnitModel[!, [networkRow[:relationship] for networkRow in eachrow(networkModel)]]) # CHECKED same as R
-        meanCenteredCounts = rawCounts .- transpose(collect(mean(rawCounts[:, i]) for i in 1:size(rawCounts)[2])) # TODO say this simpler # CHECKED same as R
-        XBar = (meanCenteredCounts - meanCenteredCounts*weights*transpose(weights)) * qr(weights).Q[:, 2:end] # 2:end to remove the x-axis (the 1 col) from the deflation
-        display(XBar) # TODO HERE
-        pcaModel = fit(PCA, Matrix{Float64}(transpose(XBar)), # TODO check what config of Julia's PCA runs the same algorithm as R's prcomp(X, scale=FALSE)
-            pratio=1.0, mean=0, method=:svd)
-        display(projection(pcaModel))
-        orthosvd = qr(weights).Q[:, 2:end] * projection(pcaModel) # 2:end to remove the x-axis (the 1 col) from the reinflation
-        display(orthosvd)
-        networkModel[!, :weight_y] = orthosvd[:, 2]
+        controlModel = DataFrame(:x_axis => [
+            sum(
+                networkRow[:weight_x] * unitRow[networkRow[:relationship]]
+                for networkRow in eachrow(networkModel)
+            ) for unitRow in eachrow(factoredUnitModel)
+        ])
+        pcaModel = help_ac_svd(networkModel, factoredUnitModel, controlModel)
+
+        if haskey(config, :confounds) # TODO: why does this work to match R??
+            networkModel[!, :weight_y] = pcaModel[:, 1]
+        else
+            networkModel[!, :weight_y] = pcaModel[:, 2]
+        end
     else
         error("means_rotation requires a groupVar")
     end
 end
+
+# weights = Vector{Float64}(networkModel[!, :weight_x]) # CHECKED same as R
+# rawCounts = Matrix{Float64}(factoredUnitModel[!, [networkRow[:relationship] for networkRow in eachrow(networkModel)]]) # CHECKED same as R
+# meanCenteredCounts = rawCounts .- transpose(collect(mean(rawCounts[:, i]) for i in 1:size(rawCounts)[2])) # TODO say this simpler # CHECKED same as R
+# XBar = (meanCenteredCounts - meanCenteredCounts*weights*transpose(weights)) * qr(weights).Q[:, 2:end] # 2:end to remove the x-axis (the 1 col) from the deflation
+# display(XBar) # TODO HERE
+# pcaModel = fit(PCA, Matrix{Float64}(transpose(XBar)), # TODO check what config of Julia's PCA runs the same algorithm as R's prcomp(X, scale=FALSE)
+#     pratio=1.0, mean=0, method=:svd)
+# display(projection(pcaModel))
+# orthosvd = qr(weights).Q[:, 2:end] * projection(pcaModel) # 2:end to remove the x-axis (the 1 col) from the reinflation
+# display(orthosvd)
+# networkModel[!, :weight_y] = orthosvd[:, 2]
