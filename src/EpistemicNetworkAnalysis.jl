@@ -7,7 +7,7 @@ using MultivariateStats
 using GLM
 using CSV
 # TODO using Lasso
-# using Makie
+using Makie
 
 include("./helpers.jl")
 include("./ENARotations.jl")

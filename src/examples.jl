@@ -6,7 +6,7 @@
 
 function temp_example()
     RSdata = ena_dataset("RS.data")
-    print(first(RSdata, 6))
+    println(first(RSdata, 6))
 
     codes = [:Data,
              :Technical_Constraints,
@@ -28,9 +28,10 @@ function temp_example()
                      rotateBy=means_rotation!
                      )
         
-    print(myENA.networkModel)
-    print(myENA.codeModel)
-    print(myENA.unitModel[!, [:ENA_UNIT, :dim_x, :fit_x, :dim_y, :fit_y]])
+    # println(myENA.networkModel)
+    # println(myENA.codeModel)
+    # println(myENA.unitModel[!, [:ENA_UNIT, :dim_x, :fit_x, :dim_y, :fit_y]])
+    display(myENA)
 end
 
 # MR1 in Julia: X=MATCH, Y=APPROX

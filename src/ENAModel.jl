@@ -11,7 +11,7 @@ struct ENAModel
     metadata::Array{Symbol,1}
     # plots::Dict{String,Scene} # dropping this in favor of doing it with display/plot methods, for now maybe
     rotateBy::Function
-    relationships::Array{Symbol,1}
+    relationships::Any
     unitModel::DataFrame # all the unit-level data we compute
     networkModel::DataFrame # all the connections-level data we compute
     codeModel::DataFrame # all the code-level data we compute
@@ -185,49 +185,58 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
 
     ## Place the code dots into fit_x, fit_y, by predicting unit dim_x and dim_y values
     ## This is a projection of the relationship space into the code space
-    # TODO verify, if there's a part that's wrong when doing the fitting, I believe it's this and/or the coef's below
     X = Matrix{Float64}(zeros(nrow(unitModel), 1 + nrow(codeModel)))
     X[:, 1] .= 1 # intercept
-    for networkRow in eachrow(networkModel)
-        r = networkRow[:relationship]
-        i, j = relationships[r]
-        for (k, unitRow) in enumerate(eachrow(unitModel))
-            X[k, i+1] += unitRow[r] / 2 # +1 because we started with the intercept
-            X[k, j+1] += unitRow[r] / 2 # +1 because we started with the intercept
+    for (i, unitRow) in enumerate(eachrow(unitModel))
+        # denom = 2 * sqrt(sum(unitRow[t]^2 for t in keys(relationships))) # TODO when not doing sphere normal by default
+        denom = 2
+        for r in keys(relationships)
+            a, b = relationships[r]
+            X[i, a+1] += unitRow[r] / denom # +1 because we started with the intercept
+            X[i, b+1] += unitRow[r] / denom # +1 because we started with the intercept
         end
     end
 
     ## fit_x
     y = Vector{Float64}(unitModel[:, :dim_x])
-    ols = lm(X, y)
+    x_axis_ols = lm(X, y)
     for i in 1:nrow(codeModel)
-        codeModel[i, :fit_x] = coef(ols)[i+1] # +1 because we started with the intercept
+        codeModel[i, :fit_x] = coef(x_axis_ols)[i+1] # +1 because we started with the intercept
     end
 
     ## fit_y
     y = Vector{Float64}(unitModel[:, :dim_y])
-    ols = lm(X, y)
+    y_axis_ols = lm(X, y)
     for i in 1:nrow(codeModel)
-        codeModel[i, :fit_y] = coef(ols)[i+1] # +1 because we started with the intercept
+        codeModel[i, :fit_y] = coef(y_axis_ols)[i+1] # +1 because we started with the intercept
     end
 
     ## Fit the units
-    # TODO verify, but I'm pretty confident that *this* part is right
+    # TODO verify
     for unitRow in eachrow(unitModel)
-        unitRow[:fit_x] = sum(
-            codeModel[relationships[networkRow[:relationship]][1], :fit_x] * unitRow[networkRow[:relationship]] / 2 +
-            codeModel[relationships[networkRow[:relationship]][2], :fit_x] * unitRow[networkRow[:relationship]] / 2
-            for networkRow in eachrow(networkModel) # TODO simplify, here and below
-        )
 
-        unitRow[:fit_y] = sum(
-            codeModel[relationships[networkRow[:relationship]][1], :fit_y] * unitRow[networkRow[:relationship]] / 2 +
-            codeModel[relationships[networkRow[:relationship]][2], :fit_y] * unitRow[networkRow[:relationship]] / 2
-            for networkRow in eachrow(networkModel)
-        )
+        # fit_x = intercept + code_fit_x_1 * half_line_thickness_1 + ...
+        unitRow[:fit_x] = coef(x_axis_ols)[1] + sum(
+            codeModel[relationships[r][1], :fit_x] * unitRow[r] +
+            codeModel[relationships[r][2], :fit_x] * unitRow[r]
+            for r in keys(relationships)
+        # ) / 2 / sqrt(sum(unitRow[t]^2 for t in keys(relationships))) # TODO when not doing sphere normal by default
+        ) / 2
+
+        # fit_y = intercept + code_fit_y_1 * half_line_thickness_1 + ...
+        unitRow[:fit_y] = coef(y_axis_ols)[1] + sum(
+            codeModel[relationships[r][1], :fit_y] * unitRow[r] +
+            codeModel[relationships[r][2], :fit_y] * unitRow[r]
+            for r in keys(relationships)
+        # ) / 2 / sqrt(sum(unitRow[t]^2 for t in keys(relationships))) # TODO when not doing sphere normal by default
+        ) / 2
     end
+
+    ## Translate code model fits to account for scaling and the intercept # TODO why do I need this?
+    codeModel[!, :fit_x] = 4*codeModel[!, :fit_x] .+ coef(x_axis_ols)[1]
+    codeModel[!, :fit_y] = 4*codeModel[!, :fit_y] .+ coef(y_axis_ols)[1]
 
     # Done!
     return ENAModel(unitJoinedData, codes, conversations, units, windowSize, groupVar, treatmentGroup, controlGroup,
-                    confounds, metadata, rotateBy, collect(keys(relationships)), unitModel, networkModel, codeModel)
+                    confounds, metadata, rotateBy, relationships, unitModel, networkModel, codeModel)
 end
