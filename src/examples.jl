@@ -25,11 +25,12 @@ function temp_example()
     myENA = ENAModel(RSdata, codes, conversations, units,
                      groupVar=groupVar, controlGroup=controlGroup, treatmentGroup=treatmentGroup,
                     #  confounds=confounds,
-                    #  rotateBy=means_rotation!
+                     rotateBy=means_rotation!
                      )
         
-    print(myENA.unitModel[!, [:ENA_UNIT, :Data_Collaboration]])
     print(myENA.networkModel)
+    print(myENA.codeModel)
+    print(myENA.unitModel[!, [:ENA_UNIT, :dim_x, :fit_x, :dim_y, :fit_y]])
 end
 
 # MR1 in Julia: X=MATCH, Y=APPROX

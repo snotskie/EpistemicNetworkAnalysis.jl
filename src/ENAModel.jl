@@ -113,7 +113,6 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     for unitRow in eachrow(unitModel)
         unit = unitRow[unitVar]
         vector = [counts[unit][i][j] for (i,j) in values(relationships)]
-        # s = std(vector, corrected=false)
         s = sqrt(sum(vector .^ 2))
         vector /= s
         for (k, r) in enumerate(keys(relationships))
@@ -133,6 +132,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     end
 
     # Rotation step
+    ## Prepare the config
     config = Dict{Symbol,Any}()
     if !isnothing(groupVar)
         config[:groupVar] = groupVar
@@ -144,121 +144,90 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         config[:confounds] = confounds
     end
 
+    ## Use the given lambda, probably one of the ENARotations functions
     rotateBy(networkModel, unitModel, config)
 
-    # Layout step
-    # TODO compute dim_x and dim_y of the unit-level model
-    # TODO fit the x and y positions of the unit-level model and code-level model
-    # TODO compute the dot sizes for the code-level model
+    ## Compute dim_x and dim_y for the units, now that we have the rotation
+    for unitRow in eachrow(unitModel)
+        unitRow[:dim_x] = sum(
+            networkRow[:weight_x] * unitRow[networkRow[:relationship]]
+            for networkRow in eachrow(networkModel)
+        )
 
+        unitRow[:dim_y] = sum(
+            networkRow[:weight_y] * unitRow[networkRow[:relationship]]
+            for networkRow in eachrow(networkModel)
+        )
+    end
+
+    # Layout step
+    ## Compute the thickness of each network row line
+    for networkRow in eachrow(networkModel)
+        r = networkRow[:relationship]
+        networkRow[:thickness] = sum(unitModel[!, r])
+    end
+
+    ## Normalize
+    s = sqrt(sum(networkModel[!, :thickness] .^ 2))
+    networkModel[!, :thickness] /= s
+
+    ## Compute the thickness of each code row dot, by "splitting" the thickness of each line between its two codes
+    for networkRow in eachrow(networkModel)
+        r = networkRow[:relationship]
+        i, j = relationships[r]
+        codeModel[i, :thickness] += networkRow[:thickness] # TODO check, is this the right way to do this?
+        codeModel[j, :thickness] += networkRow[:thickness]
+    end
+
+    ## Normalize
+    s = sqrt(sum(codeModel[!, :thickness] .^ 2))
+    codeModel[!, :thickness] /= s
+
+    ## Place the code dots into fit_x, fit_y, by predicting unit dim_x and dim_y values
+    ## This is a projection of the relationship space into the code space
+    # TODO verify, if there's a part that's wrong when doing the fitting, I believe it's this and/or the coef's below
+    X = Matrix{Float64}(zeros(nrow(unitModel), 1 + nrow(codeModel)))
+    X[:, 1] .= 1 # intercept
+    for networkRow in eachrow(networkModel)
+        r = networkRow[:relationship]
+        i, j = relationships[r]
+        for (k, unitRow) in enumerate(eachrow(unitModel))
+            X[k, i+1] += unitRow[r] / 2 # +1 because we started with the intercept
+            X[k, j+1] += unitRow[r] / 2 # +1 because we started with the intercept
+        end
+    end
+
+    ## fit_x
+    y = Vector{Float64}(unitModel[:, :dim_x])
+    ols = lm(X, y)
+    for i in 1:nrow(codeModel)
+        codeModel[i, :fit_x] = coef(ols)[i+1] # +1 because we started with the intercept
+    end
+
+    ## fit_y
+    y = Vector{Float64}(unitModel[:, :dim_y])
+    ols = lm(X, y)
+    for i in 1:nrow(codeModel)
+        codeModel[i, :fit_y] = coef(ols)[i+1] # +1 because we started with the intercept
+    end
+
+    ## Fit the units
+    # TODO verify, but I'm pretty confident that *this* part is right
+    for unitRow in eachrow(unitModel)
+        unitRow[:fit_x] = sum(
+            codeModel[relationships[networkRow[:relationship]][1], :fit_x] * unitRow[networkRow[:relationship]] / 2 +
+            codeModel[relationships[networkRow[:relationship]][2], :fit_x] * unitRow[networkRow[:relationship]] / 2
+            for networkRow in eachrow(networkModel) # TODO simplify, here and below
+        )
+
+        unitRow[:fit_y] = sum(
+            codeModel[relationships[networkRow[:relationship]][1], :fit_y] * unitRow[networkRow[:relationship]] / 2 +
+            codeModel[relationships[networkRow[:relationship]][2], :fit_y] * unitRow[networkRow[:relationship]] / 2
+            for networkRow in eachrow(networkModel)
+        )
+    end
+
+    # Done!
     return ENAModel(unitJoinedData, codes, conversations, units, windowSize, groupVar, treatmentGroup, controlGroup,
                     confounds, metadata, rotateBy, collect(keys(relationships)), unitModel, networkModel, codeModel)
 end
-
-# TODO verify this
-function svd_rotation!(networkModel, unitModel, config)
-    if haskey(config, :confounds)
-        goodRows = completecases(unitModel[!, config[:confounds]])
-        filteredUnitModel = unitModel[goodRows, :]
-        controlModel = filteredUnitModel[!, config[:confounds]]
-        pcaModel = help_ac_svd(networkModel, filteredUnitModel, controlModel)
-        networkModel[!, :weight_x] = pcaModel[:, 1]
-        networkModel[!, :weight_y] = pcaModel[:, 2]
-    else
-        pcaModel = help_ac_svd(networkModel, unitModel)
-        networkModel[!, :weight_x] = pcaModel[:, 1]
-        networkModel[!, :weight_y] = pcaModel[:, 2]
-    end
-
-    # TODO compute the thickness of the relationships
-end
-
-function means_rotation!(networkModel, unitModel, config)
-    ## Must have group variable to use (m)mr1
-    if haskey(config, :groupVar)
-
-        ## Tidy up the unit model to just those in the control/treatment group
-        filteredUnitModel = filter(unitModel) do unitRow
-            if unitRow[config[:groupVar]] == config[:controlGroup]
-                return true
-            elseif unitRow[config[:groupVar]] == config[:treatmentGroup]
-                return true
-            else
-                return false
-            end
-        end
-
-        ## When confounds present, drop rows with missing confound data
-        if haskey(config, :confounds)
-            goodRows = completecases(filteredUnitModel[!, config[:confounds]])
-            filteredUnitModel = filteredUnitModel[goodRows, :]
-        end
-
-        ## Convert the control/treatment label to just 0/1
-        factors = map(eachrow(filteredUnitModel)) do filteredRow
-            if filteredRow[config[:groupVar]] == config[:controlGroup]
-                return 0.0
-            else
-                return 1.0
-            end
-        end
-
-        factoredUnitModel = hcat(filteredUnitModel, DataFrame(:factoredGroupVar => factors))
-
-        ## Predictors for the linear model. When confounds present, moderate the model.
-        X = DataFrame(:Intercept => [1 for i in 1:nrow(factoredUnitModel)])
-        X = hcat(X, factoredUnitModel[!, :factoredGroupVar])
-        if haskey(config, :confounds)
-            # TODO think of a more consistent way to specify columns. right now, confounds must be simple numeric, but groups can be whatever data type, factored into a 0, 1, or drop
-            interactions = factoredUnitModel[!, [config[:confounds]...]] .* factoredUnitModel[!, :factoredGroupVar]
-            X = hcat(X, factoredUnitModel[!, [config[:confounds]...]])
-            X = hcat(X, interactions, makeunique=true)
-        end
-
-        X = Matrix{Float64}(X)
-
-        ## For each relationship, find the (moderated) difference of means
-        for networkRow in eachrow(networkModel)
-            r = networkRow[:relationship]
-            y = Vector{Float64}(factoredUnitModel[!, r])
-            ols = lm(X, y)
-            # print(ols) # TEMP
-            slope = coef(ols)[2]
-            networkRow[:thickness] = slope # TODO check that this is the right way to do this; negative means blue, positive means red
-            networkRow[:weight_x] = slope
-        end
-
-        ## Normalize the differences of the means
-        s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
-        networkModel[!, :weight_x] /= s
-
-        ## Find the first svd dim of the data orthogonal to the x weights, use these as the y weights
-        controlModel = DataFrame(:x_axis => [
-            sum(
-                networkRow[:weight_x] * unitRow[networkRow[:relationship]]
-                for networkRow in eachrow(networkModel)
-            ) for unitRow in eachrow(factoredUnitModel)
-        ])
-        pcaModel = help_ac_svd(networkModel, factoredUnitModel, controlModel)
-
-        if haskey(config, :confounds) # TODO: why does this work to match R??
-            networkModel[!, :weight_y] = pcaModel[:, 1]
-        else
-            networkModel[!, :weight_y] = pcaModel[:, 2]
-        end
-    else
-        error("means_rotation requires a groupVar")
-    end
-end
-
-# weights = Vector{Float64}(networkModel[!, :weight_x]) # CHECKED same as R
-# rawCounts = Matrix{Float64}(factoredUnitModel[!, [networkRow[:relationship] for networkRow in eachrow(networkModel)]]) # CHECKED same as R
-# meanCenteredCounts = rawCounts .- transpose(collect(mean(rawCounts[:, i]) for i in 1:size(rawCounts)[2])) # TODO say this simpler # CHECKED same as R
-# XBar = (meanCenteredCounts - meanCenteredCounts*weights*transpose(weights)) * qr(weights).Q[:, 2:end] # 2:end to remove the x-axis (the 1 col) from the deflation
-# display(XBar) # TODO HERE
-# pcaModel = fit(PCA, Matrix{Float64}(transpose(XBar)), # TODO check what config of Julia's PCA runs the same algorithm as R's prcomp(X, scale=FALSE)
-#     pratio=1.0, mean=0, method=:svd)
-# display(projection(pcaModel))
-# orthosvd = qr(weights).Q[:, 2:end] * projection(pcaModel) # 2:end to remove the x-axis (the 1 col) from the reinflation
-# display(orthosvd)
-# networkModel[!, :weight_y] = orthosvd[:, 2]
