@@ -55,6 +55,8 @@ function Makie.plot(ena::ENAModel;
 
     ## Subtraction mode size and color
     if subtraction
+        # TODO does it make sense to color the lines at all?
+        # ... Don't the color-coded groups tell us what we need to know, *and* those reflect the projection anyway?
         ## Count the size of the groups
         numControl = sum(map(eachrow(ena.unitModel)) do unitRow
             if unitRow[ena.groupVar] == ena.controlGroup

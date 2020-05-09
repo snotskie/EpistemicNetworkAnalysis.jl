@@ -4,7 +4,8 @@
 # TODO mmr1
 # TODO different plot options
 # TODO saving plots
-# TODO post-plot testing (with HypothesisTesting lib)
+# TODO model fit testing
+# TODO other (HLM, etc.) post-plot testing (with HypothesisTesting lib)
 
 # using EpistemicNetworkAnalysis
 
