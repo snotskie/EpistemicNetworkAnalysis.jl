@@ -14,6 +14,7 @@ struct ENAModel
     unitModel::DataFrame # all the unit-level data we compute
     networkModel::DataFrame # all the connections-level data we compute
     codeModel::DataFrame # all the code-level data we compute
+    # TODO pvalue
 end
 
 function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};

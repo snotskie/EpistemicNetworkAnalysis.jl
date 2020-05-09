@@ -82,6 +82,10 @@ function means_rotation!(networkModel, unitModel, config)
                 for networkRow in eachrow(networkModel)
             ) for unitRow in eachrow(factoredUnitModel)
         ])
+
+        if haskey(config, :confounds)
+            controlModel = DataFrame(hcat(controlModel[!, :x_axis], X[:, 3:end]))
+        end
         
         pcaModel = help_ac_svd(networkModel, factoredUnitModel, controlModel) # TODO use a better version of ortho svd
         if haskey(config, :confounds) # TODO: why does this work to match R??

@@ -8,6 +8,8 @@ IN DEVELOPMENT
 
 ## Tests
 
+(as of [22d915d](https://github.com/snotskie/EpistemicNetworkAnalysis.jl/commit/22d915dd917824799d00f6436e03b74bd234772f))
+
 Means rotation:
 
 ![](examples/images/mr1.png)

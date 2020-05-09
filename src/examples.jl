@@ -36,7 +36,7 @@ function temp_example()
 
     display(myENA)
     scene = plot(myENA,
-        # subtraction=true,
+        groups=true,
         # showprojection=true,
     )
     display(scene)
