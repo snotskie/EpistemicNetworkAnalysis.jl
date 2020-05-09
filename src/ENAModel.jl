@@ -30,7 +30,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
 
     ## Unit model
     unitVar = :ENA_UNIT
-    unitJoinedData = hcat(data, DataFrame(unitVar => map(eachrow(data)) do dataRow # TODO do this automatically when a group var, simplify the units param down to just a unitVar scalar again?
+    unitJoinedData = hcat(data, DataFrame(unitVar => map(eachrow(data)) do dataRow
         return join(dataRow[units], ".")
     end))
     unitModel = by(unitJoinedData, unitVar, first)
@@ -215,10 +215,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     ## Fit the units
     # TODO verify
     for unitRow in eachrow(unitModel)
-
         denom = 2 * sum(unitRow[t] for t in keys(relationships))
-
-        # Note: fit_x = intercept + code_fit_x_1 * half_line_thickness_1 + ...
         unitRow[:fit_x] = x_axis_coefs[1] +
             sum(
                 codeModel[relationships[r][1], :fit_x] * unitRow[r] +
@@ -226,7 +223,6 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
                 for r in keys(relationships)
             ) / denom
 
-        # Note: fit_y = intercept + code_fit_y_1 * half_line_thickness_1 + ...
         unitRow[:fit_y] = y_axis_coefs[1] +
             sum(
                 codeModel[relationships[r][1], :fit_y] * unitRow[r] +

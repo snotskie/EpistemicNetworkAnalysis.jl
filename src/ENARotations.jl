@@ -80,8 +80,8 @@ function means_rotation!(networkModel, unitModel, config)
                 for networkRow in eachrow(networkModel)
             ) for unitRow in eachrow(factoredUnitModel)
         ])
-        pcaModel = help_ac_svd(networkModel, factoredUnitModel, controlModel)
-
+        
+        pcaModel = help_ac_svd(networkModel, factoredUnitModel, controlModel) # TODO use a better version of ortho svd
         if haskey(config, :confounds) # TODO: why does this work to match R??
             networkModel[!, :weight_y] = pcaModel[:, 1]
         else
@@ -91,15 +91,3 @@ function means_rotation!(networkModel, unitModel, config)
         error("means_rotation requires a groupVar")
     end
 end
-
-# weights = Vector{Float64}(networkModel[!, :weight_x]) # CHECKED same as R
-# rawCounts = Matrix{Float64}(factoredUnitModel[!, [networkRow[:relationship] for networkRow in eachrow(networkModel)]]) # CHECKED same as R
-# meanCenteredCounts = rawCounts .- transpose(collect(mean(rawCounts[:, i]) for i in 1:size(rawCounts)[2])) # TODO say this simpler # CHECKED same as R
-# XBar = (meanCenteredCounts - meanCenteredCounts*weights*transpose(weights)) * qr(weights).Q[:, 2:end] # 2:end to remove the x-axis (the 1 col) from the deflation
-# display(XBar) # TODO HERE
-# pcaModel = fit(PCA, Matrix{Float64}(transpose(XBar)), # TODO check what config of Julia's PCA runs the same algorithm as R's prcomp(X, scale=FALSE)
-#     pratio=1.0, mean=0, method=:svd)
-# display(projection(pcaModel))
-# orthosvd = qr(weights).Q[:, 2:end] * projection(pcaModel) # 2:end to remove the x-axis (the 1 col) from the reinflation
-# display(orthosvd)
-# networkModel[!, :weight_y] = orthosvd[:, 2]

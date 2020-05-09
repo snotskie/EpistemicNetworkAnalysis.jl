@@ -3,6 +3,10 @@
 # TODO mr1
 # TODO mmr1
 # TODO different plot options
+# TODO saving plots
+# TODO post-plot testing (with HypothesisTesting lib)
+
+# using EpistemicNetworkAnalysis
 
 function temp_example()
     RSdata = ena_dataset("RS.data")
@@ -25,12 +29,15 @@ function temp_example()
 
     myENA = ENAModel(RSdata, codes, conversations, units,
                      groupVar=groupVar, controlGroup=controlGroup, treatmentGroup=treatmentGroup,
-                    #  confounds=confounds,
+                     confounds=confounds,
                      rotateBy=means_rotation!
                      )
 
     display(myENA)
-    scene = plot(myENA)
+    scene = plot(myENA,
+        # subtraction=true,
+        # showprojection=true,
+    )
     display(scene)
 end
 
