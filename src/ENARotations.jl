@@ -61,6 +61,7 @@ function means_rotation!(networkModel, unitModel, config)
         X = Matrix{Float64}(X)
 
         ## For each relationship, find the (moderated) difference of means
+        networkModel[!, :coefs] = [Real[0, 0] for networkRow in eachrow(networkModel)]
         for networkRow in eachrow(networkModel)
             r = networkRow[:relationship]
             y = Vector{Float64}(factoredUnitModel[!, r])
@@ -69,6 +70,7 @@ function means_rotation!(networkModel, unitModel, config)
             coefs = (transpose(X) * X)^-1 * transpose(X) * y
             slope = coefs[2]
             networkRow[:weight_x] = slope
+            networkRow[:coefs] = coefs[2:end]
         end
 
         ## Normalize the differences of the means
@@ -76,22 +78,36 @@ function means_rotation!(networkModel, unitModel, config)
         networkModel[!, :weight_x] /= s
 
         ## Find the first svd dim of the data orthogonal to the x weights, use these as the y weights
-        controlModel = DataFrame(:x_axis => [
-            sum(
+        unitValues = Matrix{Float64}(factoredUnitModel[!, networkModel[!, :relationship]])
+        coefValues = transpose(Matrix{Float64}(DataFrame(hcat(networkModel[!, :coefs]...))))
+        controlModel = DataFrame(unitValues * coefValues)
+        pcaModel = help_ac_svd(networkModel, factoredUnitModel, controlModel) # TODO optimize the lambda, don't just guess at 10 all the time
+        networkModel[!, :weight_y] = pcaModel[:, 1]
+
+        ## Warnings for colinear axes
+        for unitRow in eachrow(factoredUnitModel)
+            unitRow[:dim_x] = sum(
                 networkRow[:weight_x] * unitRow[networkRow[:relationship]]
                 for networkRow in eachrow(networkModel)
-            ) for unitRow in eachrow(factoredUnitModel)
-        ])
-
-        if haskey(config, :confounds)
-            controlModel = DataFrame(hcat(controlModel[!, :x_axis], X[:, 3:end]))
+            )
+    
+            unitRow[:dim_y] = sum(
+                networkRow[:weight_y] * unitRow[networkRow[:relationship]]
+                for networkRow in eachrow(networkModel)
+            )
         end
-        
-        pcaModel = help_ac_svd(networkModel, factoredUnitModel, controlModel) # TODO use a better version of ortho svd
-        if haskey(config, :confounds) # TODO: why does this work to match R??
-            networkModel[!, :weight_y] = pcaModel[:, 1]
-        else
-            networkModel[!, :weight_y] = pcaModel[:, 2]
+
+        norm_y = sqrt(sum(factoredUnitModel[!, :dim_y] .* factoredUnitModel[!, :dim_y]))
+        for i in 1:ncol(controlModel)
+            norm_x = sqrt(sum(controlModel[!, i] .* controlModel[!, i]))
+            cos_angle = sum(factoredUnitModel[!, :dim_y] .* controlModel[!, i]) / norm_y / norm_x
+            if abs(cos_angle) >= 0.15
+                @warn """The y-axis appears colinear with dimension #$(i) of the x-axis.
+Dimension #1 is the regular x-axis, aka, the (moderated) effect of the grouping variable on the connection weights.
+Dimension #2 is the effect from the first confound, #3 is the effect from the second confound, and so on.
+The next dimension is the effect from the interacton between the grouping variable and the first confound, and so on.
+"""
+            end
         end
     else
         error("means_rotation requires a groupVar")
