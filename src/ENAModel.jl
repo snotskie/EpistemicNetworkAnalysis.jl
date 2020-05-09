@@ -9,7 +9,6 @@ struct ENAModel
     controlGroup::Any # if groupVar == treatmentGroup, then 0; if neither, leave it out
     confounds::Union{Nothing,Array{Symbol,1}}
     metadata::Array{Symbol,1}
-    # plots::Dict{String,Scene} # dropping this in favor of doing it with display/plot methods, for now maybe
     rotateBy::Function
     relationships::Any
     unitModel::DataFrame # all the unit-level data we compute
@@ -168,7 +167,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     end
 
     ## Normalize
-    s = sqrt(sum(networkModel[!, :thickness] .^ 2))
+    s = maximum(networkModel[!, :thickness]) #sqrt(sum(networkModel[!, :thickness] .^ 2))
     networkModel[!, :thickness] /= s
 
     ## Compute the thickness of each code row dot, by "splitting" the thickness of each line between its two codes
@@ -180,7 +179,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     end
 
     ## Normalize
-    s = sqrt(sum(codeModel[!, :thickness] .^ 2))
+    s = maximum(codeModel[!, :thickness]) # sqrt(sum(codeModel[!, :thickness] .^ 2))
     codeModel[!, :thickness] /= s
 
     ## Place the code dots into fit_x, fit_y, by predicting unit dim_x and dim_y values
@@ -188,8 +187,8 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     X = Matrix{Float64}(zeros(nrow(unitModel), 1 + nrow(codeModel)))
     X[:, 1] .= 1 # intercept
     for (i, unitRow) in enumerate(eachrow(unitModel))
-        # denom = 2 * sqrt(sum(unitRow[t]^2 for t in keys(relationships))) # TODO when not doing sphere normal by default
-        denom = 2
+        # denom = 2
+        denom = 2 * sum(unitRow[t] for t in keys(relationships))
         for r in keys(relationships)
             a, b = relationships[r]
             X[i, a+1] += unitRow[r] / denom # +1 because we started with the intercept
@@ -199,42 +198,46 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
 
     ## fit_x
     y = Vector{Float64}(unitModel[:, :dim_x])
-    x_axis_ols = lm(X, y)
+    # x_axis_coefs = coef(lm(X, y))
+    x_axis_coefs = (transpose(X) * X)^-1 * transpose(X) * y
     for i in 1:nrow(codeModel)
-        codeModel[i, :fit_x] = coef(x_axis_ols)[i+1] # +1 because we started with the intercept
+        codeModel[i, :fit_x] = x_axis_coefs[i+1] # +1 because we started with the intercept
     end
 
     ## fit_y
     y = Vector{Float64}(unitModel[:, :dim_y])
-    y_axis_ols = lm(X, y)
+    # y_axis_coefs = coef(lm(X, y))
+    y_axis_coefs = (transpose(X) * X)^-1 * transpose(X) * y
     for i in 1:nrow(codeModel)
-        codeModel[i, :fit_y] = coef(y_axis_ols)[i+1] # +1 because we started with the intercept
+        codeModel[i, :fit_y] = y_axis_coefs[i+1] # +1 because we started with the intercept
     end
 
     ## Fit the units
     # TODO verify
     for unitRow in eachrow(unitModel)
 
-        # fit_x = intercept + code_fit_x_1 * half_line_thickness_1 + ...
-        unitRow[:fit_x] = coef(x_axis_ols)[1] + sum(
-            codeModel[relationships[r][1], :fit_x] * unitRow[r] +
-            codeModel[relationships[r][2], :fit_x] * unitRow[r]
-            for r in keys(relationships)
-        # ) / 2 / sqrt(sum(unitRow[t]^2 for t in keys(relationships))) # TODO when not doing sphere normal by default
-        ) / 2
+        denom = 2 * sum(unitRow[t] for t in keys(relationships))
 
-        # fit_y = intercept + code_fit_y_1 * half_line_thickness_1 + ...
-        unitRow[:fit_y] = coef(y_axis_ols)[1] + sum(
-            codeModel[relationships[r][1], :fit_y] * unitRow[r] +
-            codeModel[relationships[r][2], :fit_y] * unitRow[r]
-            for r in keys(relationships)
-        # ) / 2 / sqrt(sum(unitRow[t]^2 for t in keys(relationships))) # TODO when not doing sphere normal by default
-        ) / 2
+        # Note: fit_x = intercept + code_fit_x_1 * half_line_thickness_1 + ...
+        unitRow[:fit_x] = x_axis_coefs[1] +
+            sum(
+                codeModel[relationships[r][1], :fit_x] * unitRow[r] +
+                codeModel[relationships[r][2], :fit_x] * unitRow[r]
+                for r in keys(relationships)
+            ) / denom
+
+        # Note: fit_y = intercept + code_fit_y_1 * half_line_thickness_1 + ...
+        unitRow[:fit_y] = y_axis_coefs[1] +
+            sum(
+                codeModel[relationships[r][1], :fit_y] * unitRow[r] +
+                codeModel[relationships[r][2], :fit_y] * unitRow[r]
+                for r in keys(relationships)
+            ) / denom
     end
 
-    ## Translate code model fits to account for scaling and the intercept # TODO why do I need this?
-    codeModel[!, :fit_x] = 4*codeModel[!, :fit_x] .+ coef(x_axis_ols)[1]
-    codeModel[!, :fit_y] = 4*codeModel[!, :fit_y] .+ coef(y_axis_ols)[1]
+    ## Translate code model fits to account for the intercepts
+    codeModel[!, :fit_x] = codeModel[!, :fit_x] .+ x_axis_coefs[1]
+    codeModel[!, :fit_y] = codeModel[!, :fit_y] .+ y_axis_coefs[1]
 
     # Done!
     return ENAModel(unitJoinedData, codes, conversations, units, windowSize, groupVar, treatmentGroup, controlGroup,

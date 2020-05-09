@@ -4,7 +4,7 @@ using DataFrames
 using Statistics
 using LinearAlgebra
 using MultivariateStats
-using GLM
+using HypothesisTests
 using CSV
 # TODO using Lasso
 using Makie

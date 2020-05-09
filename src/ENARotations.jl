@@ -62,9 +62,10 @@ function means_rotation!(networkModel, unitModel, config)
         for networkRow in eachrow(networkModel)
             r = networkRow[:relationship]
             y = Vector{Float64}(factoredUnitModel[!, r])
-            ols = lm(X, y)
-            # print(ols) # TEMP
-            slope = coef(ols)[2]
+            # ols = lm(X, y)
+            # slope = coef(ols)[2]
+            coefs = (transpose(X) * X)^-1 * transpose(X) * y
+            slope = coefs[2]
             networkRow[:weight_x] = slope
         end
 
