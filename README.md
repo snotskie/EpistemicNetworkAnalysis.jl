@@ -18,7 +18,7 @@ Means rotation, subtraction plot:
 
 Means rotation, subtraction plot, detail showing target projections:
 
-![](examples/images/mr1-sub.png)
+![](examples/images/mr1-sub-detail.png)
 
 SVD rotation:
 
@@ -30,7 +30,7 @@ SVD rotation, subtraction plot:
 
 SVD rotation, subtraction plot, detail showing target projections:
 
-![](examples/images/svd-sub.png)
+![](examples/images/svd-sub-detail.png)
 
 Moderated means rotation:
 
@@ -42,7 +42,7 @@ Moderated means rotation, subtraction plot:
 
 Moderated means rotation, subtraction plot, detail showing target projections:
 
-![](examples/images/mmr1-sub.png)
+![](examples/images/mmr1-sub-detail.png)
 
 AC-SVD rotation:
 
@@ -54,4 +54,4 @@ AC-SVD rotation, subtraction plot:
 
 AC-SVD rotation, subtraction plot, detail showing target projections:
 
-![](examples/images/acsvd-sub.png)
+![](examples/images/acsvd-sub-detail.png)
