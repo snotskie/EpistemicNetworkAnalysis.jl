@@ -8,7 +8,7 @@ IN DEVELOPMENT
 
 ## Tests
 
-(as of [22d915d](https://github.com/snotskie/EpistemicNetworkAnalysis.jl/commit/22d915dd917824799d00f6436e03b74bd234772f))
+(as of [969eb82](https://github.com/snotskie/EpistemicNetworkAnalysis.jl/commit/969eb822c7c8e420f0459c154a30ad2043062a42))
 
 Means rotation:
 
