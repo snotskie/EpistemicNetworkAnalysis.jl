@@ -6,7 +6,7 @@ function svd_rotation!(networkModel, unitModel, config)
         goodRows = completecases(unitModel[!, config[:confounds]])
         filteredUnitModel = unitModel[goodRows, :]
         controlModel = filteredUnitModel[!, config[:confounds]]
-        pcaModel = help_ac_svd(networkModel, filteredUnitModel, controlModel)
+        pcaModel = help_ac_svd(networkModel, filteredUnitModel, controlModel) # TODO optimize lambda better
         networkModel[!, :weight_x] = pcaModel[:, 1]
         networkModel[!, :weight_y] = pcaModel[:, 2]
     else
@@ -16,6 +16,77 @@ function svd_rotation!(networkModel, unitModel, config)
     end
 end
 
+# TODO test
+function regression_rotation!(networkModel, unitModel, config)
+    ## Must have confounds to use rr1
+    if haskey(config, :confounds)
+
+        ## Drop rows with missing confound data
+        goodRows = completecases(unitModel[!, config[:confounds]])
+        filteredUnitModel = unitModel[goodRows, :]
+
+        ## Predictors for the linear model.
+        X = DataFrame(:Intercept => [1 for i in 1:nrow(filteredUnitModel)])
+        X = hcat(X, filteredUnitModel[!, [config[:confounds]...]])
+        X = Matrix{Float64}(X)
+
+        ## For each relationship, find the effect of the first listed confound
+        networkModel[!, :coefs] = [Real[0, 0] for networkRow in eachrow(networkModel)]
+        for networkRow in eachrow(networkModel)
+            r = networkRow[:relationship]
+            y = Vector{Float64}(filteredUnitModel[!, r])
+            # ols = lm(X, y)
+            # slope = coef(ols)[2]
+            coefs = (transpose(X) * X)^-1 * transpose(X) * y
+            slope = coefs[2]
+            networkRow[:weight_x] = slope
+            networkRow[:coefs] = coefs[2:end]
+        end
+
+        ## Normalize the weights
+        s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
+        networkModel[!, :weight_x] /= s
+
+        ## Find the first svd dim of the data orthogonal to the x weights, use these as the y weights
+        unitValues = Matrix{Float64}(filteredUnitModel[!, networkModel[!, :relationship]])
+        coefValues = transpose(Matrix{Float64}(DataFrame(hcat(networkModel[!, :coefs]...))))
+        controlModel = DataFrame(unitValues * coefValues)
+        pcaModel = help_ac_svd(networkModel, filteredUnitModel, controlModel, 250) # TODO replace this with an ortho svd
+        networkModel[!, :weight_y] = pcaModel[:, 1]
+
+        ## Warnings for colinear axes
+        # TODO move up to ac-pca after using ortho svd here/
+        for unitRow in eachrow(filteredUnitModel)
+            unitRow[:dim_x] = sum(
+                networkRow[:weight_x] * unitRow[networkRow[:relationship]]
+                for networkRow in eachrow(networkModel)
+            )
+    
+            unitRow[:dim_y] = sum(
+                networkRow[:weight_y] * unitRow[networkRow[:relationship]]
+                for networkRow in eachrow(networkModel)
+            )
+        end
+
+        norm_y = sqrt(sum(filteredUnitModel[!, :dim_y] .* filteredUnitModel[!, :dim_y]))
+        for i in 1:ncol(controlModel)
+            norm_x = sqrt(sum(controlModel[!, i] .* controlModel[!, i]))
+            cos_angle = sum(filteredUnitModel[!, :dim_y] .* controlModel[!, i]) / norm_y / norm_x
+            if abs(cos_angle) >= 0.15
+                @warn "The y-axis appears colinear with dimension #$(i) of the x-axis: cos(angle) = $(cos_angle)."
+            end
+        end
+        # /TODO
+    else
+        error("regression_rotation requires confounds")
+    end
+end
+
+# TODO call the above twice, then combine them into an x and y axis
+function xy_regression_rotation!(networkModel, unitModel, config)
+end
+
+# TODO refactor to use regression_rotation
 function means_rotation!(networkModel, unitModel, config)
     ## Must have group variable to use (m)mr1
     if haskey(config, :groupVar)
@@ -113,3 +184,5 @@ The next dimension is the effect from the interacton between the grouping variab
         error("means_rotation requires a groupVar")
     end
 end
+
+# TODO xy_means_rotation!, call regression_rotation twice, once with the group up front, once with the group in the back

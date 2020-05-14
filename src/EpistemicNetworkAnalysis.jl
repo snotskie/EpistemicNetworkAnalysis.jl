@@ -14,10 +14,10 @@ include("./ENARotations.jl")
 include("./ENAModel.jl")
 include("./ENADisplay.jl")
 include("./RSData.jl")
-# include("./examples.jl") # TEMP
+include("./examples.jl") # TEMP
 
 # TODO exports
 
-# temp_example() # TEMP
+temp_example() # TEMP
 
 end # module

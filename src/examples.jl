@@ -26,12 +26,13 @@ function temp_example()
     groupVar = :Condition
     controlGroup = "FirstGame"
     treatmentGroup = "SecondGame"
-    confounds = [:CONFIDENCE_Pre]
+    confounds = [:CONFIDENCE_Change]
 
     myENA = ENAModel(RSdata, codes, conversations, units,
                      groupVar=groupVar, controlGroup=controlGroup, treatmentGroup=treatmentGroup,
-                    #  confounds=confounds,
+                     confounds=confounds,
                      rotateBy=means_rotation!
+                    # rotateBy=regression_rotation!
                      )
 
     display(myENA)
