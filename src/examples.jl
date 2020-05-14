@@ -31,14 +31,14 @@ function temp_example()
     myENA = ENAModel(RSdata, codes, conversations, units,
                      groupVar=groupVar, controlGroup=controlGroup, treatmentGroup=treatmentGroup,
                      confounds=confounds,
-                     rotateBy=means_rotation!
-                    # rotateBy=regression_rotation!
+                    #  rotateBy=means_rotation!
+                    rotateBy=regression_rotation!
                      )
 
     display(myENA)
     scene = plot(myENA,
         groups=true,
-        # showprojection=true,
+        showprojection=true,
     )
     display(scene)
 end

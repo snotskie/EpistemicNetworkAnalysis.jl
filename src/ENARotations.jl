@@ -1,12 +1,26 @@
 # TODO LASSO
+# LASSO rotation finds the x-axis of the network model that
+# best predicts the first listed confound, holding the other
+# confounds constant, and with penalties for weak correlation.
+# This should result in a best attempt at a model that would pass
+# k-fold cross validation.
+
+# TODO xy LASSO
 
 # TODO verify this
+# SVD rotation finds the x- and y-axes that explain the most
+# variance of the network model while being orthogonal to one
+# another. When confounds are given, these axes are penalized
+# for colinearity with those confounds, attempting to optimize
+# for orthogonality with the first listed confound. No orthogonality
+# with the confounds is guaranteed, just approximated. This approximation
+# should be good enough to interpret the quadrants.
 function svd_rotation!(networkModel, unitModel, config)
     if haskey(config, :confounds)
         goodRows = completecases(unitModel[!, config[:confounds]])
         filteredUnitModel = unitModel[goodRows, :]
         controlModel = filteredUnitModel[!, config[:confounds]]
-        pcaModel = help_ac_svd(networkModel, filteredUnitModel, controlModel) # TODO optimize lambda better
+        pcaModel = help_ac_svd(networkModel, filteredUnitModel, controlModel)
         networkModel[!, :weight_x] = pcaModel[:, 1]
         networkModel[!, :weight_y] = pcaModel[:, 2]
     else
@@ -17,6 +31,12 @@ function svd_rotation!(networkModel, unitModel, config)
 end
 
 # TODO test
+# Regression rotation finds the x-axis of the network space
+# such that it captures the variance explained by the effect
+# of the first listed confound, holding the other confounds constant.
+# The y-axis is then set to capture the most variance while being
+# orthogonal to the x-axis. This y-axis could very well be colinear
+# with one or more of the other confounds given.
 function regression_rotation!(networkModel, unitModel, config)
     ## Must have confounds to use rr1
     if haskey(config, :confounds)
@@ -40,7 +60,7 @@ function regression_rotation!(networkModel, unitModel, config)
             coefs = (transpose(X) * X)^-1 * transpose(X) * y
             slope = coefs[2]
             networkRow[:weight_x] = slope
-            networkRow[:coefs] = coefs[2:end]
+            # networkRow[:coefs] = coefs[2:end]
         end
 
         ## Normalize the weights
@@ -49,44 +69,31 @@ function regression_rotation!(networkModel, unitModel, config)
 
         ## Find the first svd dim of the data orthogonal to the x weights, use these as the y weights
         unitValues = Matrix{Float64}(filteredUnitModel[!, networkModel[!, :relationship]])
-        coefValues = transpose(Matrix{Float64}(DataFrame(hcat(networkModel[!, :coefs]...))))
-        controlModel = DataFrame(unitValues * coefValues)
-        pcaModel = help_ac_svd(networkModel, filteredUnitModel, controlModel, 250) # TODO replace this with an ortho svd
+        # coefValues = transpose(Matrix{Float64}(DataFrame(hcat(networkModel[!, :coefs]...))))
+        # controlModel = DataFrame(unitValues * coefValues)
+        axisValues = Matrix{Float64}(DataFrame(:weight_x => networkModel[!, :weight_x]))
+        controlModel = DataFrame(unitValues * axisValues)
+        pcaModel = help_ac_svd(networkModel, filteredUnitModel, controlModel) # TODO replace this with an ortho svd
         networkModel[!, :weight_y] = pcaModel[:, 1]
-
-        ## Warnings for colinear axes
-        # TODO move up to ac-pca after using ortho svd here/
-        for unitRow in eachrow(filteredUnitModel)
-            unitRow[:dim_x] = sum(
-                networkRow[:weight_x] * unitRow[networkRow[:relationship]]
-                for networkRow in eachrow(networkModel)
-            )
-    
-            unitRow[:dim_y] = sum(
-                networkRow[:weight_y] * unitRow[networkRow[:relationship]]
-                for networkRow in eachrow(networkModel)
-            )
-        end
-
-        norm_y = sqrt(sum(filteredUnitModel[!, :dim_y] .* filteredUnitModel[!, :dim_y]))
-        for i in 1:ncol(controlModel)
-            norm_x = sqrt(sum(controlModel[!, i] .* controlModel[!, i]))
-            cos_angle = sum(filteredUnitModel[!, :dim_y] .* controlModel[!, i]) / norm_y / norm_x
-            if abs(cos_angle) >= 0.15
-                @warn "The y-axis appears colinear with dimension #$(i) of the x-axis: cos(angle) = $(cos_angle)."
-            end
-        end
-        # /TODO
     else
         error("regression_rotation requires confounds")
     end
 end
 
-# TODO call the above twice, then combine them into an x and y axis
-function xy_regression_rotation!(networkModel, unitModel, config)
-end
+# TODO call the above twice, then combine them into an x and y axis; must have at least two confounds
+# function xy_regression_rotation!(networkModel, unitModel, config)
+# end
 
-# TODO refactor to use regression_rotation
+# Means rotation is a special case of regression rotation. First,
+# means rotation factors the grouping variable into a dummy 0/1,
+# then it runs a regression rotation with that dummy as the first
+# listed confound, followed by the given confounds (if any), followed
+# by the interactions between the group dummy and each of those confounds (if any).
+# This finds the x-axis of the network space such that it captures
+# the variance explained by the effect of the grouping variable, moderated
+# by the confounds. The y-axis is then set to capture the most variance while being
+# orthogonal to the x-axis. This y-axis could very well be colinear
+# with one or more of the other confounds given.
 function means_rotation!(networkModel, unitModel, config)
     ## Must have group variable to use (m)mr1
     if haskey(config, :groupVar)
@@ -119,70 +126,23 @@ function means_rotation!(networkModel, unitModel, config)
 
         factoredUnitModel = hcat(filteredUnitModel, DataFrame(:factoredGroupVar => factors))
 
-        ## Predictors for the linear model. When confounds present, moderate the model.
-        X = DataFrame(:Intercept => [1 for i in 1:nrow(factoredUnitModel)])
-        X = hcat(X, factoredUnitModel[!, :factoredGroupVar])
+        ## Reconfigure the confounds to pass to the regression_rotation
+        ## When confounds were passed here, moderate the regression too.
+        reconfounds = [:factoredGroupVar]
         if haskey(config, :confounds)
-            # TODO think of a more consistent way to specify columns. right now, confounds must be simple numeric, but groups can be whatever data type, factored into a 0, 1, or drop
-            interactions = factoredUnitModel[!, [config[:confounds]...]] .* factoredUnitModel[!, :factoredGroupVar]
-            X = hcat(X, factoredUnitModel[!, [config[:confounds]...]])
-            X = hcat(X, interactions, makeunique=true)
-        end
-
-        X = Matrix{Float64}(X)
-
-        ## For each relationship, find the (moderated) difference of means
-        networkModel[!, :coefs] = [Real[0, 0] for networkRow in eachrow(networkModel)]
-        for networkRow in eachrow(networkModel)
-            r = networkRow[:relationship]
-            y = Vector{Float64}(factoredUnitModel[!, r])
-            # ols = lm(X, y)
-            # slope = coef(ols)[2]
-            coefs = (transpose(X) * X)^-1 * transpose(X) * y
-            slope = coefs[2]
-            networkRow[:weight_x] = slope
-            networkRow[:coefs] = coefs[2:end]
-        end
-
-        ## Normalize the differences of the means
-        s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
-        networkModel[!, :weight_x] /= s
-
-        ## Find the first svd dim of the data orthogonal to the x weights, use these as the y weights
-        unitValues = Matrix{Float64}(factoredUnitModel[!, networkModel[!, :relationship]])
-        coefValues = transpose(Matrix{Float64}(DataFrame(hcat(networkModel[!, :coefs]...))))
-        controlModel = DataFrame(unitValues * coefValues)
-        pcaModel = help_ac_svd(networkModel, factoredUnitModel, controlModel) # TODO optimize the lambda, don't just guess at 10 all the time
-        networkModel[!, :weight_y] = pcaModel[:, 1]
-
-        ## Warnings for colinear axes
-        for unitRow in eachrow(factoredUnitModel)
-            unitRow[:dim_x] = sum(
-                networkRow[:weight_x] * unitRow[networkRow[:relationship]]
-                for networkRow in eachrow(networkModel)
-            )
-    
-            unitRow[:dim_y] = sum(
-                networkRow[:weight_y] * unitRow[networkRow[:relationship]]
-                for networkRow in eachrow(networkModel)
-            )
-        end
-
-        norm_y = sqrt(sum(factoredUnitModel[!, :dim_y] .* factoredUnitModel[!, :dim_y]))
-        for i in 1:ncol(controlModel)
-            norm_x = sqrt(sum(controlModel[!, i] .* controlModel[!, i]))
-            cos_angle = sum(factoredUnitModel[!, :dim_y] .* controlModel[!, i]) / norm_y / norm_x
-            if abs(cos_angle) >= 0.15
-                @warn """The y-axis appears colinear with dimension #$(i) of the x-axis.
-Dimension #1 is the regular x-axis, aka, the (moderated) effect of the grouping variable on the connection weights.
-Dimension #2 is the effect from the first confound, #3 is the effect from the second confound, and so on.
-The next dimension is the effect from the interacton between the grouping variable and the first confound, and so on.
-"""
+            reconfounds = [:factoredGroupVar, config[:confounds]...]
+            for confound in config[:confounds]
+                interaction = Symbol(string(:factoredGroupVar, "_", confound, "_interaction"))
+                factoredUnitModel[!, interaction] = factoredUnitModel[!, confound] .* factoredUnitModel[!, :factoredGroupVar]
+                push!(reconfounds, interaction)
             end
         end
+
+        config[:confounds] = reconfounds
+        return regression_rotation!(networkModel, factoredUnitModel, config)
     else
         error("means_rotation requires a groupVar")
     end
 end
 
-# TODO xy_means_rotation!, call regression_rotation twice, once with the group up front, once with the group in the back
+# TODO xy_means_rotation!, call xy_regression_rotation; must have group and confounds
