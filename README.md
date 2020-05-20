@@ -134,4 +134,8 @@ Moderated means rotation, group alignment plot, detail showing target projection
 
 ![](examples/images/mmr1-sub-detail.png)
 
+### MR1 vs MMR1
+
+![](examples/images/mr1-vs-mmr1.png)
+
 https://alexanderrodin.com/github-latex-markdown/
