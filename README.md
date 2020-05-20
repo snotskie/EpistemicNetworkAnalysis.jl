@@ -44,7 +44,13 @@ This gives a rotation such that there is a stronger correlation between the conn
 
 #### Moderated Means Rotation
 
-TODO
+Given a set of rival explanatory variables ("confounds", v), use a regression rotation, where the explantory variable of interest is a dummy group variable (g), where 0 represents the control group and 1 the treatment group; and also include in the regression the confounds and the interaction between the grouping variable and the confounds.
+
+![c_j \sim 1 + g + v_1 + v_2 + ... + gv_1 + gv_2 + ...](https://render.githubusercontent.com/render/math?math=c_j%20%5Csim%201%20%2B%20g%20%2B%20v_1%20%2B%20v_2%20%2B%20...%20%2B%20gv_1%20%2B%20gv_2%20%2B%20...)
+
+![w_j \propto \beta_g](https://render.githubusercontent.com/render/math?math=w_j%20%5Cpropto%20%5Cbeta_g)
+
+This gives a rotation such that, holding the confounds and interaction with the confounds constant, there is a stronger correlation between the connections on the right and being in the treatment group, and a stronger correlation between the connections on the left and being in the control group.
 
 #### SVD Rotation
 
