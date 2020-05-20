@@ -14,7 +14,9 @@ TODO
 
 ### Rotation
 
-![x_i \propto \sum_j w_j r_{ij}](https://render.githubusercontent.com/render/math?math=x_i%20%5Cpropto%20%5Csum_j%20w_j%20r_%7Bij%7D)
+The x-axis values for each unit (x) are proportional to the sum of that unit's connections (c), weighted (w) to give a "rotation" of the high dimensional connection space that highlights some feature of interest.
+
+![x_i \propto \sum_j w_j c_{ij}](https://render.githubusercontent.com/render/math?math=x_i%20%5Cpropto%20%5Csum_j%20w_j%20c_%7Bij%7D)
 
 #### Regression Rotation
 
@@ -99,3 +101,5 @@ AC-SVD rotation, group alignment plot:
 AC-SVD rotation, group alignment plot, detail showing target projections:
 
 ![](examples/images/acsvd-sub-detail.png)
+
+https://alexanderrodin.com/github-latex-markdown/
