@@ -6,6 +6,36 @@ Original R package by [http://www.epistemicnetwork.org/](http://www.epistemicnet
 
 IN DEVELOPMENT
 
+## Math
+
+### Measure
+
+TODO
+
+### Rotation
+
+![x_i \propto \sum_j w_j r_{ij}](https://render.githubusercontent.com/render/math?math=x_i%20%5Cpropto%20%5Csum_j%20w_j%20r_%7Bij%7D)
+
+#### Regression Rotation
+
+TODO
+
+#### Means Rotation
+
+TODO
+
+#### Moderated Means Rotation
+
+TODO
+
+#### SVD Rotation
+
+TODO
+
+### Model
+
+TODO
+
 ## Tests
 
 (as of [969eb82](https://github.com/snotskie/EpistemicNetworkAnalysis.jl/commit/969eb822c7c8e420f0459c154a30ad2043062a42))
