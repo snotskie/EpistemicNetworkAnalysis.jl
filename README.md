@@ -118,16 +118,4 @@ Moderated means rotation, group alignment plot, detail showing target projection
 
 ![](examples/images/mmr1-sub-detail.png)
 
-AC-SVD rotation:
-
-![](examples/images/acsvd.png)
-
-AC-SVD rotation, group alignment plot:
-
-![](examples/images/acsvd-sub.png)
-
-AC-SVD rotation, group alignment plot, detail showing target projections:
-
-![](examples/images/acsvd-sub-detail.png)
-
 https://alexanderrodin.com/github-latex-markdown/
