@@ -70,6 +70,8 @@ TODO
 
 (as of [969eb82](https://github.com/snotskie/EpistemicNetworkAnalysis.jl/commit/969eb822c7c8e420f0459c154a30ad2043062a42))
 
+### Means Rotation
+
 Means rotation:
 
 ![](examples/images/mr1.png)
@@ -81,6 +83,8 @@ Means rotation, group alignment plot:
 Means rotation, group alignment plot, detail showing target projections:
 
 ![](examples/images/mr1-sub-detail.png)
+
+### SVD Rotation
 
 SVD rotation:
 
@@ -94,6 +98,8 @@ SVD rotation, group alignment plot, detail showing target projections:
 
 ![](examples/images/svd-sub-detail.png)
 
+### Regression Rotation
+
 Regression rotation:
 
 ![](examples/images/rr1.png)
@@ -105,6 +111,8 @@ Regression rotation, group alignment plot:
 Regression rotation, group alignment plot, detail showing target projections:
 
 ![](examples/images/rr1-sub-detail.png)
+
+### Moderated Means Rotation
 
 Moderated means rotation:
 
