@@ -32,6 +32,8 @@ The weight for a connection is then chosen to be proportional to the effect size
 
 This gives a rotation such that, holding v constant, there is a stronger positive effect between the connections on the right side of the x-axis, and and a stronger negative effect for those on the left.
 
+What this highlights is the variance of the high dimensional space explained by the variable of interest.
+
 #### Means Rotation
 
 Use a regression rotation, where the explantory variable of interest is a dummy group variable (g), where 0 represents the control group and 1 the treatment group.
@@ -42,6 +44,8 @@ Use a regression rotation, where the explantory variable of interest is a dummy 
 
 This gives a rotation such that there is a stronger correlation between the connections on the right and being in the treatment group, and a stronger correlation between the connections on the left and being in the control group.
 
+What this highlights is the difference of the mean networks between the two groups.
+
 #### Moderated Means Rotation
 
 Given a set of rival explanatory variables ("confounds", v), use a regression rotation, where the explantory variable of interest is a dummy group variable (g), where 0 represents the control group and 1 the treatment group; and also include in the regression the confounds and the interaction between the grouping variable and the confounds.
@@ -51,6 +55,8 @@ Given a set of rival explanatory variables ("confounds", v), use a regression ro
 ![w_j \propto \beta_g](https://render.githubusercontent.com/render/math?math=w_j%20%5Cpropto%20%5Cbeta_g)
 
 This gives a rotation such that, holding the confounds and interaction with the confounds constant, there is a stronger correlation between the connections on the right and being in the treatment group, and a stronger correlation between the connections on the left and being in the control group.
+
+What this highlights is the moderated difference of the mean networks between the two groups.
 
 #### SVD Rotation
 
