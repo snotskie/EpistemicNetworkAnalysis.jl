@@ -34,7 +34,13 @@ This gives a rotation such that, holding v constant, there is a stronger positiv
 
 #### Means Rotation
 
-TODO
+Use a regression rotation, where the explantory variable of interest is a dummy group variable (g), where 0 represents the control group and 1 the treatment group.
+
+![c_j \sim 1 + g](https://render.githubusercontent.com/render/math?math=c_j%20%5Csim%201%20%2B%20g)
+
+![w_j \propto \beta_g](https://render.githubusercontent.com/render/math?math=w_j%20%5Cpropto%20%5Cbeta_g)
+
+This gives a rotation such that there is a stronger correlation between the connections on the right and being in the treatment group, and a stronger correlation between the connections on the left and being in the control group.
 
 #### Moderated Means Rotation
 
