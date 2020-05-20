@@ -16,11 +16,21 @@ TODO
 
 The x-axis values for each unit (x) are proportional to the sum of that unit's connections (c), weighted (w) to give a "rotation" of the high dimensional connection space that highlights some feature of interest.
 
-![x_i \propto \sum_j w_j c_{ij}](https://render.githubusercontent.com/render/math?math=x_i%20%5Cpropto%20%5Csum_j%20w_j%20c_%7Bij%7D)
+![x_i \propto \sum_j w_j c_{ji}](https://render.githubusercontent.com/render/math?math=x_i%20%5Cpropto%20%5Csum_j%20w_j%20c_%7Bji%7D)
+
+The y-axis values are then generally chosen to explain the most variance of the high dimensional space while being orthogonal to the x-axis (ie, orthogonal svd).
 
 #### Regression Rotation
 
-TODO
+Given an explanatory variable of interest (u) and a set of other explanatory variables to control for (v), regress each of the connections (c) on those explanatory variables:
+
+![c_j \sim 1 + u + v_1 + v_2 + ...](https://render.githubusercontent.com/render/math?math=c_j%20%5Csim%201%20%2B%20u%20%2B%20v_1%20%2B%20v_2%20%2B%20...)
+
+The weight for a connection is then chosen to be proportional to the effect size of the variable of interest in that regression:
+
+![w_j \propto \beta_u](https://render.githubusercontent.com/render/math?math=w_j%20%5Cpropto%20%5Cbeta_u)
+
+This gives a rotation such that, holding v constant, there is a stronger positive effect between the connections on the right side of the x-axis, and and a stronger negative effect for those on the left.
 
 #### Means Rotation
 
