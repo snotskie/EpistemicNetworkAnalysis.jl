@@ -66,6 +66,14 @@ TODO
 
 TODO
 
+#### Fitting
+
+TODO
+
+#### Color Coding
+
+TODO
+
 ## Tests
 
 (as of [969eb82](https://github.com/snotskie/EpistemicNetworkAnalysis.jl/commit/969eb822c7c8e420f0459c154a30ad2043062a42))
