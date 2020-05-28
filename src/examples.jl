@@ -30,9 +30,9 @@ function temp_example()
 
     myENA = ENAModel(RSdata, codes, conversations, units,
                      groupVar=groupVar, controlGroup=controlGroup, treatmentGroup=treatmentGroup,
-                     confounds=confounds,
-                    #  rotateBy=means_rotation!
-                    rotateBy=regression_rotation!
+                    #  confounds=confounds,
+                     rotateBy=means_rotation!
+                    # rotateBy=regression_rotation!
                      )
 
     display(myENA)
@@ -44,24 +44,21 @@ function temp_example()
 end
 
 # MR1 in Julia: X=MATCH, Y=APPROX
-# │ Row │ relationship                                          │ thickness    │ weight_x    │ weight_y │
-# │     │ Symbol                                                │ Real         │ Float64     │ Real     │
-# ├─────┼───────────────────────────────────────────────────────┼──────────────┼─────────────┼──────────┤
-# │ 1   │ Technical_Constraints_Performance_Parameters          │ -0.0204738   │ -0.105832   │ 0        │
-# │ 2   │ Data_Client_and_Consultant_Requests                   │ -0.000870865 │ -0.00450161 │ 0        │
-# │ 3   │ Client_and_Consultant_Requests_Collaboration          │ 0.00178668   │ 0.00923557  │ 0        │
-# │ 4   │ Design_Reasoning_Collaboration                        │ -0.0291836   │ -0.150854   │ 0        │
-# │ 5   │ Data_Performance_Parameters                           │ 0.040982     │ 0.211841    │ 0        │
-# │ 6   │ Data_Collaboration                                    │ -0.0496898   │ -0.256853   │ 0        │
-# │ 7   │ Data_Design_Reasoning                                 │ 0.0407667    │ 0.210729    │ 0        │
-# │ 8   │ Client_and_Consultant_Requests_Design_Reasoning       │ 0.0127943    │ 0.0661352   │ 0        │
-# │ 9   │ Technical_Constraints_Collaboration                   │ -0.102116    │ -0.527851   │ 0        │
-# │ 10  │ Performance_Parameters_Client_and_Consultant_Requests │ 0.0135614    │ 0.0701007   │ 0        │
-# │ 11  │ Performance_Parameters_Design_Reasoning               │ 0.10306      │ 0.532729    │ 0        │
-# │ 12  │ Data_Technical_Constraints                            │ -0.0769063   │ -0.397539   │ 0        │
-# │ 13  │ Technical_Constraints_Client_and_Consultant_Requests  │ -0.0373163   │ -0.192893   │ 0        │
-# │ 14  │ Performance_Parameters_Collaboration                  │ -0.0330796   │ -0.170993   │ 0        │
-# │ 15  │ Technical_Constraints_Design_Reasoning                │ -0.0232809   │ -0.120342   │ 0        │
+# │ Row │ relationship                                          │ thickness │ weight_x    │ weight_y    │
+# │     │ Symbol                                                │ Float64   │ Float64     │ Float64     │
+# ├─────┼───────────────────────────────────────────────────────┼───────────┼─────────────┼─────────────┤
+# │ 1   │ Technical_Constraints_Performance_Parameters          │ 0.688247  │ -0.105832   │ 0.0671277   │
+# │ 2   │ Data_Client_and_Consultant_Requests                   │ 0.179897  │ -0.00450161 │ 0.186166    │
+# │ 3   │ Client_and_Consultant_Requests_Collaboration          │ 0.0589685 │ 0.00923557  │ 0.0601898   │
+# │ 4   │ Design_Reasoning_Collaboration                        │ 0.223918  │ -0.150854   │ 0.274862    │
+# │ 5   │ Data_Performance_Parameters                           │ 0.605124  │ 0.211841    │ 0.438982    │
+# ⋮
+# │ 10  │ Performance_Parameters_Client_and_Consultant_Requests │ 0.200761  │ 0.0701007   │ 0.219654    │
+# │ 11  │ Performance_Parameters_Design_Reasoning               │ 0.740363  │ 0.532729    │ 0.103073    │
+# │ 12  │ Data_Technical_Constraints                            │ 0.748241  │ -0.397539   │ -0.00707982 │
+# │ 13  │ Technical_Constraints_Client_and_Consultant_Requests  │ 0.188269  │ -0.192893   │ 0.111187    │
+# │ 14  │ Performance_Parameters_Collaboration                  │ 0.148319  │ -0.170993   │ 0.148614    │
+# │ 15  │ Technical_Constraints_Design_Reasoning                │ 1.0       │ -0.120342   │ -0.698476   │
 
 # MR1 in R: X=MATCH, Y=APPROX
 # codes	MMR1	SVD2	SVD3	SVD4	SVD5	SVD6	SVD7	SVD8	SVD9	SVD10	SVD11	SVD12	SVD13	SVD14	SVD15

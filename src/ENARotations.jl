@@ -20,11 +20,11 @@ function svd_rotation!(networkModel, unitModel, config)
         goodRows = completecases(unitModel[!, config[:confounds]])
         filteredUnitModel = unitModel[goodRows, :]
         controlModel = filteredUnitModel[!, config[:confounds]]
-        pcaModel = help_ac_svd(networkModel, filteredUnitModel, controlModel)
+        pcaModel = help_deflating_svd(networkModel, filteredUnitModel, controlModel)
         networkModel[!, :weight_x] = pcaModel[:, 1]
         networkModel[!, :weight_y] = pcaModel[:, 2]
     else
-        pcaModel = help_ac_svd(networkModel, unitModel)
+        pcaModel = help_deflating_svd(networkModel, unitModel)
         networkModel[!, :weight_x] = pcaModel[:, 1]
         networkModel[!, :weight_y] = pcaModel[:, 2]
     end
@@ -51,7 +51,7 @@ function regression_rotation!(networkModel, unitModel, config)
         X = Matrix{Float64}(X)
 
         ## For each relationship, find the effect of the first listed confound
-        networkModel[!, :coefs] = [Real[0, 0] for networkRow in eachrow(networkModel)]
+        # networkModel[!, :coefs] = [Real[0, 0] for networkRow in eachrow(networkModel)]
         for networkRow in eachrow(networkModel)
             r = networkRow[:relationship]
             y = Vector{Float64}(filteredUnitModel[!, r])
@@ -73,7 +73,7 @@ function regression_rotation!(networkModel, unitModel, config)
         # controlModel = DataFrame(unitValues * coefValues)
         axisValues = Matrix{Float64}(DataFrame(:weight_x => networkModel[!, :weight_x]))
         controlModel = DataFrame(unitValues * axisValues)
-        pcaModel = help_ac_svd(networkModel, filteredUnitModel, controlModel) # TODO replace this with an ortho svd
+        pcaModel = help_deflating_svd(networkModel, filteredUnitModel, controlModel)
         networkModel[!, :weight_y] = pcaModel[:, 1]
     else
         error("regression_rotation requires confounds")
