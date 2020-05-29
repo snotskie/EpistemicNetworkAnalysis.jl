@@ -21,18 +21,22 @@ function temp_example()
              :Design_Reasoning,
              :Collaboration]
 
-    conversations = [:Condition, :GroupName]
-    units = [:Condition, :UserName]
+    conversations = [:Condition, :GameHalf, :GroupName]
+    units = [:Condition, :GameHalf, :UserName]
+    # conversations = [:Condition, :GroupName]
+    # units = [:Condition, :UserName]
     groupVar = :Condition
     controlGroup = "FirstGame"
     treatmentGroup = "SecondGame"
-    confounds = [:CONFIDENCE_Change]
+    # confounds = [:CONFIDENCE_Change]
+    confounds = [:GameHalf]
 
     myENA = ENAModel(RSdata, codes, conversations, units,
                      groupVar=groupVar, controlGroup=controlGroup, treatmentGroup=treatmentGroup,
-                    #  confounds=confounds,
-                     rotateBy=means_rotation!
+                     confounds=confounds,
+                    #  rotateBy=means_rotation!
                     # rotateBy=regression_rotation!
+                    rotateBy=two_group_rotation!
                      )
 
     display(myENA)
@@ -41,6 +45,8 @@ function temp_example()
         showprojection=true,
     )
     display(scene)
+
+    println(dot(myENA.unitModel[!, :dim_x], myENA.unitModel[!, :dim_y]))
 end
 
 # MR1 in Julia: X=MATCH, Y=APPROX

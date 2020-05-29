@@ -1,3 +1,5 @@
+## TODO refactor so that rotations take arguments and produce a rotationg function
+
 # TODO LASSO
 # LASSO rotation finds the x-axis of the network model that
 # best predicts the first listed confound, holding the other
@@ -65,7 +67,9 @@ function regression_rotation!(networkModel, unitModel, config)
 
         ## Normalize the weights
         s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
-        networkModel[!, :weight_x] /= s
+        if s != 0
+            networkModel[!, :weight_x] /= s
+        end
 
         ## Find the first svd dim of the data orthogonal to the x weights, use these as the y weights
         unitValues = Matrix{Float64}(filteredUnitModel[!, networkModel[!, :relationship]])
@@ -146,3 +150,122 @@ function means_rotation!(networkModel, unitModel, config)
 end
 
 # TODO xy_means_rotation!, call xy_regression_rotation; must have group and confounds
+
+# IN DEV: put G_1 effect on x and G_2 effect on y, make sure they are orthogonal
+function two_group_rotation!(networkModel, unitModel, config)
+    ## Must have group variable to use (m)mr1
+    if haskey(config, :groupVar)
+
+        ## Must have confounds, using the first confound as the G_2
+        if haskey(config, :confounds)
+
+            ## Tidy up the unit model to just those in the control/treatment group
+            filteredUnitModel = filter(unitModel) do unitRow
+                if unitRow[config[:groupVar]] == config[:controlGroup]
+                    return true
+                elseif unitRow[config[:groupVar]] == config[:treatmentGroup]
+                    return true
+                else
+                    return false
+                end
+            end
+
+            ## Drop rows with missing confound data
+            goodRows = completecases(filteredUnitModel[!, config[:confounds]])
+            filteredUnitModel = filteredUnitModel[goodRows, :]
+
+            ## Convert the control/treatment label to just 0/1
+            factors = map(eachrow(filteredUnitModel)) do filteredRow
+                if filteredRow[config[:groupVar]] == config[:controlGroup]
+                    return 0.0
+                else
+                    return 1.0
+                end
+            end
+
+            factoredUnitModel = hcat(filteredUnitModel, DataFrame(:factoredGroupVar1 => factors))
+
+            ## Convert the first confound to just 0/1
+            controlConfound = unique(sort(factoredUnitModel[!, config[:confounds][1]]))[1]
+            factors2 = map(eachrow(filteredUnitModel)) do filteredRow
+                if filteredRow[config[:confounds][1]] == controlConfound
+                    return 0.0
+                else
+                    return 1.0
+                end
+            end
+
+            # println(controlConfound)
+
+            factoredUnitModel = hcat(factoredUnitModel, DataFrame(:factoredGroupVar2 => factors2))
+
+            ## Interact the two groups
+            factoredUnitModel[!, :factoredGroupInteraction] =
+                factoredUnitModel[!, :factoredGroupVar1] .* factoredUnitModel[!, :factoredGroupVar2]
+            
+            # println(factoredUnitModel[!, [:factoredGroupVar1, :factoredGroupVar2, :factoredGroupInteraction]])
+
+            ## Reconfigure the confounds
+            reconfounds = [:factoredGroupVar1, :factoredGroupVar2, :factoredGroupInteraction]
+            config[:confounds] = reconfounds
+
+            ## Predictors for the linear model.
+            X = DataFrame(:Intercept => [1 for i in 1:nrow(factoredUnitModel)])
+            X = hcat(X, factoredUnitModel[!, [config[:confounds]...]])
+            X = Matrix{Float64}(X)
+
+            # println(X)
+
+            # println((transpose(X) * X)^-1)
+
+            # println((transpose(X) * X)^-1 * transpose(X))
+
+            X = (transpose(X) * X)^-1 * transpose(X)
+
+            # println(any(isinf.(X[:])))
+            # println(any(isnan.(X[:])))
+            # println(any(ismissing.(X[:])))
+
+            # println(X * Vector{Float64}([rand() for i in eachrow(factoredUnitModel)]))
+
+            ## For each relationship, find the effect of the first listed confound
+            # networkModel[!, :coefs] = [Real[0, 0] for networkRow in eachrow(networkModel)]
+            for networkRow in eachrow(networkModel)
+                r = networkRow[:relationship]
+                y = Vector{Float64}(factoredUnitModel[!, r])
+
+                # println(any(isinf.(y)))
+                # println(any(isnan.(y)))
+                # println(any(ismissing.(y)))
+                
+                # println(r)
+                # println(y)
+                # ols = lm(X, y)
+                # slope = coef(ols)[2]
+                # coefs = (transpose(X) * X)^-1 * transpose(X) * y
+                coefs = X * y
+                # println(coefs)
+                # slope = coefs[2]
+                # networkRow[:weight_x] = slope
+                # networkRow[:coefs] = coefs[2:end]
+                networkRow[:weight_x] = coefs[2]
+                networkRow[:weight_y] = coefs[3]
+            end
+
+            ## Normalize the weights
+            s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
+            if s != 0
+                networkModel[!, :weight_x] /= s
+            end
+
+            s = sqrt(sum(networkModel[!, :weight_y] .^ 2))
+            if s != 0
+                networkModel[!, :weight_y] /= s
+            end
+        else
+            error("this requires a confound")
+        end
+    else
+        error("means_rotation requires a groupVar")
+    end
+end

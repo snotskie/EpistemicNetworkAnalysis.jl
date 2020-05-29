@@ -7,6 +7,8 @@ using MultivariateStats
 using HypothesisTests
 using CSV
 # TODO using Lasso
+using ImageMagick # fix for cairo bug, have this first
+using CairoMakie # using CairoMakie instead of GLMakie because the latter requires a gpu
 using Makie
 
 include("./helpers.jl")

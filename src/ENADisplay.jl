@@ -1,3 +1,6 @@
+## TODO refactor so that plot takes a colorUnitsBy argument like rotateBy
+## And colorLinesBy argument like that too
+
 # TODO show the data for just one relationship
 
 function Base.display(ena::ENAModel)

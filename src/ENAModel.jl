@@ -17,6 +17,9 @@ struct ENAModel
     # TODO pvalue
 end
 
+## TODO move confounds out to a rotation factory? keep group because it's useful for plotting?
+## or pull the group out to the plotting stage?
+
 function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
     metadata::Array{Symbol,1}=Symbol[], windowSize::Int=4, confounds::Union{Nothing,Array{Symbol,1}}=nothing,
     groupVar::Union{Nothing,Symbol}=nothing, treatmentGroup::Any=nothing, controlGroup::Any=nothing,
@@ -34,7 +37,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     unitJoinedData = hcat(data, DataFrame(unitVar => map(eachrow(data)) do dataRow
         return join(dataRow[units], ".")
     end))
-    unitModel = by(unitJoinedData, unitVar, first)
+    unitModel = combine(first, groupby(unitJoinedData, unitVar)) #by(unitJoinedData, unitVar, first)
     if !isempty(metadata)
         if !isnothing(groupVar) && !isnothing(confounds)
             unitModel = unitModel[:, [unitVar, metadata..., groupVar, confounds...]]
@@ -114,7 +117,10 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         unit = unitRow[unitVar]
         vector = [counts[unit][i][j] for (i,j) in values(relationships)]
         s = sqrt(sum(vector .^ 2))
-        vector /= s
+        if s != 0
+            vector /= s
+        end
+
         for (k, r) in enumerate(keys(relationships))
             unitRow[r] = vector[k]
         end
@@ -130,6 +136,8 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
             end
         end
     end
+
+    ## TOdO drop relationships and units that have all zeros
 
     # Rotation step
     ## Prepare the config
@@ -169,7 +177,9 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
 
     ## Normalize
     s = maximum(networkModel[!, :thickness]) #sqrt(sum(networkModel[!, :thickness] .^ 2))
-    networkModel[!, :thickness] /= s
+    if s != 0
+        networkModel[!, :thickness] /= s
+    end
 
     ## Compute the thickness of each code row dot, by "splitting" the thickness of each line between its two codes
     for networkRow in eachrow(networkModel)
@@ -181,7 +191,9 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
 
     ## Normalize
     s = maximum(codeModel[!, :thickness]) # sqrt(sum(codeModel[!, :thickness] .^ 2))
-    codeModel[!, :thickness] /= s
+    if s != 0
+        codeModel[!, :thickness] /= s
+    end
 
     ## Place the code dots into fit_x, fit_y, by predicting unit dim_x and dim_y values
     ## This is a projection of the relationship space into the code space
@@ -190,10 +202,12 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     for (i, unitRow) in enumerate(eachrow(unitModel))
         # denom = 2
         denom = 2 * sum(unitRow[t] for t in keys(relationships))
-        for r in keys(relationships)
-            a, b = relationships[r]
-            X[i, a+1] += unitRow[r] / denom # +1 because we started with the intercept
-            X[i, b+1] += unitRow[r] / denom # +1 because we started with the intercept
+        if denom != 0
+            for r in keys(relationships)
+                a, b = relationships[r]
+                X[i, a+1] += unitRow[r] / denom # +1 because we started with the intercept
+                X[i, b+1] += unitRow[r] / denom # +1 because we started with the intercept
+            end
         end
     end
 
@@ -217,19 +231,21 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     # TODO verify
     for unitRow in eachrow(unitModel)
         denom = 2 * sum(unitRow[t] for t in keys(relationships))
-        unitRow[:fit_x] = x_axis_coefs[1] +
-            sum(
-                codeModel[relationships[r][1], :fit_x] * unitRow[r] +
-                codeModel[relationships[r][2], :fit_x] * unitRow[r]
-                for r in keys(relationships)
-            ) / denom
+        if denom != 0
+            unitRow[:fit_x] = x_axis_coefs[1] +
+                sum(
+                    codeModel[relationships[r][1], :fit_x] * unitRow[r] +
+                    codeModel[relationships[r][2], :fit_x] * unitRow[r]
+                    for r in keys(relationships)
+                ) / denom
 
-        unitRow[:fit_y] = y_axis_coefs[1] +
-            sum(
-                codeModel[relationships[r][1], :fit_y] * unitRow[r] +
-                codeModel[relationships[r][2], :fit_y] * unitRow[r]
-                for r in keys(relationships)
-            ) / denom
+            unitRow[:fit_y] = y_axis_coefs[1] +
+                sum(
+                    codeModel[relationships[r][1], :fit_y] * unitRow[r] +
+                    codeModel[relationships[r][2], :fit_y] * unitRow[r]
+                    for r in keys(relationships)
+                ) / denom
+        end
     end
 
     ## Translate code model fits to account for the intercepts
