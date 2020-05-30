@@ -20,6 +20,8 @@ end
 ## TODO move confounds out to a rotation factory? keep group because it's useful for plotting?
 ## or pull the group out to the plotting stage?
 
+## TODO rename thickness to density
+
 function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
     metadata::Array{Symbol,1}=Symbol[], windowSize::Int=4, confounds::Union{Nothing,Array{Symbol,1}}=nothing,
     groupVar::Union{Nothing,Symbol}=nothing, treatmentGroup::Any=nothing, controlGroup::Any=nothing,
@@ -139,6 +141,13 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
 
     ## TOdO drop relationships and units that have all zeros
 
+    ## Mean center each relationship
+    # for networkRow in eachrow(networkModel)
+    #     r = networkRow[:relationship]
+    #     mu = mean(unitModel[!, r])
+    #     unitModel[!, r] = unitModel[!, r] .- mu
+    # end
+
     # Rotation step
     ## Prepare the config
     config = Dict{Symbol,Any}()
@@ -251,6 +260,16 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     ## Translate code model fits to account for the intercepts
     codeModel[!, :fit_x] = codeModel[!, :fit_x] .+ x_axis_coefs[1]
     codeModel[!, :fit_y] = codeModel[!, :fit_y] .+ y_axis_coefs[1]
+
+    ## Translate everything to account for overall mean?
+    mu_x = mean(unitModel[!, :fit_x])
+    mu_y = mean(unitModel[!, :fit_y])
+    unitModel[!, :dim_x] = unitModel[!, :dim_x] .- mu_x
+    unitModel[!, :dim_y] = unitModel[!, :dim_y] .- mu_y
+    unitModel[!, :fit_x] = unitModel[!, :fit_x] .- mu_x
+    unitModel[!, :fit_y] = unitModel[!, :fit_y] .- mu_y
+    codeModel[!, :fit_x] = codeModel[!, :fit_x] .- mu_x
+    codeModel[!, :fit_y] = codeModel[!, :fit_y] .- mu_y
 
     # Done!
     return ENAModel(unitJoinedData, codes, conversations, units, windowSize, groupVar, treatmentGroup, controlGroup,

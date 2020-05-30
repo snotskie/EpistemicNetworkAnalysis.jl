@@ -43,10 +43,17 @@ function temp_example()
     scene = plot(myENA,
         groups=true,
         showprojection=true,
+        # markerscale=0.01,
     )
     display(scene)
 
-    println(dot(myENA.unitModel[!, :dim_x], myENA.unitModel[!, :dim_y]))
+    theta = dot(myENA.unitModel[!, :dim_x], myENA.unitModel[!, :dim_y])
+    theta /= sqrt(dot(myENA.unitModel[!, :dim_x], myENA.unitModel[!, :dim_x]))
+    theta /= sqrt(dot(myENA.unitModel[!, :dim_y], myENA.unitModel[!, :dim_y]))
+    angle = acos(theta) * 180 / pi
+
+    println(theta)
+    println(angle)
 end
 
 # MR1 in Julia: X=MATCH, Y=APPROX

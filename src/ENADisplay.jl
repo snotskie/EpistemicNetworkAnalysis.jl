@@ -8,13 +8,13 @@ function Base.display(ena::ENAModel)
     display(ena.unitModel)
     println()
     println("Units (position):")
-    display(ena.unitModel[!, [:ENA_UNIT, :dim_x, :fit_x, :dim_y, :fit_y]])
+    show(ena.unitModel[!, [:ENA_UNIT, :dim_x, :fit_x, :dim_y, :fit_y]], allrows=true)
     println()
     println("Codes:")
-    display(ena.codeModel)
+    show(ena.codeModel, allrows=true)
     println()
     println("Network:")
-    display(ena.networkModel)
+    show(ena.networkModel, allrows=true)
     println()
 end
 
@@ -165,6 +165,9 @@ function Makie.plot(ena::ENAModel;
         text!(scene, string(" ", codeRow[:code]), position=(codeRow[:fit_x], codeRow[:fit_y]), textsize=0.2*textscale, align=(:left, :center))
     end
 
+    ## Cairo bug fix? First scatter after a text goes with the text, not where we tell it too
+    scatter!(scene, [0], [0], markersize=0)
+
     # Confidence Interval
     if !groups
         ## Whole group
@@ -172,7 +175,7 @@ function Makie.plot(ena::ENAModel;
         mu_y = mean(ena.unitModel[!, :fit_y])
         ci_x = collect(confint(OneSampleTTest(ena.unitModel[!, :fit_x])))
         ci_y = collect(confint(OneSampleTTest(ena.unitModel[!, :fit_y])))
-        scatter!(scene, [mu_x], [mu_y], markersize=0.05*markerscale, marker="■")
+        scatter!(scene, [mu_x], [mu_y], markersize=0.05, marker="■")
         lines!(scene, [ci_x[1], ci_x[2]], [ci_y[1], ci_y[1]], linewidth=1, linestyle=:dash)
         lines!(scene, [ci_x[1], ci_x[2]], [ci_y[2], ci_y[2]], linewidth=1, linestyle=:dash)
         lines!(scene, [ci_x[1], ci_x[1]], [ci_y[1], ci_y[2]], linewidth=1, linestyle=:dash)
@@ -183,7 +186,8 @@ function Makie.plot(ena::ENAModel;
         mu_y = mean(controlUnits[!, :fit_y])
         ci_x = collect(confint(OneSampleTTest(controlUnits[!, :fit_x])))
         ci_y = collect(confint(OneSampleTTest(controlUnits[!, :fit_y])))
-        scatter!(scene, [mu_x], [mu_y], markersize=0.05*markerscale, marker="■", color=:purple)
+        println(mu_x, mu_y, ci_x, ci_y)
+        scatter!(scene, [mu_x], [mu_y], markersize=0.05, marker="■", color=:purple)
         lines!(scene, [ci_x[1], ci_x[2]], [ci_y[1], ci_y[1]], linewidth=1, linestyle=:dash, color=:purple)
         lines!(scene, [ci_x[1], ci_x[2]], [ci_y[2], ci_y[2]], linewidth=1, linestyle=:dash, color=:purple)
         lines!(scene, [ci_x[1], ci_x[1]], [ci_y[1], ci_y[2]], linewidth=1, linestyle=:dash, color=:purple)
@@ -194,7 +198,8 @@ function Makie.plot(ena::ENAModel;
         mu_y = mean(treatmentUnits[!, :fit_y])
         ci_x = collect(confint(OneSampleTTest(treatmentUnits[!, :fit_x])))
         ci_y = collect(confint(OneSampleTTest(treatmentUnits[!, :fit_y])))
-        scatter!(scene, [mu_x], [mu_y], markersize=0.05*markerscale, marker="■", color=:orange)
+        scatter!(scene, [mu_x], [mu_y], markersize=0.05, marker="■", color=:orange)
+        println(mu_x, mu_y, ci_x, ci_y)
         lines!(scene, [ci_x[1], ci_x[2]], [ci_y[1], ci_y[1]], linewidth=1, linestyle=:dash, color=:orange)
         lines!(scene, [ci_x[1], ci_x[2]], [ci_y[2], ci_y[2]], linewidth=1, linestyle=:dash, color=:orange)
         lines!(scene, [ci_x[1], ci_x[1]], [ci_y[1], ci_y[2]], linewidth=1, linestyle=:dash, color=:orange)

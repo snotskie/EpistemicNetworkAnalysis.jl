@@ -199,10 +199,15 @@ function two_group_rotation!(networkModel, unitModel, config)
 
             factoredUnitModel = hcat(factoredUnitModel, DataFrame(:factoredGroupVar2 => factors2))
 
-            ## Interact the two groups
-            factoredUnitModel[!, :factoredGroupInteraction] =
-                factoredUnitModel[!, :factoredGroupVar1] .* factoredUnitModel[!, :factoredGroupVar2]
+            # ## Interact the two groups
+            # factoredUnitModel[!, :factoredGroupInteraction] =
+            #     factoredUnitModel[!, :factoredGroupVar1] .* factoredUnitModel[!, :factoredGroupVar2]
             
+            ## Interact the two groups, mean centered
+            factoredUnitModel[!, :factoredGroupInteraction] =
+                (factoredUnitModel[!, :factoredGroupVar1] .- mean(factoredUnitModel[!, :factoredGroupVar1])) .*
+                (factoredUnitModel[!, :factoredGroupVar2] .- mean(factoredUnitModel[!, :factoredGroupVar2]))
+
             # println(factoredUnitModel[!, [:factoredGroupVar1, :factoredGroupVar2, :factoredGroupInteraction]])
 
             ## Reconfigure the confounds
