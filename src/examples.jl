@@ -31,27 +31,32 @@ function temp_example()
     # confounds = [:CONFIDENCE_Change]
     confounds = [:GameHalf]
 
-    myENA = ENAModel(RSdata, codes, conversations, units,
-                     groupVar=groupVar, controlGroup=controlGroup, treatmentGroup=treatmentGroup,
-                     confounds=confounds,
+    # myRotation = SVDRotation()
+    # myRotation = MeansRotation(groupVar, controlGroup, treatmentGroup)
+    myRotation = TwoGroupRotation(:Condition, "FirstGame", "SecondGame",
+                                  :GameHalf, "First", "Second",
+                                  [])
+
+    myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=myRotation)
+                    #  groupVar=groupVar, controlGroup=controlGroup, treatmentGroup=treatmentGroup,
+                    #  confounds=confounds
                     #  rotateBy=means_rotation!
                     # rotateBy=regression_rotation!
-                    rotateBy=two_group_rotation!
-                     )
+                    # rotateBy=two_group_rotation!
+                    #  )
 
     display(myENA)
     scene = plot(myENA,
-        groups=true,
+        # groups=true,
         showprojection=true,
         # markerscale=0.01,
     )
     display(scene)
 
-    theta = dot(myENA.unitModel[!, :dim_x], myENA.unitModel[!, :dim_y])
-    theta /= sqrt(dot(myENA.unitModel[!, :dim_x], myENA.unitModel[!, :dim_x]))
-    theta /= sqrt(dot(myENA.unitModel[!, :dim_y], myENA.unitModel[!, :dim_y]))
+    theta = dot(myENA.networkModel[!, :weight_x], myENA.networkModel[!, :weight_y])
+    theta /= sqrt(dot(myENA.networkModel[!, :weight_x], myENA.networkModel[!, :weight_x]))
+    theta /= sqrt(dot(myENA.networkModel[!, :weight_y], myENA.networkModel[!, :weight_y]))
     angle = acos(theta) * 180 / pi
-
     println(theta)
     println(angle)
 end

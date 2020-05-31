@@ -4,28 +4,27 @@ struct ENAModel
     conversations::Array{Symbol,1}
     units::Array{Symbol,1}
     windowSize::Int
-    groupVar::Union{Nothing,Symbol}
-    treatmentGroup::Any # if groupVar == treatmentGroup, then 1
-    controlGroup::Any # if groupVar == treatmentGroup, then 0; if neither, leave it out
-    confounds::Union{Nothing,Array{Symbol,1}}
-    metadata::Array{Symbol,1}
-    rotateBy::Function
-    relationships::Any
+    rotation::ENARotation
+    # groupVar::Union{Nothing,Symbol}
+    # treatmentGroup::Any # if groupVar == treatmentGroup, then 1
+    # controlGroup::Any # if groupVar == treatmentGroup, then 0; if neither, leave it out
+    # confounds::Union{Nothing,Array{Symbol,1}}
+    # metadata::Array{Symbol,1}
+    # rotateBy::Function
+    # relationships::Any
     unitModel::DataFrame # all the unit-level data we compute
     networkModel::DataFrame # all the connections-level data we compute
     codeModel::DataFrame # all the code-level data we compute
-    # TODO pvalue
+    relationshipMap::Any
+    pvalue::Real
 end
 
-## TODO move confounds out to a rotation factory? keep group because it's useful for plotting?
-## or pull the group out to the plotting stage?
-
-## TODO rename thickness to density
-
 function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
-    metadata::Array{Symbol,1}=Symbol[], windowSize::Int=4, confounds::Union{Nothing,Array{Symbol,1}}=nothing,
-    groupVar::Union{Nothing,Symbol}=nothing, treatmentGroup::Any=nothing, controlGroup::Any=nothing,
-    rotateBy::Function=svd_rotation!)
+    windowSize::Int=4, rotateBy::T=SVDRotation(), sphereNormalize::Bool=true) where {T<:ENARotation}
+# function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
+#     metadata::Array{Symbol,1}=Symbol[], windowSize::Int=4, confounds::Union{Nothing,Array{Symbol,1}}=nothing,
+#     groupVar::Union{Nothing,Symbol}=nothing, treatmentGroup::Any=nothing, controlGroup::Any=nothing,
+#     rotateBy::Function=svd_rotation!)
 
     # Preparing model structures
     ## Relationships between codes
@@ -40,27 +39,27 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         return join(dataRow[units], ".")
     end))
     unitModel = combine(first, groupby(unitJoinedData, unitVar)) #by(unitJoinedData, unitVar, first)
-    if !isempty(metadata)
-        if !isnothing(groupVar) && !isnothing(confounds)
-            unitModel = unitModel[:, [unitVar, metadata..., groupVar, confounds...]]
-        elseif !isnothing(groupVar)
-            unitModel = unitModel[:, [unitVar, metadata..., groupVar]]
-        elseif !isnothing(confounds)
-            unitModel = unitModel[:, [unitVar, metadata..., confounds...]]
-        else
-            unitModel = unitModel[:, [unitVar, metadata...]]
-        end
-    else
-        if !isnothing(groupVar) && !isnothing(confounds)
-            unitModel = unitModel[:, [unitVar, groupVar, confounds...]]
-        elseif !isnothing(groupVar)
-            unitModel = unitModel[:, [unitVar, groupVar]]
-        elseif !isnothing(confounds)
-            unitModel = unitModel[:, [unitVar, confounds...]]
-        else
-            unitModel = unitModel[:, [unitVar]]
-        end
-    end
+    # if !isempty(metadata)
+    #     if !isnothing(groupVar) && !isnothing(confounds)
+    #         unitModel = unitModel[:, [unitVar, metadata..., groupVar, confounds...]]
+    #     elseif !isnothing(groupVar)
+    #         unitModel = unitModel[:, [unitVar, metadata..., groupVar]]
+    #     elseif !isnothing(confounds)
+    #         unitModel = unitModel[:, [unitVar, metadata..., confounds...]]
+    #     else
+    #         unitModel = unitModel[:, [unitVar, metadata...]]
+    #     end
+    # else
+    #     if !isnothing(groupVar) && !isnothing(confounds)
+    #         unitModel = unitModel[:, [unitVar, groupVar, confounds...]]
+    #     elseif !isnothing(groupVar)
+    #         unitModel = unitModel[:, [unitVar, groupVar]]
+    #     elseif !isnothing(confounds)
+    #         unitModel = unitModel[:, [unitVar, confounds...]]
+    #     else
+    #         unitModel = unitModel[:, [unitVar]]
+    #     end
+    # end
 
     unitModel = hcat(unitModel, DataFrame(Dict(r => Real[0 for i in 1:nrow(unitModel)]
                                                for r in keys(relationships))))
@@ -72,13 +71,13 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     
     ## Network model
     networkModel = DataFrame(relationship=collect(keys(relationships)),
-                             thickness=Real[0 for r in relationships], # how thick to make the line
+                             density=Real[0 for r in relationships], # how thick to make the line
                              weight_x=Real[0 for r in relationships], # the weight I contribute to dim_x's
                              weight_y=Real[0 for r in relationships]) # the weight I contribute to dim_y's
     
     ## Code model
     codeModel = DataFrame(code=codes,
-                          thickness=Real[0 for c in codes], # how thick to make the dot
+                          density=Real[0 for c in codes], # how thick to make the dot
                           fit_x=Real[0 for c in codes], # where to plot this code on the fitted plot's x-axis
                           fit_y=Real[0 for c in codes]) # where to plot this code on the fitted plot's y-axis
 
@@ -115,31 +114,61 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     end
 
     ## Normalize and overwrite the model's placeholders
-    for unitRow in eachrow(unitModel)
-        unit = unitRow[unitVar]
-        vector = [counts[unit][i][j] for (i,j) in values(relationships)]
-        s = sqrt(sum(vector .^ 2))
-        if s != 0
-            vector /= s
-        end
+    if sphereNormalize
+        for unitRow in eachrow(unitModel)
+            unit = unitRow[unitVar]
+            vector = [counts[unit][i][j] for (i,j) in values(relationships)]
+            s = sqrt(sum(vector .^ 2))
+            if s != 0
+                vector /= s
+            end
 
-        for (k, r) in enumerate(keys(relationships))
-            unitRow[r] = vector[k]
-        end
-    end
-
-    ## Simplify the unitModel down to just those in the treatment/control when groupVar is present
-    if !isnothing(groupVar)
-        filter!(unitModel) do unitRow
-            if unitRow[groupVar] in [treatmentGroup, controlGroup]
-                return true
-            else
-                return false
+            for (k, r) in enumerate(keys(relationships))
+                unitRow[r] = vector[k]
             end
         end
     end
 
-    ## TOdO drop relationships and units that have all zeros
+    ## Simplify the unitModel down to just those in the treatment/control when groupVar is present
+    # if !isnothing(groupVar)
+    #     filter!(unitModel) do unitRow
+    #         if unitRow[groupVar] in [treatmentGroup, controlGroup]
+    #             return true
+    #         else
+    #             return false
+    #         end
+    #     end
+    # end
+
+    ## TODO drop relationships and units that have all zeros
+
+    # Clean up zeros
+    ## Remove unit rows with all zeros
+    filter!(unitModel) do unitRow
+        if all(unitRow[networkRow[:relationship]] == 0 for networkRow in eachrow(networkModel))
+            return false
+        else
+            return true
+        end
+    end
+
+    ## Remove unit cols with all zeros
+    for networkRow in eachrow(networkModel)
+        r = networkRow[:relationship]
+        if all(unitRow[r] == 0 for unitRow in eachrow(unitModel))
+            delete!(unitModel, r)
+        end
+    end
+
+    ## Remove network rows that no longer have a column in the unit model
+    filter!(networkModel) do networkRow
+        r = networkRow[:relationship]
+        if !(r in names(unitModel))
+            return false
+        else
+            return true
+        end
+    end
 
     ## Mean center each relationship
     # for networkRow in eachrow(networkModel)
@@ -150,19 +179,20 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
 
     # Rotation step
     ## Prepare the config
-    config = Dict{Symbol,Any}()
-    if !isnothing(groupVar)
-        config[:groupVar] = groupVar
-        config[:treatmentGroup] = treatmentGroup
-        config[:controlGroup] = controlGroup
-    end
+    # config = Dict{Symbol,Any}()
+    # if !isnothing(groupVar)
+    #     config[:groupVar] = groupVar
+    #     config[:treatmentGroup] = treatmentGroup
+    #     config[:controlGroup] = controlGroup
+    # end
 
-    if !isnothing(confounds)
-        config[:confounds] = confounds
-    end
+    # if !isnothing(confounds)
+    #     config[:confounds] = confounds
+    # end
 
     ## Use the given lambda, probably one of the ENARotations functions
-    rotateBy(networkModel, unitModel, config)
+    # rotateBy(networkModel, unitModel, config)
+    rotateBy(networkModel, unitModel)
 
     ## Compute dim_x and dim_y for the units, now that we have the rotation
     for unitRow in eachrow(unitModel)
@@ -178,31 +208,27 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     end
 
     # Layout step
-    ## Compute the thickness of each network row line
+    ## Compute the density of each network row line
     for networkRow in eachrow(networkModel)
         r = networkRow[:relationship]
-        networkRow[:thickness] = sum(unitModel[!, r])
+        networkRow[:density] = sum(unitModel[!, r])
     end
 
     ## Normalize
-    s = maximum(networkModel[!, :thickness]) #sqrt(sum(networkModel[!, :thickness] .^ 2))
-    if s != 0
-        networkModel[!, :thickness] /= s
-    end
+    s = maximum(networkModel[!, :density])
+    networkModel[!, :density] /= s
 
-    ## Compute the thickness of each code row dot, by "splitting" the thickness of each line between its two codes
+    ## Compute the density of each code row dot, by "splitting" the density of each line between its two codes
     for networkRow in eachrow(networkModel)
         r = networkRow[:relationship]
         i, j = relationships[r]
-        codeModel[i, :thickness] += networkRow[:thickness] # TODO check, is this the right way to do this?
-        codeModel[j, :thickness] += networkRow[:thickness]
+        codeModel[i, :density] += networkRow[:density] # TODO check, is this the right way to do this?
+        codeModel[j, :density] += networkRow[:density]
     end
 
     ## Normalize
-    s = maximum(codeModel[!, :thickness]) # sqrt(sum(codeModel[!, :thickness] .^ 2))
-    if s != 0
-        codeModel[!, :thickness] /= s
-    end
+    s = maximum(codeModel[!, :density])
+    codeModel[!, :density] /= s
 
     ## Place the code dots into fit_x, fit_y, by predicting unit dim_x and dim_y values
     ## This is a projection of the relationship space into the code space
@@ -211,12 +237,10 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     for (i, unitRow) in enumerate(eachrow(unitModel))
         # denom = 2
         denom = 2 * sum(unitRow[t] for t in keys(relationships))
-        if denom != 0
-            for r in keys(relationships)
-                a, b = relationships[r]
-                X[i, a+1] += unitRow[r] / denom # +1 because we started with the intercept
-                X[i, b+1] += unitRow[r] / denom # +1 because we started with the intercept
-            end
+        for r in keys(relationships)
+            a, b = relationships[r]
+            X[i, a+1] += unitRow[r] / denom # +1 because we started with the intercept
+            X[i, b+1] += unitRow[r] / denom # +1 because we started with the intercept
         end
     end
 
@@ -271,7 +295,28 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     codeModel[!, :fit_x] = codeModel[!, :fit_x] .- mu_x
     codeModel[!, :fit_y] = codeModel[!, :fit_y] .- mu_y
 
+    # Run tests for how well the fit models the dims
+    fitDiffs = Real[]
+    dimDiffs = Real[]
+    for (i, unitRowA) in enumerate(eachrow(unitModel))
+        for (j, unitRowB) in enumerate(eachrow(unitModel))
+            if i < j
+                push!(fitDiffs, unitRowA[:fit_x] - unitRowB[:fit_x])
+                push!(fitDiffs, unitRowA[:fit_y] - unitRowB[:fit_y])
+                push!(dimDiffs, unitRowA[:dim_x] - unitRowB[:dim_x])
+                push!(dimDiffs, unitRowA[:dim_y] - unitRowB[:dim_y])
+            end
+        end
+    end
+
+    p = pvalue(OneSampleTTest(fitDiffs, dimDiffs))
+    # pvalue(EqualVarianceTTest(x, y))
+    # pvalue(UnequalVarianceTTest(x, y))
+    # pvalue(MannWhitneyUTest(x, y))
+    # pvalue(SignedRankTest(x, y))
+
     # Done!
-    return ENAModel(unitJoinedData, codes, conversations, units, windowSize, groupVar, treatmentGroup, controlGroup,
-                    confounds, metadata, rotateBy, relationships, unitModel, networkModel, codeModel)
+    # return ENAModel(unitJoinedData, codes, conversations, units, windowSize, groupVar, treatmentGroup, controlGroup,
+    #                 confounds, metadata, rotateBy, relationships, unitModel, networkModel, codeModel, p)
+    return ENAModel(unitJoinedData, codes, conversations, units, windowSize, rotateBy, unitModel, networkModel, codeModel, relationships, p)
 end
