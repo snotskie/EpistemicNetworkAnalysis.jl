@@ -1,0 +1,226 @@
+abstract type ENAArtist
+end
+
+struct DefaultArtist <: ENAArtist
+end
+
+struct MeansArtist <: ENAArtist
+    groupVar::Symbol
+    controlGroup::Any
+    treatmentGroup::Any
+end
+
+# DefaultArtist: TODO document
+function (artist::DefaultArtist)(cb, ena, scene)
+    ## Colors
+    networkColors = map(eachrow(ena.networkModel)) do networkRow
+        return :black
+    end
+
+    unitColors = map(eachrow(ena.unitModel)) do unitRow
+        return :black
+    end
+
+    codeColors = map(eachrow(ena.codeModel)) do codeRow
+        return :black
+    end
+
+    ## Shapes
+    unitShapes = map(eachrow(ena.unitModel)) do unitRow
+        return "o"
+    end
+
+    codeShapes = map(eachrow(ena.codeModel)) do codeRow
+        return "o"
+    end
+
+    ## Sizes
+    networkLineWidths = map(eachrow(ena.networkModel)) do networkRow
+        return networkRow[:density]
+    end
+
+    unitMarkerSizes = map(eachrow(ena.unitModel)) do unitRow
+        return 1
+    end
+
+    codeMarkerSizes = map(eachrow(ena.codeModel)) do codeRow
+        return codeRow[:density]
+    end
+
+    ## Normalize
+    s = maximum(networkLineWidths)
+    networkLineWidths /= s
+    networkLineWidths *= 2
+
+    s = maximum(unitMarkerSizes)
+    unitMarkerSizes /= s
+    unitMarkerSizes *= 0.05
+
+    s = maximum(codeMarkerSizes)
+    codeMarkerSizes /= s
+    codeMarkerSizes *= 0.1
+
+    ## Confidence Intervals
+    confidenceIntervals = []
+    mu_x = mean(ena.unitModel[!, :fit_x])
+    mu_y = mean(ena.unitModel[!, :fit_y])
+    ci_x = collect(confint(OneSampleTTest(ena.unitModel[!, :fit_x])))
+    ci_y = collect(confint(OneSampleTTest(ena.unitModel[!, :fit_y])))
+    color = :black
+    shape = "■"
+    size = 0.05
+    CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
+    push!(confidenceIntervals, CI)
+
+    ## Do Callback so ENADisplay can do the bulk of the work
+    cb(networkColors,
+       unitColors,
+       codeColors,
+       unitShapes,
+       codeShapes,
+       networkLineWidths,
+       unitMarkerSizes,
+       codeMarkerSizes,
+       confidenceIntervals)
+end
+
+# MeansArtist: TODO document
+function (artist::MeansArtist)(cb, ena, scene)
+    ##Pre-splitting the groups
+    controlUnits = filter(ena.unitModel) do unitRow
+        if unitRow[artist.groupVar] == artist.controlGroup
+            return true
+        else
+            return false
+        end
+    end
+
+    treatmentUnits = filter(ena.unitModel) do unitRow
+        if unitRow[artist.groupVar] == artist.treatmentGroup
+            return true
+        else
+            return false
+        end
+    end
+
+    ## Pre-processing the size of the network lines
+    ### Find the "direction", "strength", and "angle" for the line size
+    ### Thicker lines are those whose rotation weights are more towards
+    ### one side of the difference of the means
+    mu_x_control = mean(controlUnits[!, :fit_x])
+    mu_y_control = mean(controlUnits[!, :fit_y])
+    mu_x_treatment = mean(treatmentUnits[!, :fit_x])
+    mu_y_treatment = mean(treatmentUnits[!, :fit_y])
+    mu_x_all = (mu_x_treatment + mu_x_control) / 2
+    mu_y_all = (mu_y_treatment + mu_y_control) / 2
+    vt = Vector{Float64}([
+        mu_x_treatment - mu_x_all,
+        mu_y_treatment - mu_y_all
+    ])
+
+    norm_vt = sqrt(dot(vt, vt))
+    lineStrengths = Dict{Symbol,Float64}()
+    for networkRow in eachrow(ena.networkModel)
+        r = networkRow[:relationship]
+        vl = Vector{Float64}([
+            networkRow[:weight_x],
+            networkRow[:weight_y]
+        ])
+
+        lineStrengths[r] = dot(vl, vt) / norm_vt
+    end
+
+    ## Colors
+    networkColors = map(eachrow(ena.networkModel)) do networkRow
+        if lineStrengths[networkRow[:relationship]] < 0
+            return :purple
+        else
+            return :orange
+        end
+    end
+
+    unitColors = map(eachrow(ena.unitModel)) do unitRow
+        if unitRow[artist.groupVar] == artist.controlGroup
+            return :purple
+        elseif unitRow[artist.groupVar] == artist.treatmentGroup
+            return :orange
+        else
+            return :black
+        end
+    end
+
+    codeColors = map(eachrow(ena.codeModel)) do codeRow
+        return :black
+    end
+
+    ## Shapes
+    unitShapes = map(eachrow(ena.unitModel)) do unitRow
+        return "o"
+    end
+
+    codeShapes = map(eachrow(ena.codeModel)) do codeRow
+        return "o"
+    end
+
+    ## Sizes
+    networkLineWidths = map(eachrow(ena.networkModel)) do networkRow
+        return lineStrengths[networkRow[:relationship]] ^ 2
+    end
+
+    unitMarkerSizes = map(eachrow(ena.unitModel)) do unitRow
+        return 1
+    end
+
+    codeMarkerSizes = map(eachrow(ena.codeModel)) do codeRow
+        return codeRow[:density]
+    end
+
+    ## Normalize
+    s = maximum(networkLineWidths)
+    networkLineWidths /= s
+    networkLineWidths *= 2
+
+    s = maximum(unitMarkerSizes)
+    unitMarkerSizes /= s
+    unitMarkerSizes *= 0.05
+
+    s = maximum(codeMarkerSizes)
+    codeMarkerSizes /= s
+    codeMarkerSizes *= 0.1
+
+    ## Confidence Intervals
+    confidenceIntervals = []
+
+    ### Control
+    mu_x = mean(controlUnits[!, :fit_x])
+    mu_y = mean(controlUnits[!, :fit_y])
+    ci_x = collect(confint(OneSampleTTest(controlUnits[!, :fit_x])))
+    ci_y = collect(confint(OneSampleTTest(controlUnits[!, :fit_y])))
+    color = :purple
+    shape = "■"
+    size = 0.05
+    CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
+    push!(confidenceIntervals, CI)
+
+    ### Treatment
+    mu_x = mean(treatmentUnits[!, :fit_x])
+    mu_y = mean(treatmentUnits[!, :fit_y])
+    ci_x = collect(confint(OneSampleTTest(treatmentUnits[!, :fit_x])))
+    ci_y = collect(confint(OneSampleTTest(treatmentUnits[!, :fit_y])))
+    color = :orange
+    shape = "■"
+    size = 0.05
+    CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
+    push!(confidenceIntervals, CI)
+
+    ## Do Callback so ENADisplay can do the bulk of the work
+    cb(networkColors,
+       unitColors,
+       codeColors,
+       unitShapes,
+       codeShapes,
+       networkLineWidths,
+       unitMarkerSizes,
+       codeMarkerSizes,
+       confidenceIntervals)
+end

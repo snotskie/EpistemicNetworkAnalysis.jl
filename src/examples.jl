@@ -38,27 +38,16 @@ function temp_example()
                                   [])
 
     myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=myRotation)
-                    #  groupVar=groupVar, controlGroup=controlGroup, treatmentGroup=treatmentGroup,
-                    #  confounds=confounds
-                    #  rotateBy=means_rotation!
-                    # rotateBy=regression_rotation!
-                    # rotateBy=two_group_rotation!
-                    #  )
-
     display(myENA)
+
+    myArtist = MeansArtist(:Condition, "FirstGame", "SecondGame")
+    # myArtist = MeansArtist(:GameHalf, "First", "Second")
     scene = plot(myENA,
-        # groups=true,
         showprojection=true,
-        # markerscale=0.01,
+        unitscale=0,
+        artist=myArtist
     )
     display(scene)
-
-    theta = dot(myENA.networkModel[!, :weight_x], myENA.networkModel[!, :weight_y])
-    theta /= sqrt(dot(myENA.networkModel[!, :weight_x], myENA.networkModel[!, :weight_x]))
-    theta /= sqrt(dot(myENA.networkModel[!, :weight_y], myENA.networkModel[!, :weight_y]))
-    angle = acos(theta) * 180 / pi
-    println(theta)
-    println(angle)
 end
 
 # MR1 in Julia: X=MATCH, Y=APPROX

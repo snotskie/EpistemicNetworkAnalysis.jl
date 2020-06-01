@@ -13,6 +13,7 @@ using Makie
 
 include("./helpers.jl")
 include("./ENARotations.jl")
+include("./ENAArtists.jl")
 include("./ENAModel.jl")
 include("./ENADisplay.jl")
 include("./RSData.jl")

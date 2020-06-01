@@ -5,13 +5,6 @@ struct ENAModel
     units::Array{Symbol,1}
     windowSize::Int
     rotation::ENARotation
-    # groupVar::Union{Nothing,Symbol}
-    # treatmentGroup::Any # if groupVar == treatmentGroup, then 1
-    # controlGroup::Any # if groupVar == treatmentGroup, then 0; if neither, leave it out
-    # confounds::Union{Nothing,Array{Symbol,1}}
-    # metadata::Array{Symbol,1}
-    # rotateBy::Function
-    # relationships::Any
     unitModel::DataFrame # all the unit-level data we compute
     networkModel::DataFrame # all the connections-level data we compute
     codeModel::DataFrame # all the code-level data we compute
@@ -21,10 +14,6 @@ end
 
 function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
     windowSize::Int=4, rotateBy::T=SVDRotation(), sphereNormalize::Bool=true) where {T<:ENARotation}
-# function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
-#     metadata::Array{Symbol,1}=Symbol[], windowSize::Int=4, confounds::Union{Nothing,Array{Symbol,1}}=nothing,
-#     groupVar::Union{Nothing,Symbol}=nothing, treatmentGroup::Any=nothing, controlGroup::Any=nothing,
-#     rotateBy::Function=svd_rotation!)
 
     # Preparing model structures
     ## Relationships between codes
@@ -33,34 +22,14 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
                          for (j, code2) in enumerate(codes)
                          if i < j)
 
-    ## Unit model
+    ## Adding a new column to the raw data that labels each unit properly
     unitVar = :ENA_UNIT
     unitJoinedData = hcat(data, DataFrame(unitVar => map(eachrow(data)) do dataRow
         return join(dataRow[units], ".")
     end))
-    unitModel = combine(first, groupby(unitJoinedData, unitVar)) #by(unitJoinedData, unitVar, first)
-    # if !isempty(metadata)
-    #     if !isnothing(groupVar) && !isnothing(confounds)
-    #         unitModel = unitModel[:, [unitVar, metadata..., groupVar, confounds...]]
-    #     elseif !isnothing(groupVar)
-    #         unitModel = unitModel[:, [unitVar, metadata..., groupVar]]
-    #     elseif !isnothing(confounds)
-    #         unitModel = unitModel[:, [unitVar, metadata..., confounds...]]
-    #     else
-    #         unitModel = unitModel[:, [unitVar, metadata...]]
-    #     end
-    # else
-    #     if !isnothing(groupVar) && !isnothing(confounds)
-    #         unitModel = unitModel[:, [unitVar, groupVar, confounds...]]
-    #     elseif !isnothing(groupVar)
-    #         unitModel = unitModel[:, [unitVar, groupVar]]
-    #     elseif !isnothing(confounds)
-    #         unitModel = unitModel[:, [unitVar, confounds...]]
-    #     else
-    #         unitModel = unitModel[:, [unitVar]]
-    #     end
-    # end
 
+    ## Unit model placeholders
+    unitModel = combine(first, groupby(unitJoinedData, unitVar))
     unitModel = hcat(unitModel, DataFrame(Dict(r => Real[0 for i in 1:nrow(unitModel)]
                                                for r in keys(relationships))))
 
@@ -69,13 +38,13 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
                                           fit_x=Real[0 for i in 1:nrow(unitModel)], # fitted sum of the above
                                           fit_y=Real[0 for i in 1:nrow(unitModel)])) 
     
-    ## Network model
+    ## Network model placeholders
     networkModel = DataFrame(relationship=collect(keys(relationships)),
                              density=Real[0 for r in relationships], # how thick to make the line
                              weight_x=Real[0 for r in relationships], # the weight I contribute to dim_x's
                              weight_y=Real[0 for r in relationships]) # the weight I contribute to dim_y's
     
-    ## Code model
+    ## Code model placeholders
     codeModel = DataFrame(code=codes,
                           density=Real[0 for c in codes], # how thick to make the dot
                           fit_x=Real[0 for c in codes], # where to plot this code on the fitted plot's x-axis
@@ -113,7 +82,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         end
     end
 
-    ## Normalize and overwrite the model's placeholders
+    ## Normalize and overwrite the unit model's placeholders
     if sphereNormalize
         for unitRow in eachrow(unitModel)
             unit = unitRow[unitVar]
@@ -128,19 +97,6 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
             end
         end
     end
-
-    ## Simplify the unitModel down to just those in the treatment/control when groupVar is present
-    # if !isnothing(groupVar)
-    #     filter!(unitModel) do unitRow
-    #         if unitRow[groupVar] in [treatmentGroup, controlGroup]
-    #             return true
-    #         else
-    #             return false
-    #         end
-    #     end
-    # end
-
-    ## TODO drop relationships and units that have all zeros
 
     # Clean up zeros
     ## Remove unit rows with all zeros
@@ -170,28 +126,8 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         end
     end
 
-    ## Mean center each relationship
-    # for networkRow in eachrow(networkModel)
-    #     r = networkRow[:relationship]
-    #     mu = mean(unitModel[!, r])
-    #     unitModel[!, r] = unitModel[!, r] .- mu
-    # end
-
     # Rotation step
-    ## Prepare the config
-    # config = Dict{Symbol,Any}()
-    # if !isnothing(groupVar)
-    #     config[:groupVar] = groupVar
-    #     config[:treatmentGroup] = treatmentGroup
-    #     config[:controlGroup] = controlGroup
-    # end
-
-    # if !isnothing(confounds)
-    #     config[:confounds] = confounds
-    # end
-
-    ## Use the given lambda, probably one of the ENARotations functions
-    # rotateBy(networkModel, unitModel, config)
+    ## Use the given lambda, probably one of the out-of-the-box ENARotations, but could be anything user defined
     rotateBy(networkModel, unitModel)
 
     ## Compute dim_x and dim_y for the units, now that we have the rotation
@@ -214,7 +150,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         networkRow[:density] = sum(unitModel[!, r])
     end
 
-    ## Normalize
+    ## Normalize the network densities
     s = maximum(networkModel[!, :density])
     networkModel[!, :density] /= s
 
@@ -226,16 +162,16 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         codeModel[j, :density] += networkRow[:density]
     end
 
-    ## Normalize
+    ## Normalize the code densities
     s = maximum(codeModel[!, :density])
     codeModel[!, :density] /= s
 
     ## Place the code dots into fit_x, fit_y, by predicting unit dim_x and dim_y values
     ## This is a projection of the relationship space into the code space
+    ## TODO verify
     X = Matrix{Float64}(zeros(nrow(unitModel), 1 + nrow(codeModel)))
     X[:, 1] .= 1 # intercept
     for (i, unitRow) in enumerate(eachrow(unitModel))
-        # denom = 2
         denom = 2 * sum(unitRow[t] for t in keys(relationships))
         for r in keys(relationships)
             a, b = relationships[r]
@@ -244,18 +180,18 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         end
     end
 
+    X = (transpose(X) * X)^-1 * transpose(X)
+
     ## fit_x
     y = Vector{Float64}(unitModel[:, :dim_x])
-    # x_axis_coefs = coef(lm(X, y))
-    x_axis_coefs = (transpose(X) * X)^-1 * transpose(X) * y
+    x_axis_coefs = X * y
     for i in 1:nrow(codeModel)
         codeModel[i, :fit_x] = x_axis_coefs[i+1] # +1 because we started with the intercept
     end
 
     ## fit_y
     y = Vector{Float64}(unitModel[:, :dim_y])
-    # y_axis_coefs = coef(lm(X, y))
-    y_axis_coefs = (transpose(X) * X)^-1 * transpose(X) * y
+    y_axis_coefs = X * y
     for i in 1:nrow(codeModel)
         codeModel[i, :fit_y] = y_axis_coefs[i+1] # +1 because we started with the intercept
     end
@@ -285,9 +221,9 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     codeModel[!, :fit_x] = codeModel[!, :fit_x] .+ x_axis_coefs[1]
     codeModel[!, :fit_y] = codeModel[!, :fit_y] .+ y_axis_coefs[1]
 
-    ## Translate everything to account for overall mean?
-    mu_x = mean(unitModel[!, :fit_x])
-    mu_y = mean(unitModel[!, :fit_y])
+    ## Translate everything to account for overall mean
+    mu_x = mean(unitModel[!, :fit_x]) # TODO should this be fit or fit?
+    mu_y = mean(unitModel[!, :fit_y]) # TODO should this be fit or fit?
     unitModel[!, :dim_x] = unitModel[!, :dim_x] .- mu_x
     unitModel[!, :dim_y] = unitModel[!, :dim_y] .- mu_y
     unitModel[!, :fit_x] = unitModel[!, :fit_x] .- mu_x
@@ -295,7 +231,8 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     codeModel[!, :fit_x] = codeModel[!, :fit_x] .- mu_x
     codeModel[!, :fit_y] = codeModel[!, :fit_y] .- mu_y
 
-    # Run tests for how well the fit models the dims
+    # Testing step
+    ## Run tests for how well the fit models the dims
     fitDiffs = Real[]
     dimDiffs = Real[]
     for (i, unitRowA) in enumerate(eachrow(unitModel))
@@ -315,8 +252,16 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     # pvalue(MannWhitneyUTest(x, y))
     # pvalue(SignedRankTest(x, y))
 
+    ## Test that the angle between the dimensions is 90 degrees
+    theta = dot(networkModel[!, :weight_x], networkModel[!, :weight_y])
+    theta /= sqrt(dot(networkModel[!, :weight_x], networkModel[!, :weight_x]))
+    theta /= sqrt(dot(networkModel[!, :weight_y], networkModel[!, :weight_y]))
+    angle = acos(theta) * 180 / pi
+    if abs(angle-90) > 0.01 # allow for a little approximation error
+        @warn "The angle between the axes of this model is $(angle) degrees, when it should be 90. This can lead to strange visual effects when plotting on orthogonal axes and can undermine interpreting betweenness."
+    end
+
     # Done!
-    # return ENAModel(unitJoinedData, codes, conversations, units, windowSize, groupVar, treatmentGroup, controlGroup,
-    #                 confounds, metadata, rotateBy, relationships, unitModel, networkModel, codeModel, p)
-    return ENAModel(unitJoinedData, codes, conversations, units, windowSize, rotateBy, unitModel, networkModel, codeModel, relationships, p)
+    return ENAModel(unitJoinedData, codes, conversations, units,
+                    windowSize, rotateBy, unitModel, networkModel, codeModel, relationships, p)
 end
