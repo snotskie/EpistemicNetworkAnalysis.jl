@@ -166,6 +166,11 @@ function (rotation::TwoGroupRotation)(networkModel, unitModel)
     factoredUnitModel[!, :factoredGroupInteraction] =
         (factoredUnitModel[!, :factoredGroupVar1] .- mean(factoredUnitModel[!, :factoredGroupVar1])) .*
         (factoredUnitModel[!, :factoredGroupVar2] .- mean(factoredUnitModel[!, :factoredGroupVar2]))
+    
+    # ## Interact the two groups
+    # factoredUnitModel[!, :factoredGroupInteraction] =
+    #     factoredUnitModel[!, :factoredGroupVar1] .*
+    #     factoredUnitModel[!, :factoredGroupVar2]
 
     ## Collect the columns we need
     columns = [:factoredGroupVar1, :factoredGroupVar2, :factoredGroupInteraction, rotation.confounds...]
@@ -175,12 +180,13 @@ function (rotation::TwoGroupRotation)(networkModel, unitModel)
     X = hcat(X, factoredUnitModel[!, columns])
     X = Matrix{Float64}(X)
     X = (transpose(X) * X)^-1 * transpose(X)
+
+    ## Find the line of the first group's effect through the high dimensional space
     for networkRow in eachrow(networkModel)
         r = networkRow[:relationship]
         y = Vector{Float64}(factoredUnitModel[!, r])
         coefs = X * y
         networkRow[:weight_x] = coefs[2]
-        networkRow[:weight_y] = coefs[3]
     end
 
     ## Normalize the weights
@@ -189,10 +195,72 @@ function (rotation::TwoGroupRotation)(networkModel, unitModel)
         networkModel[!, :weight_x] /= s
     end
 
+    ## Find the values for each unit projected onto the x-axis (for the whole unit model?)
+    xAxisColumn =
+        Matrix{Float64}(factoredUnitModel[!, networkModel[!, :relationship]]) *
+        Vector{Float64}(networkModel[!, :weight_x])
+
+    ## Find the line of the second group's effect through the high dimensional space,
+    ## orthogonal to (independent from) the first
+    for networkRow in eachrow(networkModel)
+        r = networkRow[:relationship]
+        y = Vector{Float64}(factoredUnitModel[!, r])
+        scalar = dot(y, xAxisColumn) / dot(xAxisColumn, xAxisColumn)
+        y -= scalar * xAxisColumn
+        coefs = X * y
+        networkRow[:weight_y] = coefs[3]
+    end
+
+    ## Normalize the weights
     s = sqrt(sum(networkModel[!, :weight_y] .^ 2))
     if s != 0
         networkModel[!, :weight_y] /= s
     end
+
+    # ## Find the line of the interaction's effect through the high dimensional space
+    # interactionEffect = Float64[]
+    # for networkRow in eachrow(networkModel)
+    #     r = networkRow[:relationship]
+    #     y = Vector{Float64}(factoredUnitModel[!, r])
+    #     coefs = X * y
+    #     push!(interactionEffect, coefs[4])
+    # end
+
+    # ## Normalize the line
+    # s = sqrt(sum(interactionEffect .^ 2))
+    # if s != 0
+    #     interactionEffect /= s
+    # end
+
+    # ## Find the values for each unit projected onto that space (on the whole unit model)
+    # interactionColumn =
+    #     Matrix{Float64}(unitModel[!, networkModel[!, :relationship]]) *
+    #     Vector{Float64}(interactionEffect)
+    
+    # display(interactionColumn)
+
+    # ## Find the line of the two groups' effects through the high dimensional space,
+    # ## orthogonal to (independent from) the interaction
+    # for networkRow in eachrow(networkModel)
+    #     r = networkRow[:relationship]
+    #     y = Vector{Float64}(factoredUnitModel[!, r])
+    #     scalar = dot(y, interactionColumn) / dot(interactionColumn, interactionColumn)
+    #     y -= scalar * interactionColumn
+    #     coefs = X * y
+    #     networkRow[:weight_x] = coefs[2]
+    #     networkRow[:weight_y] = coefs[3]
+    # end
+
+    # ## Normalize the weights
+    # s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
+    # if s != 0
+    #     networkModel[!, :weight_x] /= s
+    # end
+
+    # s = sqrt(sum(networkModel[!, :weight_y] .^ 2))
+    # if s != 0
+    #     networkModel[!, :weight_y] /= s
+    # end
 end
 
 #### OLD STUFF BELOW ####

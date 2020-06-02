@@ -10,6 +10,7 @@ struct ENAModel
     codeModel::DataFrame # all the code-level data we compute
     relationshipMap::Any
     pvalue::Real
+    pearson::Real
 end
 
 function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
@@ -247,6 +248,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     end
 
     p = pvalue(OneSampleTTest(fitDiffs, dimDiffs))
+    pearson = cor(fitDiffs, dimDiffs)
     # pvalue(EqualVarianceTTest(x, y))
     # pvalue(UnequalVarianceTTest(x, y))
     # pvalue(MannWhitneyUTest(x, y))
@@ -257,11 +259,14 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     theta /= sqrt(dot(networkModel[!, :weight_x], networkModel[!, :weight_x]))
     theta /= sqrt(dot(networkModel[!, :weight_y], networkModel[!, :weight_y]))
     angle = acos(theta) * 180 / pi
-    if abs(angle-90) > 0.01 # allow for a little approximation error
-        @warn "The angle between the axes of this model is $(angle) degrees, when it should be 90. This can lead to strange visual effects when plotting on orthogonal axes and can undermine interpreting betweenness."
+    if abs(angle-90) > 0.0001 # allow for a little approximation error
+        @warn """The angle between the axes of this model is $(angle) degrees, when it should be 90.
+This can lead to strange visual effects when plotting on orthogonal axes.
+This can undermine interpreting betweenness between units.
+And this can cause problems with ENA's optimization algorithm fitting the codes and the lines."""
     end
 
     # Done!
     return ENAModel(unitJoinedData, codes, conversations, units,
-                    windowSize, rotateBy, unitModel, networkModel, codeModel, relationships, p)
+                    windowSize, rotateBy, unitModel, networkModel, codeModel, relationships, p, pearson)
 end

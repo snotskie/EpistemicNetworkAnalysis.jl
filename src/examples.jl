@@ -40,8 +40,10 @@ function temp_example()
     myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=myRotation)
     display(myENA)
 
-    myArtist = MeansArtist(:Condition, "FirstGame", "SecondGame")
+    # myArtist = MeansArtist(:Condition, "FirstGame", "SecondGame")
     # myArtist = MeansArtist(:GameHalf, "First", "Second")
+    myArtist = WindowsArtist(:Condition, "FirstGame", "SecondGame",
+                             :GameHalf, "First", "Second")
     scene = plot(myENA,
         showprojection=true,
         unitscale=0,

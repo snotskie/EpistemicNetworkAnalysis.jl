@@ -15,7 +15,7 @@ function help_deflating_svd(networkModel::DataFrame, unitModel::DataFrame, contr
         Y = Matrix{Float64}(DataFrame(controlModel .- transpose(controlMeans)))
         for i in 1:size(X)[2]
             xcol = X[:, i]
-            for j in 1:size(Y)[2]
+            for j in 1:size(Y)[2] # TODO: Should j be the outer loop?
                 v = Y[:, j]
                 scalar = dot(xcol, v) / dot(v, v)
                 xcol -= scalar * v

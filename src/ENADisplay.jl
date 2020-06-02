@@ -16,6 +16,9 @@ function Base.display(ena::ENAModel) # TODO should this be print, display, or sh
     println("Model fit (p value):")
     println(ena.pvalue)
     println()
+    println("Model fit (Pearson):")
+    println(ena.pearson)
+    println()
 end
 
 function Makie.plot(ena::ENAModel;
