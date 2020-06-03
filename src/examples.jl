@@ -29,7 +29,7 @@ function temp_example()
     controlGroup = "FirstGame"
     treatmentGroup = "SecondGame"
     # confounds = [:CONFIDENCE_Change]
-    confounds = [:GameHalf]
+    # confounds = [:GameHalf]
 
     # myRotation = SVDRotation()
     # myRotation = MeansRotation(groupVar, controlGroup, treatmentGroup)
