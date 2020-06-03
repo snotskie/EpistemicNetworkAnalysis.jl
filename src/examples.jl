@@ -42,7 +42,9 @@ function temp_example()
 
     # myArtist = MeansArtist(:Condition, "FirstGame", "SecondGame")
     # myArtist = MeansArtist(:GameHalf, "First", "Second")
-    myArtist = WindowsArtist(:Condition, "FirstGame", "SecondGame",
+    # myArtist = WindowsArtist(:Condition, "FirstGame", "SecondGame",
+    #                          :GameHalf, "First", "Second")
+    myArtist = TVRemoteArtist(:Condition, "FirstGame", "SecondGame",
                              :GameHalf, "First", "Second")
     scene = plot(myENA,
         showprojection=true,
