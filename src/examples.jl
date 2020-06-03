@@ -25,9 +25,9 @@ function temp_example()
     units = [:Condition, :GameHalf, :UserName]
     # conversations = [:Condition, :GroupName]
     # units = [:Condition, :UserName]
-    groupVar = :Condition
-    controlGroup = "FirstGame"
-    treatmentGroup = "SecondGame"
+    # groupVar = :Condition
+    # controlGroup = "FirstGame"
+    # treatmentGroup = "SecondGame"
     # confounds = [:CONFIDENCE_Change]
     # confounds = [:GameHalf]
 
