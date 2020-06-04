@@ -87,7 +87,7 @@ function (artist::DefaultArtist)(cb, ena, scene)
     ci_x = collect(confint(OneSampleTTest(ena.unitModel[!, :fit_x])))
     ci_y = collect(confint(OneSampleTTest(ena.unitModel[!, :fit_y])))
     color = :black
-    shape = "■"
+    shape = :square
     size = 0.05
     CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
     push!(confidenceIntervals, CI)
@@ -202,11 +202,11 @@ function (artist::MeansArtist)(cb, ena, scene)
 
     s = maximum(unitMarkerSizes)
     unitMarkerSizes /= s
-    unitMarkerSizes *= 0.05
+    # unitMarkerSizes *= 0.05
 
     s = maximum(codeMarkerSizes)
     codeMarkerSizes /= s
-    codeMarkerSizes *= 0.1
+    # codeMarkerSizes *= 0.1
 
     ## Confidence Intervals
     confidenceIntervals = []
@@ -217,7 +217,7 @@ function (artist::MeansArtist)(cb, ena, scene)
     ci_x = collect(confint(OneSampleTTest(controlUnits[!, :fit_x])))
     ci_y = collect(confint(OneSampleTTest(controlUnits[!, :fit_y])))
     color = :purple
-    shape = "■"
+    shape = :square
     size = 0.05
     CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
     push!(confidenceIntervals, CI)
@@ -228,7 +228,7 @@ function (artist::MeansArtist)(cb, ena, scene)
     ci_x = collect(confint(OneSampleTTest(treatmentUnits[!, :fit_x])))
     ci_y = collect(confint(OneSampleTTest(treatmentUnits[!, :fit_y])))
     color = :orange
-    shape = "■"
+    shape = :square
     size = 0.05
     CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
     push!(confidenceIntervals, CI)
@@ -365,7 +365,7 @@ function (artist::WindowsArtist)(cb, ena, scene)
         mu_y = mean(groupedUnits[!, :fit_y])
         ci_x = collect(confint(OneSampleTTest(groupedUnits[!, :fit_x])))
         ci_y = collect(confint(OneSampleTTest(groupedUnits[!, :fit_y])))
-        shape = "■"
+        shape = :square
         size = 0.05
         CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
         push!(confidenceIntervals, CI)
@@ -509,11 +509,11 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
 
     ## Shapes
     unitShapes = map(eachrow(ena.unitModel)) do unitRow
-        return "o"
+        return :circle
     end
 
     codeShapes = map(eachrow(ena.codeModel)) do codeRow
-        return "o"
+        return :circle
     end
 
     ## Sizes
@@ -536,16 +536,16 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
 
     s = maximum(unitMarkerSizes)
     unitMarkerSizes /= s
-    unitMarkerSizes *= 0.05
+    unitMarkerSizes *= 4
 
     s = maximum(codeMarkerSizes)
     codeMarkerSizes /= s
-    codeMarkerSizes *= 0.1
+    codeMarkerSizes *= 8
 
     ## Confidence Intervals
     confidenceIntervals = []
     colors = [:purple, :purple, :orange, :orange, :purple, :orange]
-    shapes = ["▼", "▲", "▼", "▲", "■", "■"]
+    shapes = [:dtriangle, :utriangle, :dtriangle, :utriangle, :square, :square]
     
     for (i, groupedUnits) in enumerate(allGroupedUnits)
         color = colors[i]

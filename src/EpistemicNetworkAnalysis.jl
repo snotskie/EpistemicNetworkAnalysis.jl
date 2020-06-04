@@ -2,9 +2,10 @@ module EpistemicNetworkAnalysis
 
 # Imports
 ## Plotting
-using ImageMagick # fix for cairo bug, have to have this first
-using CairoMakie # fallback for when no gpu present
-using Makie
+# using ImageMagick # fix for cairo bug, have to have this first
+# using CairoMakie # fallback for when no gpu present
+# using Makie
+using Plots
 
 ## Data
 using DataFrames

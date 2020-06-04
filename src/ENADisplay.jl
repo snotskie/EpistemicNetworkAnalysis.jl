@@ -21,18 +21,20 @@ function Base.display(ena::ENAModel) # TODO should this be print, display, or sh
     println()
 end
 
-function Makie.plot(ena::ENAModel;
+function Plots.plot(ena::ENAModel;
     xaxisname::String="", yaxisname::String="",
     artist::ENAArtist=DefaultArtist(),
     showprojection::Bool=false,
-    unitscale::Real=1, linescale::Real=1, codescale::Real=1,
-    meanscale::Real=1, textscale::Real=1)
+    showunits::Bool=true,
+    showlines::Bool=true,
+    showcodes::Bool=true,
+    showconfidence::Bool=false)
 
-    # Scene
-    scene = Scene()
+    # Plot
+    p = plot(leg=false)
 
     # Artist (to choose the colors etc.)
-    artist(ena, scene) do networkColors,
+    artist(ena, p) do networkColors,
                    unitColors,
                    codeColors,
                    unitShapes,
@@ -44,48 +46,83 @@ function Makie.plot(ena::ENAModel;
     
         # Draw Units
         if showprojection
-            scatter!(scene, ena.unitModel[!, :dim_x], ena.unitModel[!, :dim_y],
-                     markersize=unitMarkerSizes.*unitscale, color=:grey)
+            plot!(p, ena.unitModel[!, :dim_x], ena.unitModel[!, :dim_y],
+                seriestype=:scatter,
+                markersize=unitMarkerSizes,
+                markercolor=:grey,
+                markerstrokecolor=:grey)
         end
 
-        scatter!(scene, ena.unitModel[!, :fit_x], ena.unitModel[!, :fit_y],
-                 markersize=unitMarkerSizes.*unitscale, color=unitColors)
+        if showunits
+            plot!(p, ena.unitModel[!, :fit_x], ena.unitModel[!, :fit_y],
+                seriestype=:scatter,
+                markersize=unitMarkerSizes,
+                markercolor=unitColors,
+                markerstrokecolor=unitColors)
+        end
         
         # Draw Lines
-        for (i, networkRow) in enumerate(eachrow(ena.networkModel))
-            j, k = ena.relationshipMap[networkRow[:relationship]]
-            lines!(scene, ena.codeModel[[j, k], :fit_x], ena.codeModel[[j, k], :fit_y],
-                   linewidth=networkLineWidths[i]*linescale, color=networkColors[i])
+        if showlines
+            for (i, networkRow) in enumerate(eachrow(ena.networkModel))
+                j, k = ena.relationshipMap[networkRow[:relationship]]
+                plot!(p, ena.codeModel[[j, k], :fit_x], ena.codeModel[[j, k], :fit_y],
+                    seriestype=:line,
+                    linewidth=networkLineWidths[i],
+                    linecolor=networkColors[i])
+            end
         end
 
         # Draw Codes (dots)
-        scatter!(scene, ena.codeModel[!, :fit_x], ena.codeModel[!, :fit_y],
-                 markersize=codeMarkerSizes.*codescale, color=codeColors)
-        
-        # Draw Codes (labels)
-        for codeRow in eachrow(ena.codeModel)
-            text!(scene, string(" ", codeRow[:code]), position=(codeRow[:fit_x], codeRow[:fit_y]),
-                  textsize=0.2*textscale, align=(:left, :center))
+        if showcodes
+            plot!(p, ena.codeModel[!, :fit_x], ena.codeModel[!, :fit_y],
+                seriestype=:scatter,
+                series_annotations=ena.codeModel[!, :code],
+                markersize=codeMarkerSizes,
+                markercolor=codeColors,
+                markerstrokecolor=codeColors)
         end
 
-        # BUGFIX: In Cairo, the first scatter after a text goes with the text, not where we tell it too
-        # This flushes that bug with a 0-sized scatter
-        scatter!(scene, [0], [0], markersize=0)
-
         # Draw CI Boxes
-        for CI in confidenceIntervals
-            (mu_x, mu_y, ci_x, ci_y, color, shape, size) = CI
-            scatter!(scene, [mu_x], [mu_y], markersize=size*meanscale, marker=shape, color=color)
-            lines!(scene, [ci_x[1], ci_x[2]], [ci_y[1], ci_y[1]], linewidth=1, linestyle=:dash, color=color)
-            lines!(scene, [ci_x[1], ci_x[2]], [ci_y[2], ci_y[2]], linewidth=1, linestyle=:dash, color=color)
-            lines!(scene, [ci_x[1], ci_x[1]], [ci_y[1], ci_y[2]], linewidth=1, linestyle=:dash, color=color)
-            lines!(scene, [ci_x[2], ci_x[2]], [ci_y[1], ci_y[2]], linewidth=1, linestyle=:dash, color=color)
+        if showconfidence
+            for CI in confidenceIntervals
+                (mu_x, mu_y, ci_x, ci_y, color, shape, size) = CI
+                plot!(p, [mu_x], [mu_y], 
+                    seriestype=:scatter,
+                    markersize=size,
+                    markershape=shape,
+                    markercolor=color,
+                    markerstrokecolor=color)
+
+                plot!(p, [ci_x[1], ci_x[2]], [ci_y[1], ci_y[1]], 
+                    seriestype=:line,
+                    linewidth=1,
+                    linestyle=:dash,
+                    linecolor=color)
+
+                plot!(p, [ci_x[1], ci_x[2]], [ci_y[2], ci_y[2]], 
+                    seriestype=:line,
+                    linewidth=1,
+                    linestyle=:dash,
+                    linecolor=color)
+
+                plot!(p, [ci_x[1], ci_x[1]], [ci_y[1], ci_y[2]], 
+                    seriestype=:line,
+                    linewidth=1,
+                    linestyle=:dash,
+                    linecolor=color)
+
+                plot!(p, [ci_x[2], ci_x[2]], [ci_y[1], ci_y[2]], 
+                    seriestype=:line,
+                    linewidth=1,
+                    linestyle=:dash,
+                    linecolor=color)
+            end
         end
 
         # Label the Axes
-        axis = scene[Axis]
-        axis[:names, :axisnames] = (xaxisname, yaxisname)
+        # axis = p[Axis]
+        # axis[:names, :axisnames] = (xaxisname, yaxisname)
     end
 
-    return scene
+    return p
 end
