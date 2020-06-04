@@ -1,3 +1,5 @@
+# TODO show one ENAUnit's model
+
 abstract type ENAArtist
 end
 
