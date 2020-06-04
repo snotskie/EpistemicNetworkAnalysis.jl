@@ -1,21 +1,21 @@
 module EpistemicNetworkAnalysis
 
 # Imports
+## Plotting
+using ImageMagick # fix for cairo bug, have to have this first
+using CairoMakie # fallback for when no gpu present
+using Makie
+
+## Data
+using DataFrames
+using CSV
+
 ## Math
 using Statistics
 using LinearAlgebra
 using MultivariateStats
 using HypothesisTests
 # TODO using Lasso
-
-## Data
-using DataFrames
-using CSV
-
-## Plotting
-using ImageMagick # fix for cairo bug, have to have this first
-using CairoMakie # fallback for when no gpu present
-using Makie
 
 # Includes
 include("./helpers.jl")
