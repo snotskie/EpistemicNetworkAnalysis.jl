@@ -2,3 +2,12 @@ name = "EpistemicNetworkAnalysis"
 uuid = "c00a38d3-3ee6-47f0-934a-5622ac45083d"
 authors = ["snotskie "]
 version = "0.1.0"
+
+[deps]
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+MultivariateStats = "6f286f6a-111f-5878-ab1e-185364afe411"
+HypothesisTests = "09f84164-cd44-5f33-b23f-e6b0d136a0d5"
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+ImageMagick = "6218d12a-5da1-5696-b52f-db25d2ecc6d1"
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"

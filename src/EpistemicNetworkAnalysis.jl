@@ -1,26 +1,37 @@
 module EpistemicNetworkAnalysis
 
+# Imports
+## Data
 using DataFrames
+using CSV
+
+## Math
 using Statistics
 using LinearAlgebra
 using MultivariateStats
 using HypothesisTests
-using CSV
 # TODO using Lasso
-using ImageMagick # fix for cairo bug, have this first
-using CairoMakie # using CairoMakie instead of GLMakie because the latter requires a gpu
+
+## Plotting
+using ImageMagick # fix for cairo bug, have to have this first
+using CairoMakie # fallback for when no gpu present
 using Makie
 
+# Includes
 include("./helpers.jl")
 include("./ENARotations.jl")
 include("./ENAArtists.jl")
 include("./ENAModel.jl")
 include("./ENADisplay.jl")
 include("./RSData.jl")
-include("./examples.jl") # TEMP
 
-# TODO exports
+# include("./examples.jl")
+# temp_example()
 
-temp_example() # TEMP
+# Exports
+export ENAModel
+export ENARotation, SVDRotation, MeansRotation
+export ENAArtist, DefaultArtist, MeansArtist
+export ena_dataset
 
 end # module
