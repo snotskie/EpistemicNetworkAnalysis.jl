@@ -12,7 +12,7 @@ codes = [:Data,
 
 conversations = [:Condition, :GameHalf, :GroupName]
 units = [:Condition, :GameHalf, :UserName]
-myRotation = MeansRotation(groupVar, controlGroup, treatmentGroup)
+myRotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
 myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=myRotation)
 display(myENA)
 

@@ -118,14 +118,14 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     end
 
     ## Remove network rows that no longer have a column in the unit model
-    filter!(networkModel) do networkRow
-        r = networkRow[:relationship]
-        if !(r in names(unitModel))
-            return false
-        else
-            return true
-        end
-    end
+    # filter!(networkModel) do networkRow
+    #     r = networkRow[:relationship]
+    #     if !(r in names(unitModel))
+    #         return false
+    #     else
+    #         return true
+    #     end
+    # end
 
     # Rotation step
     ## Use the given lambda, probably one of the out-of-the-box ENARotations, but could be anything user defined

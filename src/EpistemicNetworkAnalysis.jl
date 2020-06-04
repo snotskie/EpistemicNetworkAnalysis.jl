@@ -1,16 +1,16 @@
 module EpistemicNetworkAnalysis
 
 # Imports
-## Data
-using DataFrames
-using CSV
-
 ## Math
 using Statistics
 using LinearAlgebra
 using MultivariateStats
 using HypothesisTests
 # TODO using Lasso
+
+## Data
+using DataFrames
+using CSV
 
 ## Plotting
 using ImageMagick # fix for cairo bug, have to have this first
@@ -25,8 +25,8 @@ include("./ENAModel.jl")
 include("./ENADisplay.jl")
 include("./RSData.jl")
 
-# include("./examples.jl")
-# temp_example()
+include("./examples.jl")
+temp_example()
 
 # Exports
 export ENAModel
