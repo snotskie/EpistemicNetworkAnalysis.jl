@@ -19,7 +19,6 @@ display(myENA)
 myArtist = MeansArtist(:GameHalf, "First", "Second")
 scene = plot(myENA,
     showprojection=true,
-    unitscale=0,
     artist=myArtist
 )
 display(scene)

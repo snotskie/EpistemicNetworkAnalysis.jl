@@ -47,11 +47,11 @@ function (artist::DefaultArtist)(cb, ena, scene)
 
     ## Shapes
     unitShapes = map(eachrow(ena.unitModel)) do unitRow
-        return "o"
+        return :circle
     end
 
     codeShapes = map(eachrow(ena.codeModel)) do codeRow
-        return "o"
+        return :circle
     end
 
     ## Sizes
@@ -74,11 +74,11 @@ function (artist::DefaultArtist)(cb, ena, scene)
 
     s = maximum(unitMarkerSizes)
     unitMarkerSizes /= s
-    unitMarkerSizes *= 0.05
+    unitMarkerSizes *= 4
 
     s = maximum(codeMarkerSizes)
     codeMarkerSizes /= s
-    codeMarkerSizes *= 0.1
+    codeMarkerSizes *= 8
 
     ## Confidence Intervals
     confidenceIntervals = []
@@ -175,11 +175,11 @@ function (artist::MeansArtist)(cb, ena, scene)
 
     ## Shapes
     unitShapes = map(eachrow(ena.unitModel)) do unitRow
-        return "o"
+        return :circle
     end
 
     codeShapes = map(eachrow(ena.codeModel)) do codeRow
-        return "o"
+        return :circle
     end
 
     ## Sizes
@@ -202,11 +202,11 @@ function (artist::MeansArtist)(cb, ena, scene)
 
     s = maximum(unitMarkerSizes)
     unitMarkerSizes /= s
-    # unitMarkerSizes *= 0.05
+    unitMarkerSizes *= 4
 
     s = maximum(codeMarkerSizes)
     codeMarkerSizes /= s
-    # codeMarkerSizes *= 0.1
+    codeMarkerSizes *= 8
 
     ## Confidence Intervals
     confidenceIntervals = []
@@ -322,11 +322,11 @@ function (artist::WindowsArtist)(cb, ena, scene)
 
     ## Shapes
     unitShapes = map(eachrow(ena.unitModel)) do unitRow
-        return "o"
+        return :circle
     end
 
     codeShapes = map(eachrow(ena.codeModel)) do codeRow
-        return "o"
+        return :circle
     end
 
     ## Sizes
@@ -349,11 +349,11 @@ function (artist::WindowsArtist)(cb, ena, scene)
 
     s = maximum(unitMarkerSizes)
     unitMarkerSizes /= s
-    unitMarkerSizes *= 0.05
+    unitMarkerSizes *= 4
 
     s = maximum(codeMarkerSizes)
     codeMarkerSizes /= s
-    codeMarkerSizes *= 0.1
+    codeMarkerSizes *= 8
 
     ## Confidence Intervals
     confidenceIntervals = []
