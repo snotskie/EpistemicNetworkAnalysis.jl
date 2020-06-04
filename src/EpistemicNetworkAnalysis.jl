@@ -32,6 +32,7 @@ include("./RSData.jl")
 export ENAModel
 export ENARotation, SVDRotation, MeansRotation
 export ENAArtist, DefaultArtist, MeansArtist
+export Makie.plot
 export ena_dataset
 
 end # module
