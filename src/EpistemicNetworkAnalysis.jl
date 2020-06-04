@@ -25,8 +25,8 @@ include("./ENAModel.jl")
 include("./ENADisplay.jl")
 include("./RSData.jl")
 
-include("./examples.jl")
-temp_example()
+# include("./examples.jl")
+# temp_example()
 
 # Exports
 export ENAModel
