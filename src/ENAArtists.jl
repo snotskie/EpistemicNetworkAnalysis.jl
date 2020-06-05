@@ -103,7 +103,7 @@ function (artist::DefaultArtist)(cb, ena, scene)
     ci_y = collect(confint(OneSampleTTest(ena.unitModel[!, :fit_y])))
     color = :black
     shape = :square
-    size = 0.05
+    size = 4
     CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
     push!(confidenceIntervals, CI)
 
@@ -233,7 +233,7 @@ function (artist::MeansArtist)(cb, ena, scene)
     ci_y = collect(confint(OneSampleTTest(controlUnits[!, :fit_y])))
     color = :purple
     shape = :square
-    size = 0.05
+    size = 4
     CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
     push!(confidenceIntervals, CI)
 
@@ -244,7 +244,7 @@ function (artist::MeansArtist)(cb, ena, scene)
     ci_y = collect(confint(OneSampleTTest(treatmentUnits[!, :fit_y])))
     color = :orange
     shape = :square
-    size = 0.05
+    size = 4
     CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
     push!(confidenceIntervals, CI)
 
@@ -381,7 +381,7 @@ function (artist::WindowsArtist)(cb, ena, scene)
         ci_x = collect(confint(OneSampleTTest(groupedUnits[!, :fit_x])))
         ci_y = collect(confint(OneSampleTTest(groupedUnits[!, :fit_y])))
         shape = :square
-        size = 0.05
+        size = 4
         CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
         push!(confidenceIntervals, CI)
     end
@@ -569,7 +569,7 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
         mu_y = mean(groupedUnits[!, :fit_y])
         ci_x = collect(confint(OneSampleTTest(groupedUnits[!, :fit_x])))
         ci_y = collect(confint(OneSampleTTest(groupedUnits[!, :fit_y])))
-        size = 0.05
+        size = 4
         CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
         push!(confidenceIntervals, CI)
     end
