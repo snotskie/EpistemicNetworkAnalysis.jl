@@ -1,3 +1,6 @@
+"""
+TODO: document
+"""
 function ena_dataset(name::String)
     if name in ["RS.data"]
         filename = joinpath(dirname(@__FILE__), "..", "data", "$(name).csv")

@@ -1,4 +1,3 @@
-# TODO verify
 function help_deflating_svd(networkModel::DataFrame, unitModel::DataFrame, controlModel::Union{Nothing,DataFrame}=nothing)
     # mean center X
     rawCounts = unitModel[!, networkModel[!, :relationship]]

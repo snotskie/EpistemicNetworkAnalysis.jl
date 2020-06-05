@@ -1,17 +1,29 @@
 # TODO show one ENAUnit's model
 
+"""
+TODO: document
+"""
 abstract type ENAArtist
 end
 
+"""
+TODO: document
+"""
 struct DefaultArtist <: ENAArtist
 end
 
+"""
+TODO: document
+"""
 struct MeansArtist <: ENAArtist
     groupVar::Symbol
     controlGroup::Any
     treatmentGroup::Any
 end
 
+"""
+TODO: document
+"""
 struct WindowsArtist <: ENAArtist
     groupVar1::Symbol
     controlGroup1::Any
@@ -21,6 +33,9 @@ struct WindowsArtist <: ENAArtist
     treatmentGroup2::Any
 end
 
+"""
+TODO: document
+"""
 struct TVRemoteArtist <: ENAArtist
     groupVar1::Symbol
     controlGroup1::Any
@@ -30,7 +45,7 @@ struct TVRemoteArtist <: ENAArtist
     treatmentGroup2::Any
 end
 
-# DefaultArtist: TODO document
+# DefaultArtist
 function (artist::DefaultArtist)(cb, ena, scene)
     ## Colors
     networkColors = map(eachrow(ena.networkModel)) do networkRow
@@ -104,7 +119,7 @@ function (artist::DefaultArtist)(cb, ena, scene)
        confidenceIntervals)
 end
 
-# MeansArtist: TODO document
+# MeansArtist
 function (artist::MeansArtist)(cb, ena, scene)
     ##Pre-splitting the groups
     controlUnits = filter(ena.unitModel) do unitRow
@@ -245,7 +260,7 @@ function (artist::MeansArtist)(cb, ena, scene)
        confidenceIntervals)
 end
 
-# WindowsArtist: TODO document
+# WindowsArtist
 function (artist::WindowsArtist)(cb, ena, scene)
     # ##Pre-splitting the groups
     group00Units = filter(ena.unitModel) do unitRow
@@ -383,7 +398,7 @@ function (artist::WindowsArtist)(cb, ena, scene)
        confidenceIntervals)
 end
 
-# TVRemoteArtist: TODO document
+# TVRemoteArtist
 function (artist::TVRemoteArtist)(cb, ena, scene)
     ##Pre-splitting the groups
     group0xUnits = filter(ena.unitModel) do unitRow

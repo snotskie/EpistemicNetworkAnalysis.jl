@@ -2,9 +2,6 @@ module EpistemicNetworkAnalysis
 
 # Imports
 ## Plotting
-# using ImageMagick # fix for cairo bug, have to have this first
-# using CairoMakie # fallback for when no gpu present
-# using Makie
 using Plots
 
 ## Data
@@ -26,8 +23,39 @@ include("./ENAModel.jl")
 include("./ENADisplay.jl")
 include("./RSData.jl")
 
-# include("./examples.jl")
-# temp_example()
+# Debugging behavior for when run as main
+if abspath(PROGRAM_FILE) == @__FILE__
+    @warn "Running EpistemicNetworkAnalysis.jl as main."
+    RSdata = ena_dataset("RS.data")
+    codes = [:Data,
+        :Technical_Constraints,
+        :Performance_Parameters,
+        :Client_and_Consultant_Requests,
+        :Design_Reasoning,
+        :Collaboration]
+
+    conversations = [:Condition, :GameHalf, :GroupName]
+    units = [:Condition, :GameHalf, :UserName]
+    myRotation = TwoGroupRotation(:Condition, "FirstGame", "SecondGame",
+                                    :GameHalf, "First", "Second",
+                                    [])
+
+    myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=myRotation)
+    display(myENA)
+
+    # myArtist = MeansArtist(:Condition, "FirstGame", "SecondGame")
+    # myArtist = MeansArtist(:GameHalf, "First", "Second")
+    # myArtist = WindowsArtist(:Condition, "FirstGame", "SecondGame",
+    #                          :GameHalf, "First", "Second")
+    myArtist = TVRemoteArtist(:Condition, "FirstGame", "SecondGame",
+                                :GameHalf, "First", "Second")
+    p = plot(myENA,
+        showprojection=true,
+        artist=myArtist
+    )
+
+    display(p)
+end
 
 # Exports
 export ENAModel

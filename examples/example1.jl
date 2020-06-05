@@ -4,11 +4,11 @@ RSdata = ena_dataset("RS.data")
 display(first(RSdata, 6))
 
 codes = [:Data,
-            :Technical_Constraints,
-            :Performance_Parameters,
-            :Client_and_Consultant_Requests,
-            :Design_Reasoning,
-            :Collaboration]
+    :Technical_Constraints,
+    :Performance_Parameters,
+    :Client_and_Consultant_Requests,
+    :Design_Reasoning,
+    :Collaboration]
 
 conversations = [:Condition, :GameHalf, :GroupName]
 units = [:Condition, :GameHalf, :UserName]
@@ -17,8 +17,9 @@ myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=myRotation)
 display(myENA)
 
 myArtist = MeansArtist(:GameHalf, "First", "Second")
-scene = plot(myENA,
+p = plot(myENA,
     showprojection=true,
     artist=myArtist
 )
-display(scene)
+
+display(p)

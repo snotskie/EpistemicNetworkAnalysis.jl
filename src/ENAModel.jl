@@ -1,3 +1,6 @@
+"""
+TODO: document
+"""
 struct ENAModel
     data::DataFrame # the raw data
     codes::Array{Symbol,1}
