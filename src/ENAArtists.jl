@@ -138,36 +138,49 @@ function (artist::MeansArtist)(cb, ena, scene)
         end
     end
 
-    ## Pre-processing the size of the network lines
-    ### Find the "direction", "strength", and "angle" for the line size
-    ### Thicker lines are those whose rotation weights are more towards
-    ### one side of the difference of the means
-    mu_x_control = mean(controlUnits[!, :fit_x])
-    mu_y_control = mean(controlUnits[!, :fit_y])
-    mu_x_treatment = mean(treatmentUnits[!, :fit_x])
-    mu_y_treatment = mean(treatmentUnits[!, :fit_y])
-    mu_x_all = (mu_x_treatment + mu_x_control) / 2
-    mu_y_all = (mu_y_treatment + mu_y_control) / 2
-    vt = Vector{Float64}([
-        mu_x_treatment - mu_x_all,
-        mu_y_treatment - mu_y_all
-    ])
+    # ## Pre-processing the size of the network lines
+    # ### Find the "direction", "strength", and "angle" for the line size
+    # ### Thicker lines are those whose rotation weights are more towards
+    # ### one side of the difference of the means
+    # mu_x_control = mean(controlUnits[!, :fit_x])
+    # mu_y_control = mean(controlUnits[!, :fit_y])
+    # mu_x_treatment = mean(treatmentUnits[!, :fit_x])
+    # mu_y_treatment = mean(treatmentUnits[!, :fit_y])
+    # mu_x_all = (mu_x_treatment + mu_x_control) / 2
+    # mu_y_all = (mu_y_treatment + mu_y_control) / 2
+    # vt = Vector{Float64}([
+    #     mu_x_treatment - mu_x_all,
+    #     mu_y_treatment - mu_y_all
+    # ])
 
-    norm_vt = sqrt(dot(vt, vt))
-    lineStrengths = Dict{Symbol,Float64}()
+    # norm_vt = sqrt(dot(vt, vt))
+    # lineStrengths = Dict{Symbol,Float64}()
+    # for networkRow in eachrow(ena.networkModel)
+    #     r = networkRow[:relationship]
+    #     vl = Vector{Float64}([
+    #         networkRow[:weight_x],
+    #         networkRow[:weight_y]
+    #     ])
+
+    #     lineStrengths[r] = dot(vl, vt) / norm_vt
+    # end
+
+    ## Pre-processing the size of the network lines
+    ### Find out which group, on average, has the biggest
+    ### "lead" over other groups, on average, for each line.
+    #### Use that "lead" as the size for the line
+    lineStrengthsControl = Dict{Symbol,Float64}()
+    lineStrengthsTreatment = Dict{Symbol,Float64}()
     for networkRow in eachrow(ena.networkModel)
         r = networkRow[:relationship]
-        vl = Vector{Float64}([
-            networkRow[:weight_x],
-            networkRow[:weight_y]
-        ])
-
-        lineStrengths[r] = dot(vl, vt) / norm_vt
+        lineStrengthsControl[r] = sum(controlUnits[!, r])
+        lineStrengthsTreatment[r] = sum(treatmentUnits[!, r])
     end
 
     ## Colors
     networkColors = map(eachrow(ena.networkModel)) do networkRow
-        if lineStrengths[networkRow[:relationship]] < 0
+        r = networkRow[:relationship]
+        if lineStrengthsControl[r] - lineStrengthsTreatment[r] > 0
             return :purple
         else
             return :orange
@@ -199,7 +212,9 @@ function (artist::MeansArtist)(cb, ena, scene)
 
     ## Sizes
     networkLineWidths = map(eachrow(ena.networkModel)) do networkRow
-        return lineStrengths[networkRow[:relationship]] ^ 2
+        # return lineStrengths[networkRow[:relationship]] ^ 2
+        r = networkRow[:relationship]
+        return abs(lineStrengthsControl[r] - lineStrengthsTreatment[r])
     end
 
     unitMarkerSizes = map(eachrow(ena.unitModel)) do unitRow
