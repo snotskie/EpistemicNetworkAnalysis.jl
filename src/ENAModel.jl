@@ -17,7 +17,7 @@ struct ENAModel
 end
 
 function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
-    windowSize::Int=4, rotateBy::T=SVDRotation(), sphereNormalize::Bool=true) where {T<:ENARotation}
+    windowSize::Int=4, rotateBy::T=SVDRotation(), sphereNormalize::Bool=true, subsetFilter::Function=x->true) where {T<:ENARotation}
 
     # Preparing model structures
     ## Relationships between codes
@@ -129,6 +129,9 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     #         return true
     #     end
     # end
+
+    # User-defined unit subsetting
+    filter!(subsetFilter, unitModel)
 
     # Rotation step
     ## Use the given lambda, probably one of the out-of-the-box ENARotations, but could be anything user defined
