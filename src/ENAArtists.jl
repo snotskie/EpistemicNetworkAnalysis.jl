@@ -173,8 +173,8 @@ function (artist::MeansArtist)(cb, ena, scene)
     lineStrengthsTreatment = Dict{Symbol,Float64}()
     for networkRow in eachrow(ena.networkModel)
         r = networkRow[:relationship]
-        lineStrengthsControl[r] = sum(controlUnits[!, r])
-        lineStrengthsTreatment[r] = sum(treatmentUnits[!, r])
+        lineStrengthsControl[r] = sum(controlUnits[!, r]) / nrow(controlUnits)
+        lineStrengthsTreatment[r] = sum(treatmentUnits[!, r]) / nrow(treatmentUnits)
     end
 
     ## Colors
