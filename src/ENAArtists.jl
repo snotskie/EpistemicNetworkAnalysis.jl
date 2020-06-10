@@ -475,36 +475,54 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
         group0xUnits,
         group1xUnits]
 
-    ## Pre-processing the size of the network lines
-    ### Find the "direction", "strength", and "angle" for the line size
-    ### Thicker lines are those whose rotation weights are more towards
-    ### one side of the difference of the means
-    mu_x_control = mean(group0xUnits[!, :fit_x])
-    mu_y_control = mean(group0xUnits[!, :fit_y])
-    mu_x_treatment = mean(group1xUnits[!, :fit_x])
-    mu_y_treatment = mean(group1xUnits[!, :fit_y])
-    mu_x_all = (mu_x_treatment + mu_x_control) / 2
-    mu_y_all = (mu_y_treatment + mu_y_control) / 2
-    vt = Vector{Float64}([
-        mu_x_treatment - mu_x_all,
-        mu_y_treatment - mu_y_all
-    ])
+    # ## Pre-processing the size of the network lines
+    # ### Find the "direction", "strength", and "angle" for the line size
+    # ### Thicker lines are those whose rotation weights are more towards
+    # ### one side of the difference of the means
+    # mu_x_control = mean(group0xUnits[!, :fit_x])
+    # mu_y_control = mean(group0xUnits[!, :fit_y])
+    # mu_x_treatment = mean(group1xUnits[!, :fit_x])
+    # mu_y_treatment = mean(group1xUnits[!, :fit_y])
+    # mu_x_all = (mu_x_treatment + mu_x_control) / 2
+    # mu_y_all = (mu_y_treatment + mu_y_control) / 2
+    # vt = Vector{Float64}([
+    #     mu_x_treatment - mu_x_all,
+    #     mu_y_treatment - mu_y_all
+    # ])
 
-    norm_vt = sqrt(dot(vt, vt))
-    lineStrengths = Dict{Symbol,Float64}()
+    # norm_vt = sqrt(dot(vt, vt))
+    # lineStrengths = Dict{Symbol,Float64}()
+    # for networkRow in eachrow(ena.networkModel)
+    #     r = networkRow[:relationship]
+    #     vl = Vector{Float64}([
+    #         networkRow[:weight_x],
+    #         networkRow[:weight_y]
+    #     ])
+
+    #     lineStrengths[r] = dot(vl, vt) / norm_vt
+    # end
+
+    # ## Colors
+    # networkColors = map(eachrow(ena.networkModel)) do networkRow
+    #     if lineStrengths[networkRow[:relationship]] < 0
+    #         return :purple
+    #     else
+    #         return :orange
+    #     end
+    # end
+
+    lineStrengths0x = Dict{Symbol,Float64}()
+    lineStrengths1x = Dict{Symbol,Float64}()
     for networkRow in eachrow(ena.networkModel)
         r = networkRow[:relationship]
-        vl = Vector{Float64}([
-            networkRow[:weight_x],
-            networkRow[:weight_y]
-        ])
-
-        lineStrengths[r] = dot(vl, vt) / norm_vt
+        lineStrengths0x[r] = sum(group0xUnits[!, r]) / nrow(group0xUnits)
+        lineStrengths1x[r] = sum(group1xUnits[!, r]) / nrow(group1xUnits)
     end
 
     ## Colors
     networkColors = map(eachrow(ena.networkModel)) do networkRow
-        if lineStrengths[networkRow[:relationship]] < 0
+        r = networkRow[:relationship]
+        if lineStrengths0x[r] - lineStrengths1x[r] > 0
             return :purple
         else
             return :orange
@@ -548,7 +566,9 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
 
     ## Sizes
     networkLineWidths = map(eachrow(ena.networkModel)) do networkRow
-        return lineStrengths[networkRow[:relationship]] ^ 2
+        # return lineStrengths[networkRow[:relationship]] ^ 2
+        r = networkRow[:relationship]
+        return abs(lineStrengths0x[r] - lineStrengths1x[r])
     end
 
     unitMarkerSizes = map(eachrow(ena.unitModel)) do unitRow
