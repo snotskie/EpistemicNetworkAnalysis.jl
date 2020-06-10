@@ -27,6 +27,26 @@ include("./RSData.jl")
 if abspath(PROGRAM_FILE) == @__FILE__
     @warn "Running EpistemicNetworkAnalysis.jl as main."
     RSdata = ena_dataset("RS.data")
+    RSdata[!, :FactoredCondition] = map(RSdata[!, :Condition]) do rowValue
+        if rowValue == "FirstGame"
+            return 0
+        elseif rowValue == "SecondGame"
+            return 1
+        else
+            return missing
+        end
+    end
+
+    RSdata[!, :FactoredGameHalf] = map(RSdata[!, :GameHalf]) do rowValue
+        if rowValue == "First"
+            return 0
+        elseif rowValue == "Second"
+            return 1
+        else
+            return missing
+        end
+    end
+
     codes = [:Data,
         :Technical_Constraints,
         :Performance_Parameters,
@@ -36,9 +56,13 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     conversations = [:Condition, :GameHalf, :GroupName]
     units = [:Condition, :GameHalf, :UserName]
-    myRotation = TwoGroupRotation(:Condition, "FirstGame", "SecondGame",
-                                    :GameHalf, "First", "Second",
-                                    [])
+    myRotation = HierarchicalRotation(
+        Dict(
+            # :GroupName => [:FactoredCondition, :FactoredGameHalf] # the nested structure
+        ),
+        :FactoredCondition, :FactoredGameHalf, # the x and y axes
+        [] # other confounds (none)
+    )
 
     myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=myRotation)
     display(myENA)
@@ -50,11 +74,17 @@ if abspath(PROGRAM_FILE) == @__FILE__
     myArtist = TVRemoteArtist(:Condition, "FirstGame", "SecondGame",
                                 :GameHalf, "First", "Second")
     p = plot(myENA,
-        showprojection=true,
+        # showprojection=true,
+        showunits=false,
+        showconfidence=true,
         artist=myArtist
     )
 
-    display(p)
+    # display(p)
+    xticks!(p, [0])
+    yticks!(p, [0])
+    savefig(p, "output.svg")
+    savefig(p, "output.png")
 end
 
 # Exports
