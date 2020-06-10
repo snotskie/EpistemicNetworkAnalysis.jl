@@ -1,4 +1,5 @@
 # TODO show one ENAUnit's model
+# TODO refactor: reduce multiple artists to calling a single, generic LinesAboveAverageArtist or similar
 
 """
 TODO: document
