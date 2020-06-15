@@ -13,6 +13,7 @@ using Statistics
 using LinearAlgebra
 using MultivariateStats
 using HypothesisTests
+using GLM
 # TODO using Lasso
 
 # Includes
@@ -47,6 +48,9 @@ if abspath(PROGRAM_FILE) == @__FILE__
         end
     end
 
+    RSdata[!, :FactoredCondition] = RSdata[!, :FactoredCondition] .- mean(RSdata[!, :FactoredCondition])
+    RSdata[!, :FactoredGameHalf] = RSdata[!, :FactoredGameHalf] .- mean(RSdata[!, :FactoredGameHalf])
+
     codes = [:Data,
         :Technical_Constraints,
         :Performance_Parameters,
@@ -56,12 +60,20 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     conversations = [:Condition, :GameHalf, :GroupName]
     units = [:Condition, :GameHalf, :UserName]
-    myRotation = HierarchicalRotation(
-        Dict(
-            # :GroupName => [:FactoredCondition, :FactoredGameHalf] # the nested structure
-        ),
-        :FactoredCondition, :FactoredGameHalf, # the x and y axes
-        [] # other confounds (none)
+    # myRotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
+    # myRotation = Formula2Rotation(
+    #     LinearModel, @formula(y ~ 1 + FactoredCondition + FactoredGameHalf + FactoredGameHalf&FactoredCondition),
+    #     LinearModel, @formula(y ~ 1 + FactoredGameHalf + FactoredCondition + FactoredGameHalf&FactoredCondition)
+    # )
+
+    # myRotation = Formula2Rotation(
+    #     LinearModel, @formula(y ~ 1 + FactoredGameHalf + FactoredCondition + FactoredGameHalf&FactoredCondition),
+    #     LinearModel, @formula(y ~ 1 + FactoredCondition + FactoredGameHalf&FactoredCondition)
+    # )
+
+    myRotation = Formula2Rotation(
+        LinearModel, @formula(y ~ 1 + FactoredCondition),
+        LinearModel, @formula(y ~ 1 + FactoredCondition)
     )
 
     myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=myRotation)
@@ -71,8 +83,16 @@ if abspath(PROGRAM_FILE) == @__FILE__
     # myArtist = MeansArtist(:GameHalf, "First", "Second")
     # myArtist = WindowsArtist(:Condition, "FirstGame", "SecondGame",
     #                          :GameHalf, "First", "Second")
-    myArtist = TVRemoteArtist(:Condition, "FirstGame", "SecondGame",
-                                :GameHalf, "First", "Second")
+    myArtist = TVRemoteArtist(
+        :Condition, "FirstGame", "SecondGame",
+        :GameHalf, "First", "Second"
+    )
+
+    # myArtist = TVRemoteArtist(
+    #     :GameHalf, "First", "Second",
+    #     :Condition, "FirstGame", "SecondGame"
+    # )
+
     p = plot(myENA,
         # showprojection=true,
         showunits=false,

@@ -1,10 +1,7 @@
 # TODO show the raw data for just one relationship
 
 function Base.display(ena::ENAModel) # TODO should this be print, display, or show?
-    println("Units (full):")
-    display(ena.unitModel)
-    println()
-    println("Units (position):")
+    println("Units (positions):")
     show(ena.unitModel[!, [:ENA_UNIT, :dim_x, :fit_x, :dim_y, :fit_y]], allrows=true)
     println()
     println("Codes:")

@@ -135,7 +135,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
 
     # Rotation step
     ## Use the given lambda, probably one of the out-of-the-box ENARotations, but could be anything user defined
-    rotateBy(networkModel, unitModel)
+    rotate!(rotateBy, networkModel, unitModel)
 
     ## Compute dim_x and dim_y for the units, now that we have the rotation
     for unitRow in eachrow(unitModel)
