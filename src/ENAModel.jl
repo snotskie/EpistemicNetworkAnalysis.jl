@@ -1,3 +1,5 @@
+# TODO use fit instead of a manual lm
+
 """
 TODO: document
 """
