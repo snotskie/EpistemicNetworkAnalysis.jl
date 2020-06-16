@@ -24,9 +24,16 @@ include("./ENAModel.jl")
 include("./ENADisplay.jl")
 include("./RSData.jl")
 
+# Exports
+export ENAModel
+export ENARotation, SVDRotation, MeansRotation
+export ENAArtist, DefaultArtist, MeansArtist
+export plot
+export ena_dataset
+
 # Debugging behavior for when run as main
 if abspath(PROGRAM_FILE) == @__FILE__
-    @warn "Running EpistemicNetworkAnalysis.jl as main."
+    @warn "Running EpistemicNetworkAnalysis.jl as main. Performing kitchen sink operation."
     RSdata = ena_dataset("RS.data")
     RSdata[!, :FactoredCondition] = map(RSdata[!, :Condition]) do rowValue
         if rowValue == "FirstGame"
@@ -60,58 +67,76 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     conversations = [:Condition, :GameHalf, :GroupName]
     units = [:Condition, :GameHalf, :UserName]
-    # myRotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
-    # myRotation = Formula2Rotation(
-    #     LinearModel, @formula(y ~ 1 + FactoredCondition + FactoredGameHalf + FactoredGameHalf&FactoredCondition),
-    #     LinearModel, @formula(y ~ 1 + FactoredGameHalf + FactoredCondition + FactoredGameHalf&FactoredCondition)
-    # )
 
-    # myRotation = Formula2Rotation(
-    #     LinearModel, @formula(y ~ 1 + FactoredGameHalf + FactoredCondition + FactoredGameHalf&FactoredCondition),
-    #     LinearModel, @formula(y ~ 1 + FactoredCondition + FactoredGameHalf&FactoredCondition)
-    # )
-
-    myRotation = Formula2Rotation(
+    myRotations = ENARotation[]
+    push!(myRotations, SVDRotation())
+    push!(myRotations, MeansRotation(:Condition, "FirstGame", "SecondGame"))
+    push!(myRotations, MeansRotation(:GameHalf, "First", "Second"))
+    push!(myRotations, Formula2Rotation(
         LinearModel, @formula(y ~ 1 + FactoredCondition),
         LinearModel, @formula(y ~ 1 + FactoredCondition)
-    )
+    ))
 
-    myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=myRotation)
-    display(myENA)
+    push!(myRotations, Formula2Rotation(
+        LinearModel, @formula(y ~ 1 + FactoredCondition + FactoredGameHalf + FactoredGameHalf&FactoredCondition),
+        LinearModel, @formula(y ~ 1 + FactoredGameHalf + FactoredCondition + FactoredGameHalf&FactoredCondition)
+    ))
 
-    # myArtist = MeansArtist(:Condition, "FirstGame", "SecondGame")
-    # myArtist = MeansArtist(:GameHalf, "First", "Second")
-    # myArtist = WindowsArtist(:Condition, "FirstGame", "SecondGame",
-    #                          :GameHalf, "First", "Second")
-    myArtist = TVRemoteArtist(
+    push!(myRotations, Formula2Rotation(
+        LinearModel, @formula(y ~ 1 + FactoredGameHalf + FactoredCondition + FactoredGameHalf&FactoredCondition),
+        LinearModel, @formula(y ~ 1 + FactoredCondition + FactoredGameHalf&FactoredCondition)
+    ))
+
+    myArtists = ENAArtist[]
+    push!(myArtists, DefaultArtist())
+    push!(myArtists, MeansArtist(:Condition, "FirstGame", "SecondGame"))
+    push!(myArtists, MeansArtist(:GameHalf, "First", "Second"))
+    push!(myArtists, WindowsArtist(
         :Condition, "FirstGame", "SecondGame",
         :GameHalf, "First", "Second"
-    )
+    ))
 
-    # myArtist = TVRemoteArtist(
-    #     :GameHalf, "First", "Second",
-    #     :Condition, "FirstGame", "SecondGame"
-    # )
+    push!(myArtists, TVRemoteArtist(
+        :Condition, "FirstGame", "SecondGame",
+        :GameHalf, "First", "Second"
+    ))
 
-    p = plot(myENA,
-        # showprojection=true,
-        showunits=false,
-        showconfidence=true,
-        artist=myArtist
-    )
+    push!(myArtists, TVRemoteArtist(
+        :GameHalf, "First", "Second",
+        :Condition, "FirstGame", "SecondGame"
+    ))
 
-    # display(p)
-    xticks!(p, [0])
-    yticks!(p, [0])
-    savefig(p, "output.svg")
-    savefig(p, "output.png")
+    counter = 0
+    for rotation in myRotations
+        println(typeof(rotation))
+        myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
+        display(myENA)
+        for artist in myArtists
+            println(typeof(artist))
+            p1 = plot(myENA,
+                showprojection=true,
+                artist=artist
+            )
+
+            p2 = plot(myENA,
+                showunits=false,
+                showconfidence=true,
+                artist=artist
+            )
+
+            global counter
+            xticks!(p1, [0])
+            yticks!(p1, [0])
+            savefig(p1, "kitchen-sink-units-$(counter)-$(typeof(rotation))-$(typeof(artist)).svg")
+            savefig(p1, "kitchen-sink-units-$(counter)-$(typeof(rotation))-$(typeof(artist)).png")
+
+            xticks!(p2, [0])
+            yticks!(p2, [0])
+            savefig(p2, "kitchen-sink-means-$(counter)-$(typeof(rotation))-$(typeof(artist)).svg")
+            savefig(p2, "kitchen-sink-means-$(counter)-$(typeof(rotation))-$(typeof(artist)).png")
+            counter += 1
+        end
+    end
 end
-
-# Exports
-export ENAModel
-export ENARotation, SVDRotation, MeansRotation
-export ENAArtist, DefaultArtist, MeansArtist
-export plot
-export ena_dataset
 
 end # module

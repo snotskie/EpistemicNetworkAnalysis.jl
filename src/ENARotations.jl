@@ -109,6 +109,10 @@ function rotate!(rotation::FormulaRotation, networkModel::DataFrame, unitModel::
         m1 = fit(rotation.regression_model, f1, unitModel)
         slope = coef(m1)[2]
         networkRow[:weight_x] = slope
+        println(r)
+        display(m1)
+        display(coef(m1))
+        println()
     end
 
     ## Normalize the weights
@@ -136,6 +140,10 @@ function rotate!(rotation::Formula2Rotation, networkModel::DataFrame, unitModel:
         m1 = fit(rotation.regression_model1, f1, unitModel)
         slope = coef(m1)[2]
         networkRow[:weight_x] = slope
+        println(r)
+        display(m1)
+        display(coef(m1))
+        println()
     end
 
     ## Normalize the weights
@@ -165,6 +173,10 @@ function rotate!(rotation::Formula2Rotation, networkModel::DataFrame, unitModel:
         m2 = fit(rotation.regression_model2, f2, orthoUnitModel)
         slope = coef(m2)[2]
         networkRow[:weight_y] = slope
+        println(r)
+        display(m2)
+        display(coef(m2))
+        println()
     end
 
     ## Normalize the weights
