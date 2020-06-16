@@ -55,10 +55,10 @@ const Formula1Rotation = FormulaRotation
 """
 TODO document
 """
-struct Formula2Rotation{T <: RegressionModel} <: ENARotation
+struct Formula2Rotation{T <: RegressionModel, U <: RegressionModel} <: ENARotation
     regression_model1::Type{T}
     f1::FormulaTerm
-    regression_model2::Type{T}
+    regression_model2::Type{U}
     f2::FormulaTerm
 end
 

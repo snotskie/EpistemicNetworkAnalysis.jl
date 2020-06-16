@@ -68,50 +68,50 @@ if abspath(PROGRAM_FILE) == @__FILE__
     conversations = [:Condition, :GameHalf, :GroupName]
     units = [:Condition, :GameHalf, :UserName]
 
-    myRotations = ENARotation[]
-    push!(myRotations, SVDRotation())
-    push!(myRotations, MeansRotation(:Condition, "FirstGame", "SecondGame"))
-    push!(myRotations, MeansRotation(:GameHalf, "First", "Second"))
-    push!(myRotations, Formula2Rotation(
+    myRotations = Dict{String,ENARotation}()
+    myRotations["svd"] = SVDRotation()
+    myRotations["means-condition"] = MeansRotation(:Condition, "FirstGame", "SecondGame")
+    myRotations["means-gamehalf"] = MeansRotation(:GameHalf, "First", "Second")
+    myRotations["formula2-nonsense"] = Formula2Rotation(
         LinearModel, @formula(y ~ 1 + FactoredCondition),
         LinearModel, @formula(y ~ 1 + FactoredCondition)
-    ))
+    )
 
-    push!(myRotations, Formula2Rotation(
+    myRotations["formula2-repeat"] =  Formula2Rotation(
         LinearModel, @formula(y ~ 1 + FactoredCondition + FactoredGameHalf + FactoredGameHalf&FactoredCondition),
         LinearModel, @formula(y ~ 1 + FactoredGameHalf + FactoredCondition + FactoredGameHalf&FactoredCondition)
-    ))
+    )
 
-    push!(myRotations, Formula2Rotation(
+    myRotations["formula2-norepeat"] =  Formula2Rotation(
         LinearModel, @formula(y ~ 1 + FactoredGameHalf + FactoredCondition + FactoredGameHalf&FactoredCondition),
         LinearModel, @formula(y ~ 1 + FactoredCondition + FactoredGameHalf&FactoredCondition)
-    ))
+    )
 
-    myArtists = ENAArtist[]
-    push!(myArtists, DefaultArtist())
-    push!(myArtists, MeansArtist(:Condition, "FirstGame", "SecondGame"))
-    push!(myArtists, MeansArtist(:GameHalf, "First", "Second"))
-    push!(myArtists, WindowsArtist(
+    myArtists = Dict{String,ENAArtist}()
+    myArtists["black"] = DefaultArtist()
+    myArtists["color-condition"] = MeansArtist(:Condition, "FirstGame", "SecondGame")
+    myArtists["color-gamehalf"] = MeansArtist(:GameHalf, "First", "Second")
+    myArtists["windows"] = WindowsArtist(
         :Condition, "FirstGame", "SecondGame",
         :GameHalf, "First", "Second"
-    ))
+    )
 
-    push!(myArtists, TVRemoteArtist(
+    myArtists["tv-condition-x-gamehalf-y"] = TVRemoteArtist(
         :Condition, "FirstGame", "SecondGame",
         :GameHalf, "First", "Second"
-    ))
+    )
 
-    push!(myArtists, TVRemoteArtist(
+    myArtists["tv-gamehalf-x-condition-y"] = TVRemoteArtist(
         :GameHalf, "First", "Second",
         :Condition, "FirstGame", "SecondGame"
-    ))
+    )
 
     counter = 0
-    for rotation in myRotations
+    for (label1, rotation) in myRotations
         println(typeof(rotation))
         myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
         display(myENA)
-        for artist in myArtists
+        for (label2, artist) in myArtists
             println(typeof(artist))
             p1 = plot(myENA,
                 showprojection=true,
@@ -127,13 +127,11 @@ if abspath(PROGRAM_FILE) == @__FILE__
             global counter
             xticks!(p1, [0])
             yticks!(p1, [0])
-            savefig(p1, "kitchen-sink-units-$(counter)-$(typeof(rotation))-$(typeof(artist)).svg")
-            savefig(p1, "kitchen-sink-units-$(counter)-$(typeof(rotation))-$(typeof(artist)).png")
+            savefig(p1, "kitchensink-units-$(counter)-$(label1)-$(label2).svg")
 
             xticks!(p2, [0])
             yticks!(p2, [0])
-            savefig(p2, "kitchen-sink-means-$(counter)-$(typeof(rotation))-$(typeof(artist)).svg")
-            savefig(p2, "kitchen-sink-means-$(counter)-$(typeof(rotation))-$(typeof(artist)).png")
+            savefig(p2, "kitchensink-means-$(counter)-$(label1)-$(label2).svg")
             counter += 1
         end
     end
