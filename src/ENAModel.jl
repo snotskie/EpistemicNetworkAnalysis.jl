@@ -1,4 +1,4 @@
-# TODO use fit instead of a manual lm
+# TODO make a few different ENAModel overlap wrappers
 
 """
 TODO: document
@@ -104,34 +104,6 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         end
     end
 
-    # Clean up zeros
-    ## Remove unit rows with all zeros
-    filter!(unitModel) do unitRow
-        if all(unitRow[networkRow[:relationship]] == 0 for networkRow in eachrow(networkModel))
-            return false
-        else
-            return true
-        end
-    end
-
-    ## Remove unit cols with all zeros
-    for networkRow in eachrow(networkModel)
-        r = networkRow[:relationship]
-        if all(unitRow[r] == 0 for unitRow in eachrow(unitModel))
-            delete!(unitModel, r)
-        end
-    end
-
-    ## Remove network rows that no longer have a column in the unit model
-    # filter!(networkModel) do networkRow
-    #     r = networkRow[:relationship]
-    #     if !(r in names(unitModel))
-    #         return false
-    #     else
-    #         return true
-    #     end
-    # end
-
     # User-defined unit subsetting
     filter!(subsetFilter, unitModel)
 
@@ -179,13 +151,18 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     ## This is a projection of the relationship space into the code space
     ## TODO verify
     X = Matrix{Float64}(zeros(nrow(unitModel), 1 + nrow(codeModel)))
-    X[:, 1] .= 1 # intercept
+    X = Matrix{Float64}(zeros(nrow(unitModel), nrow(codeModel)))
+    # X[:, 1] .= 1 # intercept
     for (i, unitRow) in enumerate(eachrow(unitModel))
         denom = 2 * sum(unitRow[t] for t in keys(relationships))
-        for r in keys(relationships)
-            a, b = relationships[r]
-            X[i, a+1] += unitRow[r] / denom # +1 because we started with the intercept
-            X[i, b+1] += unitRow[r] / denom # +1 because we started with the intercept
+        if denom != 0
+            for r in keys(relationships)
+                a, b = relationships[r]
+                # X[i, a+1] += unitRow[r] / denom # +1 because we started with the intercept
+                # X[i, b+1] += unitRow[r] / denom # +1 because we started with the intercept
+                X[i, a] += unitRow[r] / denom
+                X[i, b] += unitRow[r] / denom
+            end
         end
     end
 
@@ -195,14 +172,16 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     y = Vector{Float64}(unitModel[:, :dim_x])
     x_axis_coefs = X * y
     for i in 1:nrow(codeModel)
-        codeModel[i, :fit_x] = x_axis_coefs[i+1] # +1 because we started with the intercept
+        # codeModel[i, :fit_x] = x_axis_coefs[i+1] # +1 because we started with the intercept
+        codeModel[i, :fit_x] = x_axis_coefs[i]
     end
 
     ## fit_y
     y = Vector{Float64}(unitModel[:, :dim_y])
     y_axis_coefs = X * y
     for i in 1:nrow(codeModel)
-        codeModel[i, :fit_y] = y_axis_coefs[i+1] # +1 because we started with the intercept
+        # codeModel[i, :fit_y] = y_axis_coefs[i+1] # +1 because we started with the intercept
+        codeModel[i, :fit_y] = y_axis_coefs[i]
     end
 
     ## Fit the units
@@ -210,14 +189,14 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     for unitRow in eachrow(unitModel)
         denom = 2 * sum(unitRow[t] for t in keys(relationships))
         if denom != 0
-            unitRow[:fit_x] = x_axis_coefs[1] +
+            unitRow[:fit_x] = #x_axis_coefs[1] +
                 sum(
                     codeModel[relationships[r][1], :fit_x] * unitRow[r] +
                     codeModel[relationships[r][2], :fit_x] * unitRow[r]
                     for r in keys(relationships)
                 ) / denom
 
-            unitRow[:fit_y] = y_axis_coefs[1] +
+            unitRow[:fit_y] = #y_axis_coefs[1] +
                 sum(
                     codeModel[relationships[r][1], :fit_y] * unitRow[r] +
                     codeModel[relationships[r][2], :fit_y] * unitRow[r]
@@ -226,19 +205,19 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         end
     end
 
-    ## Translate code model fits to account for the intercepts
-    codeModel[!, :fit_x] = codeModel[!, :fit_x] .+ x_axis_coefs[1]
-    codeModel[!, :fit_y] = codeModel[!, :fit_y] .+ y_axis_coefs[1]
-
     ## Translate everything to account for overall mean
-    mu_x = mean(unitModel[!, :fit_x]) # TODO should this be fit or fit?
-    mu_y = mean(unitModel[!, :fit_y]) # TODO should this be fit or fit?
-    unitModel[!, :dim_x] = unitModel[!, :dim_x] .- mu_x
-    unitModel[!, :dim_y] = unitModel[!, :dim_y] .- mu_y
+    mu_x = mean(unitModel[!, :fit_x])
+    mu_y = mean(unitModel[!, :fit_y])
     unitModel[!, :fit_x] = unitModel[!, :fit_x] .- mu_x
     unitModel[!, :fit_y] = unitModel[!, :fit_y] .- mu_y
     codeModel[!, :fit_x] = codeModel[!, :fit_x] .- mu_x
     codeModel[!, :fit_y] = codeModel[!, :fit_y] .- mu_y
+
+
+    mu_x = mean(unitModel[!, :dim_x])
+    mu_y = mean(unitModel[!, :dim_y])
+    unitModel[!, :dim_x] = unitModel[!, :dim_x] .- mu_x
+    unitModel[!, :dim_y] = unitModel[!, :dim_y] .- mu_y
 
     # Testing step
     ## Run tests for how well the fit models the dims

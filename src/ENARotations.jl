@@ -73,13 +73,7 @@ end
 function rotate!(rotation::MeansRotation, networkModel::DataFrame, unitModel::DataFrame)
     ## Filter the unit model to just those in the control/treatment group
     filteredUnitModel = filter(unitModel) do unitRow
-        if unitRow[rotation.groupVar] == rotation.controlGroup
-            return true
-        elseif unitRow[rotation.groupVar] == rotation.treatmentGroup
-            return true
-        else
-            return false
-        end
+        return unitRow[rotation.groupVar] in [rotation.controlGroup, rotation.treatmentGroup]
     end
 
     ## Factor the control/treatment label to just 0/1
@@ -102,17 +96,29 @@ end
 function rotate!(rotation::FormulaRotation, networkModel::DataFrame, unitModel::DataFrame)
     ## TODO check assumptions about f1
 
+    ## Filter missing data
+    filteredUnitModel = unitModel
+    for t in rotation.f1.rhs
+        if isa(t, Term)
+            col = Symbol(t)
+            goodRows = completecases(filteredUnitModel[!, [col]])
+            filteredUnitModel = filteredUnitModel[goodRows, :]
+        end
+    end
+
+    ## Bugfix: https://github.com/JuliaStats/GLM.jl/issues/239
+    for networkRow in eachrow(networkModel)
+        r = networkRow[:relationship]
+        filteredUnitModel[!, r] = map(Float64, filteredUnitModel[!, r])
+    end
+
     ## For each relationship, find the effect of the first predictor after the intercept
     for networkRow in eachrow(networkModel)
         r = networkRow[:relationship]
         f1 = FormulaTerm(term(r), rotation.f1.rhs)
-        m1 = fit(rotation.regression_model, f1, unitModel)
+        m1 = fit(rotation.regression_model, f1, filteredUnitModel)
         slope = coef(m1)[2]
         networkRow[:weight_x] = slope
-        println(r)
-        display(m1)
-        display(coef(m1))
-        println()
     end
 
     ## Normalize the weights
@@ -122,9 +128,10 @@ function rotate!(rotation::FormulaRotation, networkModel::DataFrame, unitModel::
     end
 
     ## Find the first svd dim of the data orthogonal to the x weights, use these as the y weights
-    unitValues = Matrix{Float64}(unitModel[!, networkModel[!, :relationship]])
-    axisValues = Matrix{Float64}(DataFrame(:weight_x => networkModel[!, :weight_x]))
-    controlModel = DataFrame(unitValues * axisValues)
+    xAxis = Matrix{Float64}(unitModel[!, networkModel[!, :relationship]]) *
+            Matrix{Float64}(networkModel[!, [:weight_x]])
+    xAxis = xAxis .- mean(xAxis)
+    controlModel = DataFrame(xAxis)
     pcaModel = help_deflating_svd(networkModel, unitModel, controlModel)
     networkModel[!, :weight_y] = pcaModel[:, 1]
 end
@@ -132,6 +139,10 @@ end
 # Formula2 Rotation
 function rotate!(rotation::Formula2Rotation, networkModel::DataFrame, unitModel::DataFrame)
     ## TODO check assumptions about f1 and f2
+
+    ## TODO remove missing values, for both f1 and f2
+
+    ## TODO bugfix
 
     ## For each relationship, find the effect of the first predictor after the intercept
     for networkRow in eachrow(networkModel)
@@ -185,123 +196,3 @@ function rotate!(rotation::Formula2Rotation, networkModel::DataFrame, unitModel:
         networkModel[!, :weight_y] /= s
     end
 end
-
-
-# # Hierarchical Rotation
-# function rotate!(rotation::HierarchicalRotation, networkModel::DataFrame, unitModel::DataFrame)
-#     ## Collect our columns
-#     columns = unique([
-#         rotation.xAxisVar,
-#         rotation.yAxisYar,
-#         rotation.confounds...,
-#         (values(rotation.nestings)...)...
-#     ])
-
-#     ## Filter out rows with missing data
-#     goodRows = completecases(unitModel[!, columns])
-#     filteredUnitModel = unitModel[goodRows, :]
-
-#     ## Interact the two axis variables, mean centered, and add to our columns list
-#     filteredUnitModel[!, :axisInteraction] =
-#         (filteredUnitModel[!, rotation.xAxisVar] .- mean(filteredUnitModel[!, rotation.xAxisVar])) .*
-#         (filteredUnitModel[!, rotation.yAxisYar] .- mean(filteredUnitModel[!, rotation.yAxisYar]))
-
-#     push!(columns, :axisInteraction)
-
-#     ## Independent variables for the main linear model (more efficient to compute this just once out here)
-#     X = DataFrame(:Intercept => [1 for i in 1:nrow(filteredUnitModel)])
-#     X = hcat(X, filteredUnitModel[!, columns])
-#     X = Matrix{Float64}(X)
-#     X = (transpose(X) * X)^-1 * transpose(X)
-
-#     ## Find the line of the first group's effect through the high dimensional space, controlling for such and such
-#     ## We do this once for the x-axis, then once for the y-axis, with small differences
-#     xAxisColumn = Vector{Float64}([0]) # Placeholder
-#     for T in 1:2
-#         for networkRow in eachrow(networkModel)
-#             r = networkRow[:relationship]
-
-#             ## Dependent variable
-#             y = Vector{Float64}(filteredUnitModel[!, r])
-
-#             ## For the y-axis iteration, make the columns independent of the x-axis we've already found
-#             if T == 2
-#                 scalar = dot(y, xAxisColumn) / dot(xAxisColumn, xAxisColumn)
-#                 y -= scalar * xAxisColumn
-#             end
-
-#             ### Adjust for nestings
-#             #### TODO FIXME this part seems not to work at all, give it a look
-#             toExclude = []
-#             for nest in keys(rotation.nestings)
-#                 groups = unique(filteredUnitModel[!, nest])
-#                 append!(toExclude, rotation.nestings[nest])
-#                 if rotation.xAxisVar in toExclude || rotation.yAxisYar in toExclude
-#                     push!(toExclude, :axisInteraction)
-#                 end
-
-#                 groupColumns = setdiff(columns, toExclude)
-#                 for group in groups
-
-#                     #### Group's units
-#                     unitsInGroup = filter(filteredUnitModel) do unitRow
-#                         return unitRow[nest] == group
-#                     end
-
-#                     ### (re-)Predict the column
-#                     groupX = DataFrame(:Intercept => [1 for i in 1:nrow(unitsInGroup)])
-#                     if !isempty(groupColumns)
-#                         groupX = hcat(groupX, unitsInGroup[!, groupColumns])
-#                     end
-
-#                     groupX = Matrix{Float64}(groupX)
-#                     groupy = Vector{Float64}(map(filter(x->x[2][nest]==group, collect(enumerate(eachrow(filteredUnitModel))))) do (i, unitRow)
-#                         return y[i]
-#                     end)
-
-#                     println(group)
-#                     println(groupColumns)
-#                     coefs = (transpose(groupX) * groupX)^-1 * transpose(groupX) * groupy
-#                     yhat = groupX * transpose(coefs)
-
-#                     ### Update the column by copying yhat into it at the right locations
-#                     j = 1
-#                     for (i, unitRow) in enumerate(eachrow(filteredUnitModel))
-#                         if unitRow[nest] == group
-#                             y[i] = yhat[j]
-#                             j += 1
-#                         end
-#                     end
-#                 end
-#             end
-            
-#             ## Run the regression
-#             coefs = X * y
-#             if T == 1
-#                 networkRow[:weight_x] = coefs[2]
-#             else
-#                 networkRow[:weight_y] = coefs[3]
-#             end
-#         end
-
-#         ## Normalize the weights
-#         if T == 1
-#             s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
-#             if s != 0
-#                 networkModel[!, :weight_x] /= s
-#             end
-#         else
-#             s = sqrt(sum(networkModel[!, :weight_y] .^ 2))
-#             if s != 0
-#                 networkModel[!, :weight_y] /= s
-#             end
-#         end
-
-#         ## Find the values for each unit projected onto the x-axis
-#         if T == 1
-#             xAxisColumn =
-#                 Matrix{Float64}(filteredUnitModel[!, networkModel[!, :relationship]]) *
-#                 Vector{Float64}(networkModel[!, :weight_x])
-#         end
-#     end
-# end
