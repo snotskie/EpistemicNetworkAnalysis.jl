@@ -65,17 +65,17 @@ if abspath(PROGRAM_FILE) == @__FILE__
         :Design_Reasoning,
         :Collaboration]
 
-    conversations = [:Condition, :GroupName]
-    units = [:Condition, :UserName]
+    conversations = [:Condition, :GameHalf, :GroupName]
+    units = [:Condition, :GameHalf, :UserName]
 
     myRotations = Dict{String,ENARotation}()
     # myRotations["svd"] = SVDRotation()
     myRotations["means-condition"] = MeansRotation(:Condition, "FirstGame", "SecondGame")
     # myRotations["means-gamehalf"] = MeansRotation(:GameHalf, "First", "Second")
-    myRotations["formula2-nonsense"] = Formula2Rotation(
-        LinearModel, @formula(y ~ 1 + FactoredCondition),
-        LinearModel, @formula(y ~ 1 + FactoredCondition)
-    )
+    # myRotations["formula2-nonsense"] = Formula2Rotation(
+    #     LinearModel, @formula(y ~ 1 + FactoredCondition),
+    #     LinearModel, @formula(y ~ 1 + FactoredCondition)
+    # )
 
     myRotations["formula2-repeat"] =  Formula2Rotation(
         LinearModel, @formula(y ~ 1 + FactoredCondition + FactoredGameHalf + FactoredGameHalf&FactoredCondition),
@@ -91,20 +91,20 @@ if abspath(PROGRAM_FILE) == @__FILE__
     myArtists["black"] = DefaultArtist()
     myArtists["color-condition"] = MeansArtist(:Condition, "FirstGame", "SecondGame")
     myArtists["color-gamehalf"] = MeansArtist(:GameHalf, "First", "Second")
-    myArtists["windows"] = WindowsArtist(
-        :Condition, "FirstGame", "SecondGame",
-        :GameHalf, "First", "Second"
-    )
+    # myArtists["windows"] = WindowsArtist(
+    #     :Condition, "FirstGame", "SecondGame",
+    #     :GameHalf, "First", "Second"
+    # )
 
     myArtists["tv-condition-x-gamehalf-y"] = TVRemoteArtist(
         :Condition, "FirstGame", "SecondGame",
         :GameHalf, "First", "Second"
     )
 
-    myArtists["tv-gamehalf-x-condition-y"] = TVRemoteArtist(
-        :GameHalf, "First", "Second",
-        :Condition, "FirstGame", "SecondGame"
-    )
+    # myArtists["tv-gamehalf-x-condition-y"] = TVRemoteArtist(
+    #     :GameHalf, "First", "Second",
+    #     :Condition, "FirstGame", "SecondGame"
+    # )
 
     counter = 0
     for (label1, rotation) in myRotations

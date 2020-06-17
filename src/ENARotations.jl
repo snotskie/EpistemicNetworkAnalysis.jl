@@ -116,9 +116,18 @@ function rotate!(rotation::FormulaRotation, networkModel::DataFrame, unitModel::
     for networkRow in eachrow(networkModel)
         r = networkRow[:relationship]
         f1 = FormulaTerm(term(r), rotation.f1.rhs)
-        m1 = fit(rotation.regression_model, f1, filteredUnitModel)
-        slope = coef(m1)[2]
-        networkRow[:weight_x] = slope
+        try
+            m1 = fit(rotation.regression_model, f1, filteredUnitModel)
+            slope = coef(m1)[2]
+            networkRow[:weight_x] = slope
+        catch e
+            error("""
+            An error occured running a regression during the rotation step of this ENA model.
+            Usually, this occurs because the data, the regression model, and regression formula are not in agreement.
+            If you are using a MeansRotation, then this usually means that your accidentally grouped your
+            units on a different variable than the variable you passed to your MeansRotation.
+            """)
+        end
     end
 
     ## Normalize the weights
@@ -169,9 +178,16 @@ function rotate!(rotation::Formula2Rotation, networkModel::DataFrame, unitModel:
     for networkRow in eachrow(networkModel)
         r = networkRow[:relationship]
         f1 = FormulaTerm(term(r), rotation.f1.rhs)
-        m1 = fit(rotation.regression_model1, f1, filteredUnitModel)
-        slope = coef(m1)[2]
-        networkRow[:weight_x] = slope
+        try
+            m1 = fit(rotation.regression_model1, f1, filteredUnitModel)
+            slope = coef(m1)[2]
+            networkRow[:weight_x] = slope
+        catch e
+            error("""
+            An error occured running a regression during the rotation step of this ENA model.
+            Usually, this occurs because the data, the regression model, and regression formula are not in agreement.
+            """)
+        end
     end
 
     ## Normalize the weights
@@ -199,9 +215,16 @@ function rotate!(rotation::Formula2Rotation, networkModel::DataFrame, unitModel:
     for networkRow in eachrow(networkModel)
         r = networkRow[:relationship]
         f2 = FormulaTerm(term(r), rotation.f2.rhs)
-        m2 = fit(rotation.regression_model2, f2, orthoUnitModel)
-        slope = coef(m2)[2]
-        networkRow[:weight_y] = slope
+        try
+            m2 = fit(rotation.regression_model2, f2, orthoUnitModel)
+            slope = coef(m2)[2]
+            networkRow[:weight_y] = slope
+        catch e
+            error("""
+            An error occured running a regression during the rotation step of this ENA model.
+            Usually, this occurs because the data, the regression model, and regression formula are not in agreement.
+            """)
+        end
     end
 
     ## Normalize the weights

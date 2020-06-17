@@ -101,13 +101,21 @@ function (artist::DefaultArtist)(cb, ena, scene)
     confidenceIntervals = []
     mu_x = mean(ena.unitModel[!, :fit_x])
     mu_y = mean(ena.unitModel[!, :fit_y])
-    ci_x = collect(confint(OneSampleTTest(ena.unitModel[!, :fit_x])))
-    ci_y = collect(confint(OneSampleTTest(ena.unitModel[!, :fit_y])))
-    color = :black
-    shape = :square
-    size = 4
-    CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
-    push!(confidenceIntervals, CI)
+    try
+        ci_x = collect(confint(OneSampleTTest(ena.unitModel[!, :fit_x])))
+        ci_y = collect(confint(OneSampleTTest(ena.unitModel[!, :fit_y])))
+        color = :black
+        shape = :square
+        size = 4
+        CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
+        push!(confidenceIntervals, CI)
+    catch e
+        color = :black
+        shape = :square
+        size = 4
+        CI = (mu_x, mu_y, [mu_x, mu_x], [mu_y, mu_y], color, shape, size)
+        push!(confidenceIntervals, CI)
+    end
 
     ## Do Callback so ENADisplay can do the bulk of the work
     cb(networkColors,
@@ -246,24 +254,40 @@ function (artist::MeansArtist)(cb, ena, scene)
     ### Control
     mu_x = mean(controlUnits[!, :fit_x])
     mu_y = mean(controlUnits[!, :fit_y])
-    ci_x = collect(confint(OneSampleTTest(controlUnits[!, :fit_x])))
-    ci_y = collect(confint(OneSampleTTest(controlUnits[!, :fit_y])))
-    color = :purple
-    shape = :square
-    size = 4
-    CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
-    push!(confidenceIntervals, CI)
+    try
+        ci_x = collect(confint(OneSampleTTest(controlUnits[!, :fit_x])))
+        ci_y = collect(confint(OneSampleTTest(controlUnits[!, :fit_y])))
+        color = :purple
+        shape = :square
+        size = 4
+        CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
+        push!(confidenceIntervals, CI)
+    catch e
+        color = :purple
+        shape = :square
+        size = 4
+        CI = (mu_x, mu_y, [mu_x, mu_x], [mu_y, mu_y], color, shape, size)
+        push!(confidenceIntervals, CI)
+    end
 
     ### Treatment
     mu_x = mean(treatmentUnits[!, :fit_x])
     mu_y = mean(treatmentUnits[!, :fit_y])
-    ci_x = collect(confint(OneSampleTTest(treatmentUnits[!, :fit_x])))
-    ci_y = collect(confint(OneSampleTTest(treatmentUnits[!, :fit_y])))
-    color = :orange
-    shape = :square
-    size = 4
-    CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
-    push!(confidenceIntervals, CI)
+    try
+        ci_x = collect(confint(OneSampleTTest(treatmentUnits[!, :fit_x])))
+        ci_y = collect(confint(OneSampleTTest(treatmentUnits[!, :fit_y])))
+        color = :orange
+        shape = :square
+        size = 4
+        CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
+        push!(confidenceIntervals, CI)
+    catch e
+        color = :orange
+        shape = :square
+        size = 4
+        CI = (mu_x, mu_y, [mu_x, mu_x], [mu_y, mu_y], color, shape, size)
+        push!(confidenceIntervals, CI)
+    end
 
     ## Do Callback so ENADisplay can do the bulk of the work
     cb(networkColors,
@@ -395,12 +419,19 @@ function (artist::WindowsArtist)(cb, ena, scene)
         color = colors[i]
         mu_x = mean(groupedUnits[!, :fit_x])
         mu_y = mean(groupedUnits[!, :fit_y])
-        ci_x = collect(confint(OneSampleTTest(groupedUnits[!, :fit_x])))
-        ci_y = collect(confint(OneSampleTTest(groupedUnits[!, :fit_y])))
-        shape = :square
-        size = 4
-        CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
-        push!(confidenceIntervals, CI)
+        try
+            ci_x = collect(confint(OneSampleTTest(groupedUnits[!, :fit_x])))
+            ci_y = collect(confint(OneSampleTTest(groupedUnits[!, :fit_y])))
+            shape = :square
+            size = 4
+            CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
+            push!(confidenceIntervals, CI)
+        catch e
+            shape = :square
+            size = 4
+            CI = (mu_x, mu_y, [mu_x, mu_x], [mu_y, mu_y], color, shape, size)
+            push!(confidenceIntervals, CI)
+        end
     end
 
     ## Do Callback so ENADisplay can do the bulk of the work
@@ -604,11 +635,17 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
         shape = shapes[i]
         mu_x = mean(groupedUnits[!, :fit_x])
         mu_y = mean(groupedUnits[!, :fit_y])
-        ci_x = collect(confint(OneSampleTTest(groupedUnits[!, :fit_x])))
-        ci_y = collect(confint(OneSampleTTest(groupedUnits[!, :fit_y])))
-        size = 4
-        CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
-        push!(confidenceIntervals, CI)
+        try
+            ci_x = collect(confint(OneSampleTTest(groupedUnits[!, :fit_x])))
+            ci_y = collect(confint(OneSampleTTest(groupedUnits[!, :fit_y])))
+            size = 4
+            CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
+            push!(confidenceIntervals, CI)
+        catch e
+            size = 4
+            CI = (mu_x, mu_y, [mu_x, mu_x], [mu_y, mu_y], color, shape, size)
+            push!(confidenceIntervals, CI)
+        end
     end
 
     ## Do Callback so ENADisplay can do the bulk of the work
