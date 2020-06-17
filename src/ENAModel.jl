@@ -152,14 +152,11 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     ## TODO verify
     X = Matrix{Float64}(zeros(nrow(unitModel), 1 + nrow(codeModel)))
     X = Matrix{Float64}(zeros(nrow(unitModel), nrow(codeModel)))
-    # X[:, 1] .= 1 # intercept
     for (i, unitRow) in enumerate(eachrow(unitModel))
         denom = 2 * sum(unitRow[t] for t in keys(relationships))
         if denom != 0
             for r in keys(relationships)
                 a, b = relationships[r]
-                # X[i, a+1] += unitRow[r] / denom # +1 because we started with the intercept
-                # X[i, b+1] += unitRow[r] / denom # +1 because we started with the intercept
                 X[i, a] += unitRow[r] / denom
                 X[i, b] += unitRow[r] / denom
             end
@@ -172,7 +169,6 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     y = Vector{Float64}(unitModel[:, :dim_x])
     x_axis_coefs = X * y
     for i in 1:nrow(codeModel)
-        # codeModel[i, :fit_x] = x_axis_coefs[i+1] # +1 because we started with the intercept
         codeModel[i, :fit_x] = x_axis_coefs[i]
     end
 
@@ -180,7 +176,6 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     y = Vector{Float64}(unitModel[:, :dim_y])
     y_axis_coefs = X * y
     for i in 1:nrow(codeModel)
-        # codeModel[i, :fit_y] = y_axis_coefs[i+1] # +1 because we started with the intercept
         codeModel[i, :fit_y] = y_axis_coefs[i]
     end
 
@@ -189,14 +184,14 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     for unitRow in eachrow(unitModel)
         denom = 2 * sum(unitRow[t] for t in keys(relationships))
         if denom != 0
-            unitRow[:fit_x] = #x_axis_coefs[1] +
+            unitRow[:fit_x] =
                 sum(
                     codeModel[relationships[r][1], :fit_x] * unitRow[r] +
                     codeModel[relationships[r][2], :fit_x] * unitRow[r]
                     for r in keys(relationships)
                 ) / denom
 
-            unitRow[:fit_y] = #y_axis_coefs[1] +
+            unitRow[:fit_y] =
                 sum(
                     codeModel[relationships[r][1], :fit_y] * unitRow[r] +
                     codeModel[relationships[r][2], :fit_y] * unitRow[r]

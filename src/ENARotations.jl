@@ -140,21 +140,38 @@ end
 function rotate!(rotation::Formula2Rotation, networkModel::DataFrame, unitModel::DataFrame)
     ## TODO check assumptions about f1 and f2
 
-    ## TODO remove missing values, for both f1 and f2
+    ## Filter missing data
+    filteredUnitModel = unitModel
+    for t in rotation.f1.rhs
+        if isa(t, Term)
+            col = Symbol(t)
+            goodRows = completecases(filteredUnitModel[!, [col]])
+            filteredUnitModel = filteredUnitModel[goodRows, :]
+        end
+    end
 
-    ## TODO bugfix
+
+    for t in rotation.f2.rhs
+        if isa(t, Term)
+            col = Symbol(t)
+            goodRows = completecases(filteredUnitModel[!, [col]])
+            filteredUnitModel = filteredUnitModel[goodRows, :]
+        end
+    end
+
+    ## Bugfix: https://github.com/JuliaStats/GLM.jl/issues/239
+    for networkRow in eachrow(networkModel)
+        r = networkRow[:relationship]
+        filteredUnitModel[!, r] = map(Float64, filteredUnitModel[!, r])
+    end
 
     ## For each relationship, find the effect of the first predictor after the intercept
     for networkRow in eachrow(networkModel)
         r = networkRow[:relationship]
         f1 = FormulaTerm(term(r), rotation.f1.rhs)
-        m1 = fit(rotation.regression_model1, f1, unitModel)
+        m1 = fit(rotation.regression_model1, f1, filteredUnitModel)
         slope = coef(m1)[2]
         networkRow[:weight_x] = slope
-        println(r)
-        display(m1)
-        display(coef(m1))
-        println()
     end
 
     ## Normalize the weights
@@ -164,9 +181,10 @@ function rotate!(rotation::Formula2Rotation, networkModel::DataFrame, unitModel:
     end
 
     ## Orthogonalization
-    unitValues = Matrix{Float64}(unitModel[!, networkModel[!, :relationship]])
-    axisValues = Matrix{Float64}(DataFrame(:weight_x => networkModel[!, :weight_x]))
-    controlModel = DataFrame(unitValues * axisValues)
+    xAxis = Matrix{Float64}(unitModel[!, networkModel[!, :relationship]]) *
+            Matrix{Float64}(networkModel[!, [:weight_x]])
+    xAxis = xAxis .- mean(xAxis)
+    controlModel = DataFrame(xAxis)
     x = controlModel[!, 1]
     orthoUnitModel = copy(unitModel)
     for networkRow in eachrow(networkModel)
@@ -174,7 +192,7 @@ function rotate!(rotation::Formula2Rotation, networkModel::DataFrame, unitModel:
         y = orthoUnitModel[:, r]
         scalar = dot(y, x) / dot(x, x)
         y -= scalar * x
-        orthoUnitModel[!, r] = y
+        orthoUnitModel[!, r] = map(Float64, y)
     end
 
     ## For each relationship in the ortho model, find the effect of the first predictor after the intercept
@@ -184,10 +202,6 @@ function rotate!(rotation::Formula2Rotation, networkModel::DataFrame, unitModel:
         m2 = fit(rotation.regression_model2, f2, orthoUnitModel)
         slope = coef(m2)[2]
         networkRow[:weight_y] = slope
-        println(r)
-        display(m2)
-        display(coef(m2))
-        println()
     end
 
     ## Normalize the weights
