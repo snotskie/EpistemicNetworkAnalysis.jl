@@ -83,8 +83,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
     )
 
     myRotations["formula2-norepeat"] =  Formula2Rotation(
-        LinearModel, @formula(y ~ 1 + FactoredGameHalf + FactoredCondition + FactoredGameHalf&FactoredCondition),
-        LinearModel, @formula(y ~ 1 + FactoredCondition + FactoredGameHalf&FactoredCondition)
+        LinearModel, @formula(y ~ 1 + FactoredCondition + FactoredGameHalf + FactoredGameHalf&FactoredCondition),
+        LinearModel, @formula(y ~ 1 + FactoredGameHalf + FactoredGameHalf&FactoredCondition)
     )
 
     myArtists = Dict{String,ENAArtist}()
