@@ -217,7 +217,8 @@ function rotate!(rotation::Formula2Rotation, networkModel::DataFrame, unitModel:
     theta /= sqrt(dot(after, after))
     angle = acos(theta) * 180 / pi
     if abs(angle) > 5
-        # TODO
+        @warn """The angle between the y-axis and the direction of the requested effect is larger than 5 degrees ($angle degrees).
+This can undermine interpreting the y-axis in terms of the requested effect."""
     end
 
     ## Normalize the weights

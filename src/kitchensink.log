@@ -1,0 +1,429 @@
+Main.EpistemicNetworkAnalysis.MeansRotation
+Units (positions):
+96×5 DataFrames.DataFrame. Omitted printing of 2 columns
+│ Row │ ENA_UNIT                      │ dim_x      │ fit_x        │
+│     │ String                        │ Float64    │ Float64      │
+├─────┼───────────────────────────────┼────────────┼──────────────┤
+│ 1   │ FirstGame.First.steven z      │ 0.0187702  │ 0.0190138    │
+│ 2   │ FirstGame.First.akash v       │ -0.0648152 │ -0.0710602   │
+│ 3   │ FirstGame.First.alexander b   │ -0.0708571 │ -0.0682163   │
+│ 4   │ FirstGame.First.brandon l     │ -0.0190401 │ -0.022051    │
+│ 5   │ FirstGame.First.christian x   │ -0.246152  │ -0.246152    │
+│ 6   │ FirstGame.First.jordan l      │ -0.0971827 │ -0.107293    │
+│ 7   │ FirstGame.First.arden f       │ -0.669806  │ -0.618755    │
+│ 8   │ FirstGame.First.margaret n    │ -0.103935  │ -0.117901    │
+│ 9   │ FirstGame.First.connor f      │ 0.00032377 │ 0.0371829    │
+│ 10  │ FirstGame.First.jimmy i       │ -0.0415585 │ -0.0425443   │
+│ 11  │ FirstGame.First.devin c       │ -0.355323  │ -0.325781    │
+│ 12  │ FirstGame.First.tiffany x     │ 0.0405559  │ 0.0570286    │
+│ 13  │ FirstGame.First.amelia n      │ -0.117913  │ -0.124423    │
+│ 14  │ FirstGame.First.luis t        │ -0.246152  │ -0.246152    │
+│ 15  │ FirstGame.First.amalia x      │ -0.0108598 │ -0.0196153   │
+│ 16  │ FirstGame.First.robert z      │ -0.0547026 │ -0.0452351   │
+│ 17  │ FirstGame.First.joseph k      │ -0.134019  │ -0.142109    │
+│ 18  │ FirstGame.First.peter h       │ -0.0795923 │ -0.0453333   │
+│ 19  │ FirstGame.First.carl b        │ -0.0766712 │ -0.0749069   │
+│ 20  │ FirstGame.First.mitchell h    │ -0.0301386 │ -0.0636047   │
+│ 21  │ FirstGame.First.peter s       │ -0.261682  │ -0.249155    │
+│ 22  │ FirstGame.First.joseph h      │ 0.176077   │ 0.150461     │
+│ 23  │ FirstGame.First.cameron k     │ 0.160002   │ 0.188021     │
+│ 24  │ FirstGame.First.fletcher l    │ 0.164819   │ 0.113219     │
+│ 25  │ FirstGame.First.amirah u      │ 0.101325   │ 0.0522256    │
+│ 26  │ FirstGame.First.kevin g       │ 0.115443   │ 0.134129     │
+│ 27  │ FirstGame.Second.robert z     │ -0.138121  │ -0.141198    │
+│ 28  │ FirstGame.Second.akash v      │ -0.0585397 │ -0.0778018   │
+│ 29  │ FirstGame.Second.amirah u     │ -0.324912  │ -0.269617    │
+│ 30  │ FirstGame.Second.peter s      │ -0.0590643 │ -0.0928521   │
+│ 31  │ FirstGame.Second.jimmy i      │ -0.0200315 │ -0.046133    │
+│ 32  │ FirstGame.Second.devin c      │ 0.0359609  │ 0.0391353    │
+│ 33  │ FirstGame.Second.joseph h     │ -0.10053   │ -0.103681    │
+│ 34  │ FirstGame.Second.peter h      │ -0.0145266 │ -0.000937661 │
+│ 35  │ FirstGame.Second.steven z     │ -0.113775  │ -0.115937    │
+│ 36  │ FirstGame.Second.arden f      │ -0.186881  │ -0.206813    │
+│ 37  │ FirstGame.Second.amelia n     │ 0.140393   │ 0.141315     │
+│ 38  │ FirstGame.Second.amalia x     │ -0.0194392 │ -0.053546    │
+│ 39  │ FirstGame.Second.brandon l    │ 0.104388   │ 0.0718487    │
+│ 40  │ FirstGame.Second.fletcher l   │ 0.269899   │ 0.242301     │
+│ 41  │ FirstGame.Second.margaret n   │ -0.0742031 │ -0.102719    │
+│ 42  │ FirstGame.Second.carl b       │ 0.221147   │ 0.192127     │
+│ 43  │ FirstGame.Second.jordan l     │ -0.17233   │ -0.177842    │
+│ 44  │ FirstGame.Second.tiffany x    │ -0.121718  │ -0.14937     │
+│ 45  │ FirstGame.Second.cameron k    │ -0.296167  │ -0.296548    │
+│ 46  │ FirstGame.Second.alexander b  │ -0.440974  │ -0.393105    │
+│ 47  │ FirstGame.Second.mitchell h   │ -0.52055   │ -0.526898    │
+│ 48  │ FirstGame.Second.joseph k     │ -0.113131  │ -0.130295    │
+│ 49  │ FirstGame.Second.kevin g      │ -0.186179  │ -0.194796    │
+│ 50  │ FirstGame.Second.connor f     │ -0.154091  │ -0.158391    │
+│ 51  │ FirstGame.Second.christian x  │ -0.174209  │ -0.162799    │
+│ 52  │ FirstGame.Second.luis t       │ -0.191506  │ -0.205166    │
+│ 53  │ SecondGame.First.brent p      │ -0.157212  │ -0.131169    │
+│ 54  │ SecondGame.First.kiana k      │ -0.121677  │ -0.122568    │
+│ 55  │ SecondGame.First.madeline g   │ 0.144537   │ 0.0930588    │
+│ 56  │ SecondGame.First.justin y     │ -0.0513387 │ -0.0555637   │
+│ 57  │ SecondGame.First.ruzhen e     │ 0.275614   │ 0.266154     │
+│ 58  │ SecondGame.First.brandon f    │ 0.0536502  │ 0.0715886    │
+│ 59  │ SecondGame.First.jackson p    │ 0.111549   │ 0.113399     │
+│ 60  │ SecondGame.First.shane t      │ 0.109273   │ 0.0997931    │
+│ 61  │ SecondGame.First.samuel o     │ 0.130588   │ 0.170302     │
+│ 62  │ SecondGame.First.casey f      │ 0.0275504  │ 0.0203461    │
+│ 63  │ SecondGame.First.keegan q     │ 0.112735   │ 0.0935801    │
+│ 64  │ SecondGame.First.nicholas l   │ 0.100505   │ 0.108784     │
+│ 65  │ SecondGame.First.cameron i    │ 0.00179081 │ 0.0439361    │
+│ 66  │ SecondGame.First.cormick u    │ 0.118531   │ 0.138682     │
+│ 67  │ SecondGame.First.daniel t     │ 0.186188   │ 0.209789     │
+│ 68  │ SecondGame.First.christina b  │ 0.142857   │ 0.180144     │
+│ 69  │ SecondGame.First.derek v      │ 0.180397   │ 0.181024     │
+│ 70  │ SecondGame.First.nicholas n   │ 0.132115   │ 0.143712     │
+│ 71  │ SecondGame.First.abigail z    │ 0.197606   │ 0.180473     │
+│ 72  │ SecondGame.First.caitlyn y    │ 0.0569823  │ 0.0561045    │
+│ 73  │ SecondGame.First.nathan d     │ 0.152015   │ 0.142203     │
+│ 74  │ SecondGame.First.luke u       │ 0.271636   │ 0.27504      │
+│ 75  │ SecondGame.Second.jackson p   │ 0.295771   │ 0.291042     │
+│ 76  │ SecondGame.Second.brent p     │ 0.213699   │ 0.206981     │
+│ 77  │ SecondGame.Second.cormick u   │ 0.16327    │ 0.153649     │
+│ 78  │ SecondGame.Second.derek v     │ 0.152575   │ 0.168197     │
+│ 79  │ SecondGame.Second.luke u      │ 0.12634    │ 0.123413     │
+│ 80  │ SecondGame.Second.cameron i   │ 0.129083   │ 0.110978     │
+│ 81  │ SecondGame.Second.nathan d    │ 0.0933691  │ 0.065163     │
+│ 82  │ SecondGame.Second.samuel o    │ 0.325839   │ 0.352184     │
+│ 83  │ SecondGame.Second.ruzhen e    │ 0.138789   │ 0.115195     │
+│ 84  │ SecondGame.Second.casey f     │ 0.375732   │ 0.470794     │
+│ 85  │ SecondGame.Second.keegan q    │ 0.245802   │ 0.238771     │
+│ 86  │ SecondGame.Second.nicholas n  │ 0.173222   │ 0.200994     │
+│ 87  │ SecondGame.Second.justin y    │ 0.241129   │ 0.234298     │
+│ 88  │ SecondGame.Second.abigail z   │ 0.05897    │ 0.059583     │
+│ 89  │ SecondGame.Second.daniel t    │ 0.0656767  │ 0.0620119    │
+│ 90  │ SecondGame.Second.shane t     │ 0.054577   │ 0.0332457    │
+│ 91  │ SecondGame.Second.christina b │ 0.149417   │ 0.166798     │
+│ 92  │ SecondGame.Second.madeline g  │ 0.256187   │ 0.276483     │
+│ 93  │ SecondGame.Second.brandon f   │ -0.12219   │ -0.140998    │
+│ 94  │ SecondGame.Second.caitlyn y   │ -0.189501  │ -0.22304     │
+│ 95  │ SecondGame.Second.kiana k     │ -0.316294  │ -0.258026    │
+│ 96  │ SecondGame.Second.nicholas l  │ -0.195182  │ -0.187803    │
+Codes:
+6×4 DataFrames.DataFrame
+│ Row │ code                           │ density  │ fit_x     │ fit_y     │
+│     │ Symbol                         │ Float64  │ Float64   │ Float64   │
+├─────┼────────────────────────────────┼──────────┼───────────┼───────────┤
+│ 1   │ Data                           │ 0.814395 │ -0.188909 │ -0.726808 │
+│ 2   │ Technical_Constraints          │ 0.933403 │ -1.52633  │ 1.68941   │
+│ 3   │ Performance_Parameters         │ 0.799432 │ 1.21181   │ -1.23164  │
+│ 4   │ Client_and_Consultant_Requests │ 0.298306 │ -0.153143 │ -0.462968 │
+│ 5   │ Design_Reasoning               │ 1.0      │ 1.21903   │ 0.506826  │
+│ 6   │ Collaboration                  │ 0.2802   │ -2.00025  │ -1.28914  │
+Network:
+15×4 DataFrames.DataFrame. Omitted printing of 2 columns
+│ Row │ relationship                                          │ density   │
+│     │ Symbol                                                │ Float64   │
+├─────┼───────────────────────────────────────────────────────┼───────────┤
+│ 1   │ Technical_Constraints_Performance_Parameters          │ 0.666067  │
+│ 2   │ Data_Client_and_Consultant_Requests                   │ 0.180745  │
+│ 3   │ Client_and_Consultant_Requests_Collaboration          │ 0.0601998 │
+│ 4   │ Design_Reasoning_Collaboration                        │ 0.238609  │
+│ 5   │ Data_Performance_Parameters                           │ 0.612509  │
+│ 6   │ Data_Collaboration                                    │ 0.172717  │
+│ 7   │ Data_Design_Reasoning                                 │ 0.747755  │
+│ 8   │ Client_and_Consultant_Requests_Design_Reasoning       │ 0.255857  │
+│ 9   │ Technical_Constraints_Collaboration                   │ 0.215453  │
+│ 10  │ Performance_Parameters_Client_and_Consultant_Requests │ 0.208733  │
+│ 11  │ Performance_Parameters_Design_Reasoning               │ 0.756921  │
+│ 12  │ Data_Technical_Constraints                            │ 0.72876   │
+│ 13  │ Technical_Constraints_Client_and_Consultant_Requests  │ 0.189126  │
+│ 14  │ Performance_Parameters_Collaboration                  │ 0.153379  │
+│ 15  │ Technical_Constraints_Design_Reasoning                │ 1.0       │
+Model fit (p value):
+1.9898400673984713e-32
+
+Model fit (Pearson):
+0.9780517284298105
+
+Main.EpistemicNetworkAnalysis.DefaultArtist
+Main.EpistemicNetworkAnalysis.MeansArtist
+Main.EpistemicNetworkAnalysis.TVRemoteArtist
+Main.EpistemicNetworkAnalysis.MeansArtist
+Main.EpistemicNetworkAnalysis.Formula2Rotation{GLM.LinearModel,GLM.LinearModel}
+Units (positions):
+96×5 DataFrames.DataFrame. Omitted printing of 1 columns
+│ Row │ ENA_UNIT                      │ dim_x      │ fit_x      │ dim_y       │
+│     │ String                        │ Float64    │ Float64    │ Float64     │
+├─────┼───────────────────────────────┼────────────┼────────────┼─────────────┤
+│ 1   │ FirstGame.First.steven z      │ 0.0329579  │ 0.0280845  │ -0.105464   │
+│ 2   │ FirstGame.First.akash v       │ -0.0502714 │ -0.0605441 │ 0.0225218   │
+│ 3   │ FirstGame.First.alexander b   │ -0.0858593 │ -0.0735121 │ -0.0210094  │
+│ 4   │ FirstGame.First.brandon l     │ -0.0165338 │ -0.0221109 │ 0.00781895  │
+│ 5   │ FirstGame.First.christian x   │ -0.304466  │ -0.304466  │ -0.283314   │
+│ 6   │ FirstGame.First.jordan l      │ -0.139942  │ -0.148068  │ -0.0703541  │
+│ 7   │ FirstGame.First.arden f       │ -0.73335   │ -0.654949  │ -0.336948   │
+│ 8   │ FirstGame.First.margaret n    │ -0.133794  │ -0.151042  │ -0.00811909 │
+│ 9   │ FirstGame.First.connor f      │ -0.0298884 │ 0.012901   │ -0.0288075  │
+│ 10  │ FirstGame.First.jimmy i       │ -0.0702635 │ -0.0729803 │ -0.0931202  │
+│ 11  │ FirstGame.First.devin c       │ -0.440654  │ -0.427734  │ 0.185559    │
+│ 12  │ FirstGame.First.tiffany x     │ 0.0464762  │ 0.0541446  │ -0.126874   │
+│ 13  │ FirstGame.First.amelia n      │ -0.128772  │ -0.138541  │ 0.0724838   │
+│ 14  │ FirstGame.First.luis t        │ -0.304466  │ -0.304466  │ -0.283314   │
+│ 15  │ FirstGame.First.amalia x      │ -0.0148329 │ -0.026354  │ 0.0205949   │
+│ 16  │ FirstGame.First.robert z      │ -0.0300705 │ -0.0176049 │ -0.103613   │
+│ 17  │ FirstGame.First.joseph k      │ -0.115933  │ -0.130744  │ -0.144606   │
+│ 18  │ FirstGame.First.peter h       │ -0.0736745 │ -0.0391322 │ -0.191125   │
+│ 19  │ FirstGame.First.carl b        │ -0.0432709 │ -0.0345767 │ -0.117154   │
+│ 20  │ FirstGame.First.mitchell h    │ -0.0125271 │ -0.05264   │ 0.0415991   │
+│ 21  │ FirstGame.First.peter s       │ -0.267835  │ -0.241143  │ -0.351513   │
+│ 22  │ FirstGame.First.joseph h      │ 0.157234   │ 0.12873    │ -0.106023   │
+│ 23  │ FirstGame.First.cameron k     │ 0.165143   │ 0.197144   │ -0.167062   │
+│ 24  │ FirstGame.First.fletcher l    │ 0.163825   │ 0.103635   │ -0.0766706  │
+│ 25  │ FirstGame.First.amirah u      │ 0.0659726  │ 0.0186624  │ -0.115068   │
+│ 26  │ FirstGame.First.kevin g       │ 0.114059   │ 0.125001   │ -0.200898   │
+│ 27  │ FirstGame.Second.robert z     │ -0.121018  │ -0.133904  │ 0.0022465   │
+│ 28  │ FirstGame.Second.akash v      │ -0.0447452 │ -0.0688486 │ 0.111826    │
+│ 29  │ FirstGame.Second.amirah u     │ -0.292799  │ -0.234342  │ -0.214511   │
+│ 30  │ FirstGame.Second.peter s      │ -0.024263  │ -0.0635677 │ -0.0887321  │
+│ 31  │ FirstGame.Second.jimmy i      │ -0.0181282 │ -0.0543793 │ 0.0565919   │
+│ 32  │ FirstGame.Second.devin c      │ 0.0661775  │ 0.0715106  │ -0.215857   │
+│ 33  │ FirstGame.Second.joseph h     │ -0.0641945 │ -0.0681488 │ 0.0552791   │
+│ 34  │ FirstGame.Second.peter h      │ 0.0310228  │ 0.043318   │ -0.0450318  │
+│ 35  │ FirstGame.Second.steven z     │ -0.106368  │ -0.114388  │ 0.226852    │
+│ 36  │ FirstGame.Second.arden f      │ -0.148262  │ -0.169112  │ 0.228938    │
+│ 37  │ FirstGame.Second.amelia n     │ 0.162468   │ 0.170331   │ 0.114844    │
+│ 38  │ FirstGame.Second.amalia x     │ -0.0211659 │ -0.0500761 │ 0.265756    │
+│ 39  │ FirstGame.Second.brandon l    │ 0.0891368  │ 0.060485   │ 0.222323    │
+│ 40  │ FirstGame.Second.fletcher l   │ 0.250737   │ 0.224803   │ 0.135471    │
+│ 41  │ FirstGame.Second.margaret n   │ -0.0696638 │ -0.0908057 │ 0.25674     │
+│ 42  │ FirstGame.Second.carl b       │ 0.212357   │ 0.188687   │ 0.149442    │
+│ 43  │ FirstGame.Second.jordan l     │ -0.153588  │ -0.163288  │ 0.0252746   │
+│ 44  │ FirstGame.Second.tiffany x    │ -0.106825  │ -0.143177  │ 0.204345    │
+│ 45  │ FirstGame.Second.cameron k    │ -0.283459  │ -0.281636  │ 0.257934    │
+│ 46  │ FirstGame.Second.alexander b  │ -0.435706  │ -0.390101  │ 0.221403    │
+│ 47  │ FirstGame.Second.mitchell h   │ -0.478832  │ -0.476505  │ -0.0430252  │
+│ 48  │ FirstGame.Second.joseph k     │ -0.114349  │ -0.132895  │ 0.12218     │
+│ 49  │ FirstGame.Second.kevin g      │ -0.153628  │ -0.16598   │ 0.103164    │
+│ 50  │ FirstGame.Second.connor f     │ -0.152733  │ -0.156907  │ 0.268858    │
+│ 51  │ FirstGame.Second.christian x  │ -0.12813   │ -0.11566   │ 0.140083    │
+│ 52  │ FirstGame.Second.luis t       │ -0.19282   │ -0.208578  │ 0.107913    │
+│ 53  │ SecondGame.First.brent p      │ -0.0984912 │ -0.0601332 │ -0.201351   │
+│ 54  │ SecondGame.First.kiana k      │ -0.0938301 │ -0.0944192 │ -0.329352   │
+│ 55  │ SecondGame.First.madeline g   │ 0.150925   │ 0.0913026  │ 0.0453676   │
+│ 56  │ SecondGame.First.justin y     │ -0.018217  │ -0.0299331 │ -0.244039   │
+│ 57  │ SecondGame.First.ruzhen e     │ 0.265812   │ 0.251559   │ 0.0453678   │
+│ 58  │ SecondGame.First.brandon f    │ 0.088667   │ 0.106016   │ -0.0465116  │
+│ 59  │ SecondGame.First.jackson p    │ 0.134077   │ 0.129725   │ -0.102526   │
+│ 60  │ SecondGame.First.shane t      │ 0.117786   │ 0.107192   │ -0.0302083  │
+│ 61  │ SecondGame.First.samuel o     │ 0.124771   │ 0.159386   │ -0.137603   │
+│ 62  │ SecondGame.First.casey f      │ 0.0454807  │ 0.0294555  │ -0.0330929  │
+│ 63  │ SecondGame.First.keegan q     │ 0.15217    │ 0.134359   │ -0.03213    │
+│ 64  │ SecondGame.First.nicholas l   │ 0.130019   │ 0.133414   │ 0.0261309   │
+│ 65  │ SecondGame.First.cameron i    │ 0.0401462  │ 0.0758818  │ -0.0550047  │
+│ 66  │ SecondGame.First.cormick u    │ 0.14742    │ 0.155893   │ -0.0875191  │
+│ 67  │ SecondGame.First.daniel t     │ 0.196336   │ 0.228425   │ -0.0733227  │
+│ 68  │ SecondGame.First.christina b  │ 0.165656   │ 0.203839   │ -0.161589   │
+│ 69  │ SecondGame.First.derek v      │ 0.182952   │ 0.179125   │ -0.191264   │
+│ 70  │ SecondGame.First.nicholas n   │ 0.142508   │ 0.144089   │ -0.163923   │
+│ 71  │ SecondGame.First.abigail z    │ 0.181696   │ 0.172176   │ -0.0178238  │
+│ 72  │ SecondGame.First.caitlyn y    │ 0.0684302  │ 0.062396   │ -0.0623336  │
+│ 73  │ SecondGame.First.nathan d     │ 0.148861   │ 0.134974   │ -0.0542567  │
+│ 74  │ SecondGame.First.luke u       │ 0.264913   │ 0.277602   │ 0.153655    │
+│ 75  │ SecondGame.Second.jackson p   │ 0.286566   │ 0.280726   │ -0.00845157 │
+│ 76  │ SecondGame.Second.brent p     │ 0.213362   │ 0.207252   │ -0.0223197  │
+│ 77  │ SecondGame.Second.cormick u   │ 0.142455   │ 0.134969   │ 0.0518035   │
+│ 78  │ SecondGame.Second.derek v     │ 0.134419   │ 0.140702   │ -0.10165    │
+│ 79  │ SecondGame.Second.luke u      │ 0.0612905  │ 0.064037   │ -0.0541105  │
+│ 80  │ SecondGame.Second.cameron i   │ 0.145877   │ 0.130288   │ -0.0369383  │
+│ 81  │ SecondGame.Second.nathan d    │ 0.098492   │ 0.0726598  │ 0.170151    │
+│ 82  │ SecondGame.Second.samuel o    │ 0.322961   │ 0.357107   │ 0.158839    │
+│ 83  │ SecondGame.Second.ruzhen e    │ 0.140233   │ 0.11982    │ 0.161201    │
+│ 84  │ SecondGame.Second.casey f     │ 0.327879   │ 0.436476   │ 0.14283     │
+│ 85  │ SecondGame.Second.keegan q    │ 0.250112   │ 0.247376   │ 0.0549192   │
+│ 86  │ SecondGame.Second.nicholas n  │ 0.192734   │ 0.216814   │ -0.127538   │
+│ 87  │ SecondGame.Second.justin y    │ 0.247041   │ 0.241908   │ 0.0803403   │
+│ 88  │ SecondGame.Second.abigail z   │ 0.016837   │ 0.0186358  │ 0.191838    │
+│ 89  │ SecondGame.Second.daniel t    │ 0.039728   │ 0.0465923  │ 0.335713    │
+│ 90  │ SecondGame.Second.shane t     │ -0.0142447 │ -0.0290726 │ 0.102761    │
+│ 91  │ SecondGame.Second.christina b │ 0.104597   │ 0.136996   │ 0.311055    │
+│ 92  │ SecondGame.Second.madeline g  │ 0.216932   │ 0.247434   │ 0.254647    │
+│ 93  │ SecondGame.Second.brandon f   │ -0.166162  │ -0.186093  │ 0.0120495   │
+│ 94  │ SecondGame.Second.caitlyn y   │ -0.18908   │ -0.228947  │ -0.0901082  │
+│ 95  │ SecondGame.Second.kiana k     │ -0.34744   │ -0.288694  │ 0.0617448   │
+│ 96  │ SecondGame.Second.nicholas l  │ -0.213163  │ -0.203842  │ 0.0147252   │
+Codes:
+6×4 DataFrames.DataFrame
+│ Row │ code                           │ density  │ fit_x     │ fit_y     │
+│     │ Symbol                         │ Float64  │ Float64   │ Float64   │
+├─────┼────────────────────────────────┼──────────┼───────────┼───────────┤
+│ 1   │ Data                           │ 0.814395 │ -0.252847 │ 0.297541  │
+│ 2   │ Technical_Constraints          │ 0.933403 │ -1.18996  │ -0.132099 │
+│ 3   │ Performance_Parameters         │ 0.799432 │ 1.19282   │ 1.61871   │
+│ 4   │ Client_and_Consultant_Requests │ 0.298306 │ -0.38298  │ -0.711078 │
+│ 5   │ Design_Reasoning               │ 1.0      │ 1.10299   │ -1.21735  │
+│ 6   │ Collaboration                  │ 0.2802   │ -2.22317  │ 0.128953  │
+Network:
+15×4 DataFrames.DataFrame. Omitted printing of 2 columns
+│ Row │ relationship                                          │ density   │
+│     │ Symbol                                                │ Float64   │
+├─────┼───────────────────────────────────────────────────────┼───────────┤
+│ 1   │ Technical_Constraints_Performance_Parameters          │ 0.666067  │
+│ 2   │ Data_Client_and_Consultant_Requests                   │ 0.180745  │
+│ 3   │ Client_and_Consultant_Requests_Collaboration          │ 0.0601998 │
+│ 4   │ Design_Reasoning_Collaboration                        │ 0.238609  │
+│ 5   │ Data_Performance_Parameters                           │ 0.612509  │
+│ 6   │ Data_Collaboration                                    │ 0.172717  │
+│ 7   │ Data_Design_Reasoning                                 │ 0.747755  │
+│ 8   │ Client_and_Consultant_Requests_Design_Reasoning       │ 0.255857  │
+│ 9   │ Technical_Constraints_Collaboration                   │ 0.215453  │
+│ 10  │ Performance_Parameters_Client_and_Consultant_Requests │ 0.208733  │
+│ 11  │ Performance_Parameters_Design_Reasoning               │ 0.756921  │
+│ 12  │ Data_Technical_Constraints                            │ 0.72876   │
+│ 13  │ Technical_Constraints_Client_and_Consultant_Requests  │ 0.189126  │
+│ 14  │ Performance_Parameters_Collaboration                  │ 0.153379  │
+│ 15  │ Technical_Constraints_Design_Reasoning                │ 1.0       │
+Model fit (p value):
+1.2193341964055994e-9
+
+Model fit (Pearson):
+0.9292336567204313
+
+Main.EpistemicNetworkAnalysis.DefaultArtist
+Main.EpistemicNetworkAnalysis.MeansArtist
+Main.EpistemicNetworkAnalysis.TVRemoteArtist
+Main.EpistemicNetworkAnalysis.MeansArtist
+Main.EpistemicNetworkAnalysis.Formula2Rotation{GLM.LinearModel,GLM.LinearModel}
+Units (positions):
+96×5 DataFrames.DataFrame. Omitted printing of 1 columns
+│ Row │ ENA_UNIT                      │ dim_x      │ fit_x      │ dim_y       │
+│     │ String                        │ Float64    │ Float64    │ Float64     │
+├─────┼───────────────────────────────┼────────────┼────────────┼─────────────┤
+│ 1   │ FirstGame.First.steven z      │ 0.0329579  │ 0.0280845  │ -0.105464   │
+│ 2   │ FirstGame.First.akash v       │ -0.0502714 │ -0.0605441 │ 0.0225218   │
+│ 3   │ FirstGame.First.alexander b   │ -0.0858593 │ -0.0735121 │ -0.0210094  │
+│ 4   │ FirstGame.First.brandon l     │ -0.0165338 │ -0.0221109 │ 0.00781895  │
+│ 5   │ FirstGame.First.christian x   │ -0.304466  │ -0.304466  │ -0.283314   │
+│ 6   │ FirstGame.First.jordan l      │ -0.139942  │ -0.148068  │ -0.0703541  │
+│ 7   │ FirstGame.First.arden f       │ -0.73335   │ -0.654949  │ -0.336948   │
+│ 8   │ FirstGame.First.margaret n    │ -0.133794  │ -0.151042  │ -0.00811909 │
+│ 9   │ FirstGame.First.connor f      │ -0.0298884 │ 0.012901   │ -0.0288075  │
+│ 10  │ FirstGame.First.jimmy i       │ -0.0702635 │ -0.0729803 │ -0.0931202  │
+│ 11  │ FirstGame.First.devin c       │ -0.440654  │ -0.427734  │ 0.185559    │
+│ 12  │ FirstGame.First.tiffany x     │ 0.0464762  │ 0.0541446  │ -0.126874   │
+│ 13  │ FirstGame.First.amelia n      │ -0.128772  │ -0.138541  │ 0.0724838   │
+│ 14  │ FirstGame.First.luis t        │ -0.304466  │ -0.304466  │ -0.283314   │
+│ 15  │ FirstGame.First.amalia x      │ -0.0148329 │ -0.026354  │ 0.0205949   │
+│ 16  │ FirstGame.First.robert z      │ -0.0300705 │ -0.0176049 │ -0.103613   │
+│ 17  │ FirstGame.First.joseph k      │ -0.115933  │ -0.130744  │ -0.144606   │
+│ 18  │ FirstGame.First.peter h       │ -0.0736745 │ -0.0391322 │ -0.191125   │
+│ 19  │ FirstGame.First.carl b        │ -0.0432709 │ -0.0345767 │ -0.117154   │
+│ 20  │ FirstGame.First.mitchell h    │ -0.0125271 │ -0.05264   │ 0.0415991   │
+│ 21  │ FirstGame.First.peter s       │ -0.267835  │ -0.241143  │ -0.351513   │
+│ 22  │ FirstGame.First.joseph h      │ 0.157234   │ 0.12873    │ -0.106023   │
+│ 23  │ FirstGame.First.cameron k     │ 0.165143   │ 0.197144   │ -0.167062   │
+│ 24  │ FirstGame.First.fletcher l    │ 0.163825   │ 0.103635   │ -0.0766706  │
+│ 25  │ FirstGame.First.amirah u      │ 0.0659726  │ 0.0186624  │ -0.115068   │
+│ 26  │ FirstGame.First.kevin g       │ 0.114059   │ 0.125001   │ -0.200898   │
+│ 27  │ FirstGame.Second.robert z     │ -0.121018  │ -0.133904  │ 0.0022465   │
+│ 28  │ FirstGame.Second.akash v      │ -0.0447452 │ -0.0688486 │ 0.111826    │
+│ 29  │ FirstGame.Second.amirah u     │ -0.292799  │ -0.234342  │ -0.214511   │
+│ 30  │ FirstGame.Second.peter s      │ -0.024263  │ -0.0635677 │ -0.0887321  │
+│ 31  │ FirstGame.Second.jimmy i      │ -0.0181282 │ -0.0543793 │ 0.0565919   │
+│ 32  │ FirstGame.Second.devin c      │ 0.0661775  │ 0.0715106  │ -0.215857   │
+│ 33  │ FirstGame.Second.joseph h     │ -0.0641945 │ -0.0681488 │ 0.0552791   │
+│ 34  │ FirstGame.Second.peter h      │ 0.0310228  │ 0.043318   │ -0.0450318  │
+│ 35  │ FirstGame.Second.steven z     │ -0.106368  │ -0.114388  │ 0.226852    │
+│ 36  │ FirstGame.Second.arden f      │ -0.148262  │ -0.169112  │ 0.228938    │
+│ 37  │ FirstGame.Second.amelia n     │ 0.162468   │ 0.170331   │ 0.114844    │
+│ 38  │ FirstGame.Second.amalia x     │ -0.0211659 │ -0.0500761 │ 0.265756    │
+│ 39  │ FirstGame.Second.brandon l    │ 0.0891368  │ 0.060485   │ 0.222323    │
+│ 40  │ FirstGame.Second.fletcher l   │ 0.250737   │ 0.224803   │ 0.135471    │
+│ 41  │ FirstGame.Second.margaret n   │ -0.0696638 │ -0.0908057 │ 0.25674     │
+│ 42  │ FirstGame.Second.carl b       │ 0.212357   │ 0.188687   │ 0.149442    │
+│ 43  │ FirstGame.Second.jordan l     │ -0.153588  │ -0.163288  │ 0.0252746   │
+│ 44  │ FirstGame.Second.tiffany x    │ -0.106825  │ -0.143177  │ 0.204345    │
+│ 45  │ FirstGame.Second.cameron k    │ -0.283459  │ -0.281636  │ 0.257934    │
+│ 46  │ FirstGame.Second.alexander b  │ -0.435706  │ -0.390101  │ 0.221403    │
+│ 47  │ FirstGame.Second.mitchell h   │ -0.478832  │ -0.476505  │ -0.0430252  │
+│ 48  │ FirstGame.Second.joseph k     │ -0.114349  │ -0.132895  │ 0.12218     │
+│ 49  │ FirstGame.Second.kevin g      │ -0.153628  │ -0.16598   │ 0.103164    │
+│ 50  │ FirstGame.Second.connor f     │ -0.152733  │ -0.156907  │ 0.268858    │
+│ 51  │ FirstGame.Second.christian x  │ -0.12813   │ -0.11566   │ 0.140083    │
+│ 52  │ FirstGame.Second.luis t       │ -0.19282   │ -0.208578  │ 0.107913    │
+│ 53  │ SecondGame.First.brent p      │ -0.0984912 │ -0.0601332 │ -0.201351   │
+│ 54  │ SecondGame.First.kiana k      │ -0.0938301 │ -0.0944192 │ -0.329352   │
+│ 55  │ SecondGame.First.madeline g   │ 0.150925   │ 0.0913026  │ 0.0453676   │
+│ 56  │ SecondGame.First.justin y     │ -0.018217  │ -0.0299331 │ -0.244039   │
+│ 57  │ SecondGame.First.ruzhen e     │ 0.265812   │ 0.251559   │ 0.0453678   │
+│ 58  │ SecondGame.First.brandon f    │ 0.088667   │ 0.106016   │ -0.0465116  │
+│ 59  │ SecondGame.First.jackson p    │ 0.134077   │ 0.129725   │ -0.102526   │
+│ 60  │ SecondGame.First.shane t      │ 0.117786   │ 0.107192   │ -0.0302083  │
+│ 61  │ SecondGame.First.samuel o     │ 0.124771   │ 0.159386   │ -0.137603   │
+│ 62  │ SecondGame.First.casey f      │ 0.0454807  │ 0.0294555  │ -0.0330929  │
+│ 63  │ SecondGame.First.keegan q     │ 0.15217    │ 0.134359   │ -0.03213    │
+│ 64  │ SecondGame.First.nicholas l   │ 0.130019   │ 0.133414   │ 0.0261309   │
+│ 65  │ SecondGame.First.cameron i    │ 0.0401462  │ 0.0758818  │ -0.0550047  │
+│ 66  │ SecondGame.First.cormick u    │ 0.14742    │ 0.155893   │ -0.0875191  │
+│ 67  │ SecondGame.First.daniel t     │ 0.196336   │ 0.228425   │ -0.0733227  │
+│ 68  │ SecondGame.First.christina b  │ 0.165656   │ 0.203839   │ -0.161589   │
+│ 69  │ SecondGame.First.derek v      │ 0.182952   │ 0.179125   │ -0.191264   │
+│ 70  │ SecondGame.First.nicholas n   │ 0.142508   │ 0.144089   │ -0.163923   │
+│ 71  │ SecondGame.First.abigail z    │ 0.181696   │ 0.172176   │ -0.0178238  │
+│ 72  │ SecondGame.First.caitlyn y    │ 0.0684302  │ 0.062396   │ -0.0623336  │
+│ 73  │ SecondGame.First.nathan d     │ 0.148861   │ 0.134974   │ -0.0542567  │
+│ 74  │ SecondGame.First.luke u       │ 0.264913   │ 0.277602   │ 0.153655    │
+│ 75  │ SecondGame.Second.jackson p   │ 0.286566   │ 0.280726   │ -0.00845157 │
+│ 76  │ SecondGame.Second.brent p     │ 0.213362   │ 0.207252   │ -0.0223197  │
+│ 77  │ SecondGame.Second.cormick u   │ 0.142455   │ 0.134969   │ 0.0518035   │
+│ 78  │ SecondGame.Second.derek v     │ 0.134419   │ 0.140702   │ -0.10165    │
+│ 79  │ SecondGame.Second.luke u      │ 0.0612905  │ 0.064037   │ -0.0541105  │
+│ 80  │ SecondGame.Second.cameron i   │ 0.145877   │ 0.130288   │ -0.0369383  │
+│ 81  │ SecondGame.Second.nathan d    │ 0.098492   │ 0.0726598  │ 0.170151    │
+│ 82  │ SecondGame.Second.samuel o    │ 0.322961   │ 0.357107   │ 0.158839    │
+│ 83  │ SecondGame.Second.ruzhen e    │ 0.140233   │ 0.11982    │ 0.161201    │
+│ 84  │ SecondGame.Second.casey f     │ 0.327879   │ 0.436476   │ 0.14283     │
+│ 85  │ SecondGame.Second.keegan q    │ 0.250112   │ 0.247376   │ 0.0549192   │
+│ 86  │ SecondGame.Second.nicholas n  │ 0.192734   │ 0.216814   │ -0.127538   │
+│ 87  │ SecondGame.Second.justin y    │ 0.247041   │ 0.241908   │ 0.0803403   │
+│ 88  │ SecondGame.Second.abigail z   │ 0.016837   │ 0.0186358  │ 0.191838    │
+│ 89  │ SecondGame.Second.daniel t    │ 0.039728   │ 0.0465923  │ 0.335713    │
+│ 90  │ SecondGame.Second.shane t     │ -0.0142447 │ -0.0290726 │ 0.102761    │
+│ 91  │ SecondGame.Second.christina b │ 0.104597   │ 0.136996   │ 0.311055    │
+│ 92  │ SecondGame.Second.madeline g  │ 0.216932   │ 0.247434   │ 0.254647    │
+│ 93  │ SecondGame.Second.brandon f   │ -0.166162  │ -0.186093  │ 0.0120495   │
+│ 94  │ SecondGame.Second.caitlyn y   │ -0.18908   │ -0.228947  │ -0.0901082  │
+│ 95  │ SecondGame.Second.kiana k     │ -0.34744   │ -0.288694  │ 0.0617448   │
+│ 96  │ SecondGame.Second.nicholas l  │ -0.213163  │ -0.203842  │ 0.0147252   │
+Codes:
+6×4 DataFrames.DataFrame
+│ Row │ code                           │ density  │ fit_x     │ fit_y     │
+│     │ Symbol                         │ Float64  │ Float64   │ Float64   │
+├─────┼────────────────────────────────┼──────────┼───────────┼───────────┤
+│ 1   │ Data                           │ 0.814395 │ -0.252847 │ 0.297541  │
+│ 2   │ Technical_Constraints          │ 0.933403 │ -1.18996  │ -0.132099 │
+│ 3   │ Performance_Parameters         │ 0.799432 │ 1.19282   │ 1.61871   │
+│ 4   │ Client_and_Consultant_Requests │ 0.298306 │ -0.38298  │ -0.711078 │
+│ 5   │ Design_Reasoning               │ 1.0      │ 1.10299   │ -1.21735  │
+│ 6   │ Collaboration                  │ 0.2802   │ -2.22317  │ 0.128953  │
+Network:
+15×4 DataFrames.DataFrame. Omitted printing of 2 columns
+│ Row │ relationship                                          │ density   │
+│     │ Symbol                                                │ Float64   │
+├─────┼───────────────────────────────────────────────────────┼───────────┤
+│ 1   │ Technical_Constraints_Performance_Parameters          │ 0.666067  │
+│ 2   │ Data_Client_and_Consultant_Requests                   │ 0.180745  │
+│ 3   │ Client_and_Consultant_Requests_Collaboration          │ 0.0601998 │
+│ 4   │ Design_Reasoning_Collaboration                        │ 0.238609  │
+│ 5   │ Data_Performance_Parameters                           │ 0.612509  │
+│ 6   │ Data_Collaboration                                    │ 0.172717  │
+│ 7   │ Data_Design_Reasoning                                 │ 0.747755  │
+│ 8   │ Client_and_Consultant_Requests_Design_Reasoning       │ 0.255857  │
+│ 9   │ Technical_Constraints_Collaboration                   │ 0.215453  │
+│ 10  │ Performance_Parameters_Client_and_Consultant_Requests │ 0.208733  │
+│ 11  │ Performance_Parameters_Design_Reasoning               │ 0.756921  │
+│ 12  │ Data_Technical_Constraints                            │ 0.72876   │
+│ 13  │ Technical_Constraints_Client_and_Consultant_Requests  │ 0.189126  │
+│ 14  │ Performance_Parameters_Collaboration                  │ 0.153379  │
+│ 15  │ Technical_Constraints_Design_Reasoning                │ 1.0       │
+Model fit (p value):
+1.2193341964055767e-9
+
+Model fit (Pearson):
+0.9292336567204311
+
+Main.EpistemicNetworkAnalysis.DefaultArtist
+Main.EpistemicNetworkAnalysis.MeansArtist
+Main.EpistemicNetworkAnalysis.TVRemoteArtist
+Main.EpistemicNetworkAnalysis.MeansArtist
