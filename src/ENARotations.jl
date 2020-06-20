@@ -159,7 +159,6 @@ function rotate!(rotation::Formula2Rotation, networkModel::DataFrame, unitModel:
         end
     end
 
-
     for t in rotation.f2.rhs
         if isa(t, Term)
             col = Symbol(t)
@@ -190,33 +189,12 @@ function rotate!(rotation::Formula2Rotation, networkModel::DataFrame, unitModel:
         end
     end
 
-    ## Normalize the weights
-    s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
-    if s != 0
-        networkModel[!, :weight_x] /= s
-    end
-
-    ## Orthogonalization
-    xAxis = Matrix{Float64}(unitModel[!, networkModel[!, :relationship]]) *
-            Matrix{Float64}(networkModel[!, [:weight_x]])
-    xAxis = xAxis .- mean(xAxis)
-    controlModel = DataFrame(xAxis)
-    x = controlModel[!, 1]
-    orthoUnitModel = copy(unitModel)
-    for networkRow in eachrow(networkModel)
-        r = networkRow[:relationship]
-        y = orthoUnitModel[:, r]
-        scalar = dot(y, x) / dot(x, x)
-        y -= scalar * x
-        orthoUnitModel[!, r] = map(Float64, y)
-    end
-
-    ## For each relationship in the ortho model, find the effect of the first predictor after the intercept
+    ## Again, but for the y-axis and using the second formula
     for networkRow in eachrow(networkModel)
         r = networkRow[:relationship]
         f2 = FormulaTerm(term(r), rotation.f2.rhs)
         try
-            m2 = fit(rotation.regression_model2, f2, orthoUnitModel)
+            m2 = fit(rotation.regression_model2, f2, filteredUnitModel)
             slope = coef(m2)[2]
             networkRow[:weight_y] = slope
         catch e
@@ -227,7 +205,27 @@ function rotate!(rotation::Formula2Rotation, networkModel::DataFrame, unitModel:
         end
     end
 
+    ## Orthogonalization: replace y weights with their rejection from the x weights
+    before = copy(networkModel[!, :weight_y])
+    scalar = dot(networkModel[!, :weight_y], networkModel[!, :weight_x]) / dot(networkModel[!, :weight_x], networkModel[!, :weight_x])
+    networkModel[!, :weight_y] -= scalar * networkModel[!, :weight_x]    
+    after = copy(networkModel[!, :weight_y])
+
+    ## Raise a warning about interpreting the y-axis when before and after have a large angle between them
+    theta = dot(before, after)
+    theta /= sqrt(dot(before, before))
+    theta /= sqrt(dot(after, after))
+    angle = acos(theta) * 180 / pi
+    if abs(angle) > 5
+        # TODO
+    end
+
     ## Normalize the weights
+    s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
+    if s != 0
+        networkModel[!, :weight_x] /= s
+    end
+
     s = sqrt(sum(networkModel[!, :weight_y] .^ 2))
     if s != 0
         networkModel[!, :weight_y] /= s
