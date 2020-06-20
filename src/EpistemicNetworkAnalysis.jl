@@ -3,6 +3,7 @@ module EpistemicNetworkAnalysis
 # Imports
 ## Plotting
 using Plots
+using Plots.PlotMeasures
 
 ## Data
 using DataFrames

@@ -28,7 +28,7 @@ function Plots.plot(ena::ENAModel;
     showconfidence::Bool=false)
 
     # Plot
-    p = plot(leg=false)
+    p = plot(leg=false, margin=20mm)
 
     # Artist (to choose the colors etc.)
     artist(ena, p) do networkColors,
