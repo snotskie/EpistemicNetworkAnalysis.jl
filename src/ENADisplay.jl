@@ -73,7 +73,7 @@ function Plots.plot(ena::ENAModel;
         if showcodes
             plot!(p, ena.codeModel[!, :fit_x], ena.codeModel[!, :fit_y],
                 seriestype=:scatter,
-                series_annotations=ena.codeModel[!, :code],
+                series_annotations=map(label->text(label, 5), ena.codeModel[!, :code]),
                 markersize=codeMarkerSizes,
                 markercolor=codeColors,
                 markerstrokecolor=codeColors)
@@ -116,9 +116,13 @@ function Plots.plot(ena::ENAModel;
             end
         end
 
-        # Label the Axes
-        # axis = p[Axis]
-        # axis[:names, :axisnames] = (xaxisname, yaxisname)
+        ## Tidy the plot
+        xticks!(p, [-1, 0, 1])
+        yticks!(p, [-1, 0, 1])
+        xlims!(p, -3, 3)
+        ylims!(p, -3, 3)
+        xlabel!(p, xaxisname)
+        ylabel!(p, yaxisname)
     end
 
     return p
