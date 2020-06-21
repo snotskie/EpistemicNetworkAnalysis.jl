@@ -16,6 +16,8 @@ struct ENAModel
     relationshipMap::Any
     pvalue::Real
     pearson::Real
+    variance_x::Real
+    variance_y::Real
 end
 
 function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
@@ -245,10 +247,23 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         @warn """The angle between the axes of this model is $(angle) degrees, when it should be 90.
 This can lead to strange visual effects when plotting on orthogonal axes.
 This can undermine interpreting betweenness between units.
+This can undermind interpreting variance explained by the axes.
 And this can cause problems with ENA's optimization algorithm fitting the codes and the lines."""
     end
 
+    ## Compute the variance explained by the axes
+    pcaModel = help_deflating_svd(networkModel, unitModel, unitModel[!, [:dim_x, :dim_y]])
+    allDims =
+        Matrix{Float64}(unitModel[!, networkModel[!, :relationship]]) * 
+        hcat(Matrix{Float64}(networkModel[!, [:weight_x, :weight_y]]),
+             Matrix{Float64}(pcaModel))
+    
+    totalVariance = sum(var.(eachcol(allDims)))
+    variance_x = var(unitModel[!, :dim_x]) / totalVariance
+    variance_y = var(unitModel[!, :dim_y]) / totalVariance
+
     # Done!
     return ENAModel(unitJoinedData, codes, conversations, units,
-                    windowSize, rotateBy, unitModel, networkModel, codeModel, relationships, p, pearson)
+                    windowSize, rotateBy, unitModel, networkModel, codeModel, relationships,
+                    p, pearson, variance_x, variance_y)
 end

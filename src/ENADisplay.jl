@@ -16,10 +16,18 @@ function Base.display(ena::ENAModel) # TODO should this be print, display, or sh
     println("Model fit (Pearson):")
     println(ena.pearson)
     println()
+    println()
+    println("Model fit (Variance explained on x-axis):")
+    println(ena.variance_x)
+    println()
+    println()
+    println("Model fit (Variance explained on y-axis):")
+    println(ena.variance_y)
+    println()
 end
 
 function Plots.plot(ena::ENAModel;
-    xaxisname::String="", yaxisname::String="",
+    xaxisname::String="X", yaxisname::String="Y",
     artist::ENAArtist=DefaultArtist(),
     showprojection::Bool=false,
     showunits::Bool=true,
@@ -121,8 +129,8 @@ function Plots.plot(ena::ENAModel;
         yticks!(p, [-1, 0, 1])
         xlims!(p, -3, 3)
         ylims!(p, -3, 3)
-        xlabel!(p, xaxisname)
-        ylabel!(p, yaxisname)
+        xlabel!(p, "$xaxisname ($(ena.variance_x)%)")
+        ylabel!(p, "$yaxisname ($(ena.variance_y)%)")
     end
 
     return p
