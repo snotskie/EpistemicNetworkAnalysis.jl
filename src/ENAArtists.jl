@@ -99,11 +99,11 @@ function (artist::DefaultArtist)(cb, ena, scene)
 
     ## Confidence Intervals
     confidenceIntervals = []
-    mu_x = mean(ena.unitModel[!, :fit_x])
-    mu_y = mean(ena.unitModel[!, :fit_y])
+    mu_x = mean(ena.unitModel[!, :dim_x])
+    mu_y = mean(ena.unitModel[!, :dim_y])
     try
-        ci_x = collect(confint(OneSampleTTest(ena.unitModel[!, :fit_x])))
-        ci_y = collect(confint(OneSampleTTest(ena.unitModel[!, :fit_y])))
+        ci_x = collect(confint(OneSampleTTest(ena.unitModel[!, :dim_x])))
+        ci_y = collect(confint(OneSampleTTest(ena.unitModel[!, :dim_y])))
         color = :black
         shape = :square
         size = 4
@@ -152,10 +152,10 @@ function (artist::MeansArtist)(cb, ena, scene)
     # ### Find the "direction", "strength", and "angle" for the line size
     # ### Thicker lines are those whose rotation weights are more towards
     # ### one side of the difference of the means
-    # mu_x_control = mean(controlUnits[!, :fit_x])
-    # mu_y_control = mean(controlUnits[!, :fit_y])
-    # mu_x_treatment = mean(treatmentUnits[!, :fit_x])
-    # mu_y_treatment = mean(treatmentUnits[!, :fit_y])
+    # mu_x_control = mean(controlUnits[!, :dim_x])
+    # mu_y_control = mean(controlUnits[!, :dim_y])
+    # mu_x_treatment = mean(treatmentUnits[!, :dim_x])
+    # mu_y_treatment = mean(treatmentUnits[!, :dim_y])
     # mu_x_all = (mu_x_treatment + mu_x_control) / 2
     # mu_y_all = (mu_y_treatment + mu_y_control) / 2
     # vt = Vector{Float64}([
@@ -252,11 +252,11 @@ function (artist::MeansArtist)(cb, ena, scene)
     confidenceIntervals = []
 
     ### Control
-    mu_x = mean(controlUnits[!, :fit_x])
-    mu_y = mean(controlUnits[!, :fit_y])
+    mu_x = mean(controlUnits[!, :dim_x])
+    mu_y = mean(controlUnits[!, :dim_y])
     try
-        ci_x = collect(confint(OneSampleTTest(controlUnits[!, :fit_x])))
-        ci_y = collect(confint(OneSampleTTest(controlUnits[!, :fit_y])))
+        ci_x = collect(confint(OneSampleTTest(controlUnits[!, :dim_x])))
+        ci_y = collect(confint(OneSampleTTest(controlUnits[!, :dim_y])))
         color = :purple
         shape = :square
         size = 4
@@ -271,11 +271,11 @@ function (artist::MeansArtist)(cb, ena, scene)
     end
 
     ### Treatment
-    mu_x = mean(treatmentUnits[!, :fit_x])
-    mu_y = mean(treatmentUnits[!, :fit_y])
+    mu_x = mean(treatmentUnits[!, :dim_x])
+    mu_y = mean(treatmentUnits[!, :dim_y])
     try
-        ci_x = collect(confint(OneSampleTTest(treatmentUnits[!, :fit_x])))
-        ci_y = collect(confint(OneSampleTTest(treatmentUnits[!, :fit_y])))
+        ci_x = collect(confint(OneSampleTTest(treatmentUnits[!, :dim_x])))
+        ci_y = collect(confint(OneSampleTTest(treatmentUnits[!, :dim_y])))
         color = :orange
         shape = :square
         size = 4
@@ -417,11 +417,11 @@ function (artist::WindowsArtist)(cb, ena, scene)
     
     for (i, groupedUnits) in enumerate(allGroupedUnits)
         color = colors[i]
-        mu_x = mean(groupedUnits[!, :fit_x])
-        mu_y = mean(groupedUnits[!, :fit_y])
+        mu_x = mean(groupedUnits[!, :dim_x])
+        mu_y = mean(groupedUnits[!, :dim_y])
         try
-            ci_x = collect(confint(OneSampleTTest(groupedUnits[!, :fit_x])))
-            ci_y = collect(confint(OneSampleTTest(groupedUnits[!, :fit_y])))
+            ci_x = collect(confint(OneSampleTTest(groupedUnits[!, :dim_x])))
+            ci_y = collect(confint(OneSampleTTest(groupedUnits[!, :dim_y])))
             shape = :square
             size = 4
             CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
@@ -512,10 +512,10 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
     # ### Find the "direction", "strength", and "angle" for the line size
     # ### Thicker lines are those whose rotation weights are more towards
     # ### one side of the difference of the means
-    # mu_x_control = mean(group0xUnits[!, :fit_x])
-    # mu_y_control = mean(group0xUnits[!, :fit_y])
-    # mu_x_treatment = mean(group1xUnits[!, :fit_x])
-    # mu_y_treatment = mean(group1xUnits[!, :fit_y])
+    # mu_x_control = mean(group0xUnits[!, :dim_x])
+    # mu_y_control = mean(group0xUnits[!, :dim_y])
+    # mu_x_treatment = mean(group1xUnits[!, :dim_x])
+    # mu_y_treatment = mean(group1xUnits[!, :dim_y])
     # mu_x_all = (mu_x_treatment + mu_x_control) / 2
     # mu_y_all = (mu_y_treatment + mu_y_control) / 2
     # vt = Vector{Float64}([
@@ -633,11 +633,11 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
     for (i, groupedUnits) in enumerate(allGroupedUnits)
         color = colors[i]
         shape = shapes[i]
-        mu_x = mean(groupedUnits[!, :fit_x])
-        mu_y = mean(groupedUnits[!, :fit_y])
+        mu_x = mean(groupedUnits[!, :dim_x])
+        mu_y = mean(groupedUnits[!, :dim_y])
         try
-            ci_x = collect(confint(OneSampleTTest(groupedUnits[!, :fit_x])))
-            ci_y = collect(confint(OneSampleTTest(groupedUnits[!, :fit_y])))
+            ci_x = collect(confint(OneSampleTTest(groupedUnits[!, :dim_x])))
+            ci_y = collect(confint(OneSampleTTest(groupedUnits[!, :dim_y])))
             size = 4
             CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
             push!(confidenceIntervals, CI)
