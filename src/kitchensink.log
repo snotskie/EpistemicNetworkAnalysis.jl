@@ -139,11 +139,14 @@ Model fit (Pearson):
 
 
 Model fit (Variance explained on x-axis):
-0.14227645676018083
+0.14227645676018086
 
 
 Model fit (Variance explained on y-axis):
-0.15246952631414534
+0.15246952631414537
+
+Model fit (Total variance):
+0.2538909080805693
 
 Main.EpistemicNetworkAnalysis.DefaultArtist
 Main.EpistemicNetworkAnalysis.MeansArtist
@@ -294,7 +297,10 @@ Model fit (Variance explained on x-axis):
 
 
 Model fit (Variance explained on y-axis):
-0.11815671832721587
+0.11815671832721585
+
+Model fit (Total variance):
+0.20304921124428246
 
 Main.EpistemicNetworkAnalysis.DefaultArtist
 Main.EpistemicNetworkAnalysis.MeansArtist
@@ -445,7 +451,10 @@ Model fit (Variance explained on x-axis):
 
 
 Model fit (Variance explained on y-axis):
-0.10006425610946787
+0.10006425610946784
+
+Model fit (Total variance):
+0.2397622227192473
 
 Main.EpistemicNetworkAnalysis.DefaultArtist
 Main.EpistemicNetworkAnalysis.MeansArtist

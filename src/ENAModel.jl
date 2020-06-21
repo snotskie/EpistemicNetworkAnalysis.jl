@@ -18,6 +18,7 @@ struct ENAModel
     pearson::Real
     variance_x::Real
     variance_y::Real
+    total_variance::Real
 end
 
 function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
@@ -258,12 +259,12 @@ And this can cause problems with ENA's optimization algorithm fitting the codes 
         hcat(Matrix{Float64}(networkModel[!, [:weight_x, :weight_y]]),
              Matrix{Float64}(pcaModel))
     
-    totalVariance = sum(var.(eachcol(allDims)))
-    variance_x = var(unitModel[!, :dim_x]) / totalVariance
-    variance_y = var(unitModel[!, :dim_y]) / totalVariance
+    total_variance = sum(var.(eachcol(allDims)))
+    variance_x = var(allDims[:, 1]) / total_variance
+    variance_y = var(allDims[:, 2]) / total_variance
 
     # Done!
     return ENAModel(unitJoinedData, codes, conversations, units,
                     windowSize, rotateBy, unitModel, networkModel, codeModel, relationships,
-                    p, pearson, variance_x, variance_y)
+                    p, pearson, variance_x, variance_y, total_variance)
 end

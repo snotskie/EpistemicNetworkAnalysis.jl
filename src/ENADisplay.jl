@@ -24,6 +24,9 @@ function Base.display(ena::ENAModel) # TODO should this be print, display, or sh
     println("Model fit (Variance explained on y-axis):")
     println(ena.variance_y)
     println()
+    println("Model fit (Total variance):")
+    println(ena.total_variance)
+    println()
 end
 
 function Plots.plot(ena::ENAModel;
