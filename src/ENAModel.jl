@@ -253,15 +253,10 @@ And this can cause problems with ENA's optimization algorithm fitting the codes 
     end
 
     ## Compute the variance explained by the axes
-    pcaModel = help_deflating_svd(networkModel, unitModel, unitModel[!, [:dim_x, :dim_y]])
-    allDims =
-        Matrix{Float64}(unitModel[!, networkModel[!, :relationship]]) * 
-        hcat(Matrix{Float64}(networkModel[!, [:weight_x, :weight_y]]),
-             Matrix{Float64}(pcaModel))
-    
-    total_variance = sum(var.(eachcol(allDims)))
-    variance_x = var(allDims[:, 1]) / total_variance
-    variance_y = var(allDims[:, 2]) / total_variance
+    pcaModel = help_deflating_svd(networkModel, unitModel, unitModel[!, [:dim_x, :dim_y]])    
+    total_variance = tvar(pcaModel) + var(unitModel[!, :dim_x]) + var(unitModel[!, :dim_y])
+    variance_x = var(unitModel[!, :dim_x]) / total_variance
+    variance_y = var(unitModel[!, :dim_y]) / total_variance
 
     # Done!
     return ENAModel(unitJoinedData, codes, conversations, units,

@@ -22,6 +22,6 @@ function help_deflating_svd(networkModel::DataFrame, unitModel::DataFrame, contr
     end
 
     # then, once we've deflated or not, we run an SVD on the data
-    pcaModel = projection(fit(PCA, X', pratio=1.0))
+    pcaModel = fit(PCA, X', pratio=1.0)
     return pcaModel
 end

@@ -64,7 +64,7 @@ end
 
 # SVD Rotation
 function rotate!(::SVDRotation, networkModel::DataFrame, unitModel::DataFrame)
-    pcaModel = help_deflating_svd(networkModel, unitModel)
+    pcaModel = projection(help_deflating_svd(networkModel, unitModel))
     networkModel[!, :weight_x] = pcaModel[:, 1]
     networkModel[!, :weight_y] = pcaModel[:, 2]
 end
@@ -141,7 +141,7 @@ function rotate!(rotation::FormulaRotation, networkModel::DataFrame, unitModel::
             Matrix{Float64}(networkModel[!, [:weight_x]])
     xAxis = xAxis .- mean(xAxis)
     controlModel = DataFrame(xAxis)
-    pcaModel = help_deflating_svd(networkModel, unitModel, controlModel)
+    pcaModel = projection(help_deflating_svd(networkModel, unitModel, controlModel))
     networkModel[!, :weight_y] = pcaModel[:, 1]
 end
 
