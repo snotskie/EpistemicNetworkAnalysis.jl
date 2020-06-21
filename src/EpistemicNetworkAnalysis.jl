@@ -72,12 +72,6 @@ if abspath(PROGRAM_FILE) == @__FILE__
     myRotations = Dict{String,ENARotation}()
     # myRotations["svd"] = SVDRotation()
     myRotations["means-condition"] = MeansRotation(:Condition, "FirstGame", "SecondGame")
-    # myRotations["means-gamehalf"] = MeansRotation(:GameHalf, "First", "Second")
-    # myRotations["formula2-nonsense"] = Formula2Rotation(
-    #     LinearModel, @formula(y ~ 1 + FactoredCondition),
-    #     LinearModel, @formula(y ~ 1 + FactoredCondition)
-    # )
-
     myRotations["formula2-repeat"] =  Formula2Rotation(
         LinearModel, @formula(y ~ 1 + FactoredCondition + FactoredGameHalf + FactoredGameHalf&FactoredCondition),
         LinearModel, @formula(y ~ 1 + FactoredGameHalf + FactoredCondition + FactoredGameHalf&FactoredCondition)
@@ -102,11 +96,6 @@ if abspath(PROGRAM_FILE) == @__FILE__
         :GameHalf, "First", "Second"
     )
 
-    # myArtists["tv-gamehalf-x-condition-y"] = TVRemoteArtist(
-    #     :GameHalf, "First", "Second",
-    #     :Condition, "FirstGame", "SecondGame"
-    # )
-
     counter = 0
     for (label1, rotation) in myRotations
         println(typeof(rotation))
@@ -115,7 +104,6 @@ if abspath(PROGRAM_FILE) == @__FILE__
         for (label2, artist) in myArtists
             println(typeof(artist))
             p1 = plot(myENA,
-                showprojection=true,
                 artist=artist
             )
 
@@ -127,7 +115,6 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
             global counter
             savefig(p1, "kitchensink-units-$(counter)-$(label1)-$(label2).svg")
-
             savefig(p2, "kitchensink-means-$(counter)-$(label1)-$(label2).svg")
             counter += 1
         end

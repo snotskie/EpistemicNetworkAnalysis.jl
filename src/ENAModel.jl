@@ -253,8 +253,6 @@ And this can cause problems with ENA's optimization algorithm fitting the codes 
     end
 
     ## Compute the variance explained by the axes
-    # pcaModel = help_deflating_svd(networkModel, unitModel, unitModel[!, [:dim_x, :dim_y]])    
-    # total_variance = tvar(pcaModel) + var(unitModel[!, :dim_x]) + var(unitModel[!, :dim_y])
     total_variance = sum(var.(eachcol(unitModel[!, networkModel[!, :relationship]])))
     variance_x = var(unitModel[!, :dim_x]) / total_variance
     variance_y = var(unitModel[!, :dim_y]) / total_variance

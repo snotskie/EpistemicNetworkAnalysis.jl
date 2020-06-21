@@ -32,7 +32,7 @@ end
 function Plots.plot(ena::ENAModel;
     xaxisname::String="X", yaxisname::String="Y",
     artist::ENAArtist=DefaultArtist(),
-    showprojection::Bool=false,
+    showunitfit::Bool=false,
     showunits::Bool=true,
     showlines::Bool=true,
     showcodes::Bool=true,
@@ -53,8 +53,8 @@ function Plots.plot(ena::ENAModel;
                    confidenceIntervals
     
         # Draw Units
-        if showprojection
-            plot!(p, ena.unitModel[!, :dim_x], ena.unitModel[!, :dim_y],
+        if showunitfit
+            plot!(p, ena.unitModel[!, :fit_x], ena.unitModel[!, :fit_y],
                 seriestype=:scatter,
                 markersize=unitMarkerSizes,
                 markercolor=:grey,
@@ -62,7 +62,7 @@ function Plots.plot(ena::ENAModel;
         end
 
         if showunits
-            plot!(p, ena.unitModel[!, :fit_x], ena.unitModel[!, :fit_y],
+            plot!(p, ena.unitModel[!, :dim_x], ena.unitModel[!, :dim_y],
                 seriestype=:scatter,
                 markersize=unitMarkerSizes,
                 markercolor=unitColors,
