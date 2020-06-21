@@ -126,12 +126,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
             )
 
             global counter
-            xticks!(p1, [0])
-            yticks!(p1, [0])
             savefig(p1, "kitchensink-units-$(counter)-$(label1)-$(label2).svg")
 
-            xticks!(p2, [0])
-            yticks!(p2, [0])
             savefig(p2, "kitchensink-means-$(counter)-$(label1)-$(label2).svg")
             counter += 1
         end

@@ -81,7 +81,7 @@ function Plots.plot(ena::ENAModel;
         if showcodes
             plot!(p, ena.codeModel[!, :fit_x], ena.codeModel[!, :fit_y],
                 seriestype=:scatter,
-                series_annotations=map(label->text(label, 5), ena.codeModel[!, :code]),
+                series_annotations=map(label->text(label, :top, 5), ena.codeModel[!, :code]),
                 markersize=codeMarkerSizes,
                 markercolor=codeColors,
                 markerstrokecolor=codeColors)
@@ -129,8 +129,8 @@ function Plots.plot(ena::ENAModel;
         yticks!(p, [-1, 0, 1])
         xlims!(p, -3, 3)
         ylims!(p, -3, 3)
-        xlabel!(p, "$xaxisname ($(ena.variance_x)%)")
-        ylabel!(p, "$yaxisname ($(ena.variance_y)%)")
+        xlabel!(p, "$xaxisname ($(round(Int, ena.variance_x*100))%)")
+        ylabel!(p, "$yaxisname ($(round(Int, ena.variance_y*100))%)")
     end
 
     return p
