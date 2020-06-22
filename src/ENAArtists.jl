@@ -344,10 +344,38 @@ function (artist::WindowsArtist)(cb, ena, scene)
         group01Units,
         group10Units,
         group11Units]
+    
+    ## Pre-processing the line weights and colors
+    lineStrengths = Dict{Symbol,Float64}(
+        r => -1
+        for r in ena.networkModel[!, :relationship]
+    )
+
+    lineColors = Dict{Symbol,Symbol}(
+        r => :black
+        for r in ena.networkModel[!, :relationship]
+    )
+
+    for networkRow in eachrow(ena.networkModel)
+        r = networkRow[:relationship]
+        colors = [:blue, :purple, :green, :orange]
+        for (i, groupedUnits) in enumerate(allGroupedUnits)
+            color = colors[i]
+            antiGroupedUnits = vcat(setdiff(allGroupedUnits, [groupedUnits])...)
+            groupStrength = sum(groupedUnits[!, r]) / nrow(groupedUnits)
+            antiGroupStrength = sum(antiGroupedUnits[!, r]) / nrow(antiGroupedUnits)
+            netStrength = groupStrength - antiGroupStrength
+            if netStrength > lineStrengths[r]
+                lineStrengths[r] = netStrength
+                lineColors[r] = color
+            end
+        end
+    end
 
     ## Colors
     networkColors = map(eachrow(ena.networkModel)) do networkRow
-        return :black
+        r = networkRow[:relationship]
+        return lineColors[r]
     end
 
     unitColors = map(eachrow(ena.unitModel)) do unitRow
@@ -372,10 +400,6 @@ function (artist::WindowsArtist)(cb, ena, scene)
         return :black
     end
 
-    codeColors = map(eachrow(ena.codeModel)) do codeRow
-        return :black
-    end
-
     ## Shapes
     unitShapes = map(eachrow(ena.unitModel)) do unitRow
         return :circle
@@ -387,7 +411,8 @@ function (artist::WindowsArtist)(cb, ena, scene)
 
     ## Sizes
     networkLineWidths = map(eachrow(ena.networkModel)) do networkRow
-        return networkRow[:density]
+        r = networkRow[:relationship]
+        return lineStrengths[r]
     end
 
     unitMarkerSizes = map(eachrow(ena.unitModel)) do unitRow
