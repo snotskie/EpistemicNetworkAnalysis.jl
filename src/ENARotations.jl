@@ -46,6 +46,7 @@ very well be colinear with one or more of the other confounds given.
 """
 struct FormulaRotation{T <: RegressionModel} <: ENARotation
     regression_model::Type{T}
+    coefindex::Int
     f1::FormulaTerm
 end
 
@@ -57,8 +58,10 @@ TODO document
 """
 struct Formula2Rotation{T <: RegressionModel, U <: RegressionModel} <: ENARotation
     regression_model1::Type{T}
+    coefindex1::Int
     f1::FormulaTerm
     regression_model2::Type{U}
+    coefindex2::Int
     f2::FormulaTerm
 end
 
@@ -88,7 +91,7 @@ function rotate!(rotation::MeansRotation, networkModel::DataFrame, unitModel::Da
     factoredUnitModel = hcat(filteredUnitModel, DataFrame(:factoredGroupVar => factors))
 
     ## Use a FormulaRotation to do the rest of the work
-    fr = FormulaRotation(LinearModel, @formula(y ~ 1 + factoredGroupVar))
+    fr = FormulaRotation(LinearModel, 2, @formula(y ~ 1 + factoredGroupVar))
     rotate!(fr, networkModel, factoredUnitModel)
 end
 
@@ -118,7 +121,7 @@ function rotate!(rotation::FormulaRotation, networkModel::DataFrame, unitModel::
         f1 = FormulaTerm(term(r), rotation.f1.rhs)
         try
             m1 = fit(rotation.regression_model, f1, filteredUnitModel)
-            slope = coef(m1)[2]
+            slope = coef(m1)[rotation.coefindex]
             networkRow[:weight_x] = slope
         catch e
             error("""
@@ -179,7 +182,7 @@ function rotate!(rotation::Formula2Rotation, networkModel::DataFrame, unitModel:
         f1 = FormulaTerm(term(r), rotation.f1.rhs)
         try
             m1 = fit(rotation.regression_model1, f1, filteredUnitModel)
-            slope = coef(m1)[2]
+            slope = coef(m1)[rotation.coefindex1]
             networkRow[:weight_x] = slope
         catch e
             error("""
@@ -195,7 +198,7 @@ function rotate!(rotation::Formula2Rotation, networkModel::DataFrame, unitModel:
         f2 = FormulaTerm(term(r), rotation.f2.rhs)
         try
             m2 = fit(rotation.regression_model2, f2, filteredUnitModel)
-            slope = coef(m2)[2]
+            slope = coef(m2)[rotation.coefindex2]
             networkRow[:weight_y] = slope
         catch e
             error("""

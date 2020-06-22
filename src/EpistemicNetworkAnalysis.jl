@@ -73,8 +73,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
     myRotations["svd"] = SVDRotation()
     myRotations["means-condition"] = MeansRotation(:Condition, "FirstGame", "SecondGame")
     myRotations["formula2-repeat"] =  Formula2Rotation(
-        LinearModel, @formula(y ~ 1 + FactoredCondition + FactoredGameHalf + FactoredGameHalf&FactoredCondition),
-        LinearModel, @formula(y ~ 1 + FactoredGameHalf + FactoredCondition + FactoredGameHalf&FactoredCondition)
+        LinearModel, 2, @formula(y ~ 1 + FactoredCondition + FactoredGameHalf + FactoredGameHalf&FactoredCondition),
+        LinearModel, 2, @formula(y ~ 1 + FactoredGameHalf + FactoredCondition + FactoredGameHalf&FactoredCondition)
     )
 
     # myRotations["formula2-norepeat"] =  Formula2Rotation(
