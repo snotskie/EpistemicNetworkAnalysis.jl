@@ -56,6 +56,7 @@ function Plots.plot(ena::ENAModel;
         if showunitfit
             plot!(p, ena.unitModel[!, :fit_x], ena.unitModel[!, :fit_y],
                 seriestype=:scatter,
+                markershape=unitShapes,
                 markersize=unitMarkerSizes,
                 markercolor=:grey,
                 markerstrokecolor=:grey)
@@ -64,6 +65,7 @@ function Plots.plot(ena::ENAModel;
         if showunits
             plot!(p, ena.unitModel[!, :dim_x], ena.unitModel[!, :dim_y],
                 seriestype=:scatter,
+                markershape=unitShapes,
                 markersize=unitMarkerSizes,
                 markercolor=unitColors,
                 markerstrokecolor=unitColors)
@@ -85,6 +87,7 @@ function Plots.plot(ena::ENAModel;
             plot!(p, ena.codeModel[!, :fit_x], ena.codeModel[!, :fit_y],
                 seriestype=:scatter,
                 series_annotations=map(label->text(label, :top, 5), ena.codeModel[!, :code]),
+                markershape=codeShapes,
                 markersize=codeMarkerSizes,
                 markercolor=codeColors,
                 markerstrokecolor=codeColors)
