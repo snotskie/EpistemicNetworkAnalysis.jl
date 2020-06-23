@@ -64,7 +64,7 @@ function (artist::DefaultArtist)(cb, ena, scene)
 
     ## Shapes
     unitShapes = map(eachrow(ena.unitModel)) do unitRow
-        return :circle
+        return :x
     end
 
     codeShapes = map(eachrow(ena.codeModel)) do codeRow
@@ -99,22 +99,23 @@ function (artist::DefaultArtist)(cb, ena, scene)
 
     ## Confidence Intervals
     confidenceIntervals = []
-    mu_x = mean(ena.unitModel[!, :dim_x])
-    mu_y = mean(ena.unitModel[!, :dim_y])
-    try
+    color = :black
+    shape = :square
+    size = 4
+    if nrow(ena.unitModel) > 1
+        mu_x = mean(ena.unitModel[!, :dim_x])
+        mu_y = mean(ena.unitModel[!, :dim_y])
         ci_x = collect(confint(OneSampleTTest(ena.unitModel[!, :dim_x])))
         ci_y = collect(confint(OneSampleTTest(ena.unitModel[!, :dim_y])))
-        color = :black
-        shape = :square
-        size = 4
         CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
         push!(confidenceIntervals, CI)
-    catch e
-        color = :black
-        shape = :square
-        size = 4
+    elseif nrow(ena.unitModel) == 1
+        mu_x = mean(ena.unitModel[!, :dim_x])
+        mu_y = mean(ena.unitModel[!, :dim_y])
         CI = (mu_x, mu_y, [mu_x, mu_x], [mu_y, mu_y], color, shape, size)
         push!(confidenceIntervals, CI)
+    else
+        # do nothing
     end
 
     ## Do Callback so ENADisplay can do the bulk of the work
@@ -213,7 +214,7 @@ function (artist::MeansArtist)(cb, ena, scene)
 
     ## Shapes
     unitShapes = map(eachrow(ena.unitModel)) do unitRow
-        return :circle
+        return :x
     end
 
     codeShapes = map(eachrow(ena.codeModel)) do codeRow
@@ -252,41 +253,43 @@ function (artist::MeansArtist)(cb, ena, scene)
     confidenceIntervals = []
 
     ### Control
-    mu_x = mean(controlUnits[!, :dim_x])
-    mu_y = mean(controlUnits[!, :dim_y])
-    try
+    color = :purple
+    shape = :square
+    size = 4
+    if nrow(controlUnits) > 1
+        mu_x = mean(controlUnits[!, :dim_x])
+        mu_y = mean(controlUnits[!, :dim_y])
         ci_x = collect(confint(OneSampleTTest(controlUnits[!, :dim_x])))
         ci_y = collect(confint(OneSampleTTest(controlUnits[!, :dim_y])))
-        color = :purple
-        shape = :square
-        size = 4
         CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
         push!(confidenceIntervals, CI)
-    catch e
-        color = :purple
-        shape = :square
-        size = 4
+    elseif nrow(controlUnits) == 1
+        mu_x = mean(controlUnits[!, :dim_x])
+        mu_y = mean(controlUnits[!, :dim_y])
         CI = (mu_x, mu_y, [mu_x, mu_x], [mu_y, mu_y], color, shape, size)
         push!(confidenceIntervals, CI)
+    else
+        # do nothing
     end
 
     ### Treatment
-    mu_x = mean(treatmentUnits[!, :dim_x])
-    mu_y = mean(treatmentUnits[!, :dim_y])
-    try
+    color = :orange
+    shape = :square
+    size = 4
+    if nrow(treatmentUnits) > 1
+        mu_x = mean(treatmentUnits[!, :dim_x])
+        mu_y = mean(treatmentUnits[!, :dim_y])
         ci_x = collect(confint(OneSampleTTest(treatmentUnits[!, :dim_x])))
         ci_y = collect(confint(OneSampleTTest(treatmentUnits[!, :dim_y])))
-        color = :orange
-        shape = :square
-        size = 4
         CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
         push!(confidenceIntervals, CI)
-    catch e
-        color = :orange
-        shape = :square
-        size = 4
+    elseif nrow(treatmentUnits) == 1
+        mu_x = mean(treatmentUnits[!, :dim_x])
+        mu_y = mean(treatmentUnits[!, :dim_y])
         CI = (mu_x, mu_y, [mu_x, mu_x], [mu_y, mu_y], color, shape, size)
         push!(confidenceIntervals, CI)
+    else
+        # do nothing
     end
 
     ## Do Callback so ENADisplay can do the bulk of the work
@@ -402,7 +405,7 @@ function (artist::WindowsArtist)(cb, ena, scene)
 
     ## Shapes
     unitShapes = map(eachrow(ena.unitModel)) do unitRow
-        return :circle
+        return :x
     end
 
     codeShapes = map(eachrow(ena.codeModel)) do codeRow
@@ -439,23 +442,24 @@ function (artist::WindowsArtist)(cb, ena, scene)
     ## Confidence Intervals
     confidenceIntervals = []
     colors = [:blue, :purple, :green, :orange]
-    
     for (i, groupedUnits) in enumerate(allGroupedUnits)
         color = colors[i]
-        mu_x = mean(groupedUnits[!, :dim_x])
-        mu_y = mean(groupedUnits[!, :dim_y])
-        try
+        shape = :square
+        size = 4
+        if nrow(groupedUnits) > 1
+            mu_x = mean(groupedUnits[!, :dim_x])
+            mu_y = mean(groupedUnits[!, :dim_y])
             ci_x = collect(confint(OneSampleTTest(groupedUnits[!, :dim_x])))
             ci_y = collect(confint(OneSampleTTest(groupedUnits[!, :dim_y])))
-            shape = :square
-            size = 4
             CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
             push!(confidenceIntervals, CI)
-        catch e
-            shape = :square
-            size = 4
+        elseif nrow(groupedUnits) == 1
+            mu_x = mean(groupedUnits[!, :dim_x])
+            mu_y = mean(groupedUnits[!, :dim_y])
             CI = (mu_x, mu_y, [mu_x, mu_x], [mu_y, mu_y], color, shape, size)
             push!(confidenceIntervals, CI)
+        else
+            # do nothing
         end
     end
 
@@ -615,7 +619,7 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
 
     ## Shapes
     unitShapes = map(eachrow(ena.unitModel)) do unitRow
-        return :circle
+        return :x
     end
 
     codeShapes = map(eachrow(ena.codeModel)) do codeRow
@@ -654,22 +658,27 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
     confidenceIntervals = []
     colors = [:purple, :purple, :orange, :orange, :purple, :orange]
     shapes = [:dtriangle, :utriangle, :dtriangle, :utriangle, :square, :square]
-    
     for (i, groupedUnits) in enumerate(allGroupedUnits)
         color = colors[i]
         shape = shapes[i]
-        mu_x = mean(groupedUnits[!, :dim_x])
-        mu_y = mean(groupedUnits[!, :dim_y])
-        try
+        size = 4
+        if (i < 5 && nrow(groupedUnits) > 1) || # draw a quadrant CI if we have enough
+            (i == 5 && nrow(group00Units) > 0 && nrow(group01Units) > 0) || # draw an omnibus CI only if each of its quadrants have something
+            (i == 6 && nrow(group10Units) > 0 && nrow(group11Units) > 0)
+            
+            mu_x = mean(groupedUnits[!, :dim_x])
+            mu_y = mean(groupedUnits[!, :dim_y])
             ci_x = collect(confint(OneSampleTTest(groupedUnits[!, :dim_x])))
             ci_y = collect(confint(OneSampleTTest(groupedUnits[!, :dim_y])))
-            size = 4
             CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
             push!(confidenceIntervals, CI)
-        catch e
-            size = 4
+        elseif (i < 5 && nrow(groupedUnits) == 1) # only for quadrant CIs
+            mu_x = mean(groupedUnits[!, :dim_x])
+            mu_y = mean(groupedUnits[!, :dim_y])
             CI = (mu_x, mu_y, [mu_x, mu_x], [mu_y, mu_y], color, shape, size)
             push!(confidenceIntervals, CI)
+        else
+            # do nothing
         end
     end
 
