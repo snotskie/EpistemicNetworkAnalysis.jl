@@ -113,6 +113,9 @@ if abspath(PROGRAM_FILE) == @__FILE__
                 artist=artist
             )
 
+            xlims!(p2, -1, 1)
+            ylims!(p2, -1, 1)
+
             global counter
             savefig(p1, "kitchensink-units-$(counter)-$(label1)-$(label2).svg")
             savefig(p2, "kitchensink-means-$(counter)-$(label1)-$(label2).svg")
