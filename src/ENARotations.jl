@@ -66,17 +66,17 @@ struct Formula2Rotation{T <: RegressionModel, U <: RegressionModel} <: ENARotati
 end
 
 # SVD Rotation
-function rotate!(::SVDRotation, networkModel::DataFrame, unitModel::DataFrame)
-    pcaModel = projection(help_deflating_svd(networkModel, unitModel))
+function rotate!(::SVDRotation, networkModel::DataFrame, refitUnitModel::DataFrame)
+    pcaModel = projection(help_deflating_svd(networkModel, refitUnitModel))
     networkModel[!, :weight_x] = pcaModel[:, 1]
     networkModel[!, :weight_y] = pcaModel[:, 2]
 end
 
 # Means Rotation
-function rotate!(rotation::MeansRotation, networkModel::DataFrame, unitModel::DataFrame)
+function rotate!(rotation::MeansRotation, networkModel::DataFrame, refitUnitModel::DataFrame)
     ## Filter the unit model to just those in the control/treatment group
-    filteredUnitModel = filter(unitModel) do unitRow
-        return unitRow[rotation.groupVar] in [rotation.controlGroup, rotation.treatmentGroup]
+    filteredUnitModel = filter(refitUnitModel) do refitRow
+        return refitRow[rotation.groupVar] in [rotation.controlGroup, rotation.treatmentGroup]
     end
 
     ## Factor the control/treatment label to just 0/1
@@ -96,11 +96,11 @@ function rotate!(rotation::MeansRotation, networkModel::DataFrame, unitModel::Da
 end
 
 # Formula Rotation
-function rotate!(rotation::FormulaRotation, networkModel::DataFrame, unitModel::DataFrame)
+function rotate!(rotation::FormulaRotation, networkModel::DataFrame, refitUnitModel::DataFrame)
     ## TODO check assumptions about f1
 
     ## Filter missing data
-    filteredUnitModel = unitModel
+    filteredUnitModel = refitUnitModel
     for t in rotation.f1.rhs
         if isa(t, Term)
             col = Symbol(t)
@@ -140,20 +140,20 @@ function rotate!(rotation::FormulaRotation, networkModel::DataFrame, unitModel::
     end
 
     ## Find the first svd dim of the data orthogonal to the x weights, use these as the y weights
-    xAxis = Matrix{Float64}(unitModel[!, networkModel[!, :relationship]]) *
+    xAxis = Matrix{Float64}(refitUnitModel[!, networkModel[!, :relationship]]) *
             Matrix{Float64}(networkModel[!, [:weight_x]])
     xAxis = xAxis .- mean(xAxis)
     controlModel = DataFrame(xAxis)
-    pcaModel = projection(help_deflating_svd(networkModel, unitModel, controlModel))
+    pcaModel = projection(help_deflating_svd(networkModel, refitUnitModel, controlModel))
     networkModel[!, :weight_y] = pcaModel[:, 1]
 end
 
 # Formula2 Rotation
-function rotate!(rotation::Formula2Rotation, networkModel::DataFrame, unitModel::DataFrame)
+function rotate!(rotation::Formula2Rotation, networkModel::DataFrame, refitUnitModel::DataFrame)
     ## TODO check assumptions about f1 and f2
 
     ## Filter missing data
-    filteredUnitModel = unitModel
+    filteredUnitModel = refitUnitModel
     for t in rotation.f1.rhs
         if isa(t, Term)
             col = Symbol(t)

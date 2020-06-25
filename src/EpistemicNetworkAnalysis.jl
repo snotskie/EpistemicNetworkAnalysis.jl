@@ -104,6 +104,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
         for (label2, artist) in myArtists
             println(typeof(artist))
             p1 = plot(myENA,
+                showoriginalspace=true,
                 artist=artist
             )
 

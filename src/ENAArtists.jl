@@ -54,7 +54,7 @@ function (artist::DefaultArtist)(cb, ena, scene)
         return :black
     end
 
-    unitColors = map(eachrow(ena.unitModel)) do unitRow
+    unitColors = map(eachrow(ena.refitUnitModel)) do refitRow
         return :black
     end
 
@@ -63,7 +63,7 @@ function (artist::DefaultArtist)(cb, ena, scene)
     end
 
     ## Shapes
-    unitShapes = map(eachrow(ena.unitModel)) do unitRow
+    unitShapes = map(eachrow(ena.refitUnitModel)) do refitRow
         return :x
     end
 
@@ -76,7 +76,7 @@ function (artist::DefaultArtist)(cb, ena, scene)
         return networkRow[:density]
     end
 
-    unitMarkerSizes = map(eachrow(ena.unitModel)) do unitRow
+    unitMarkerSizes = map(eachrow(ena.refitUnitModel)) do refitRow
         return 1
     end
 
@@ -102,16 +102,16 @@ function (artist::DefaultArtist)(cb, ena, scene)
     color = :black
     shape = :square
     size = 4
-    if nrow(ena.unitModel) > 1
-        mu_x = mean(ena.unitModel[!, :dim_x])
-        mu_y = mean(ena.unitModel[!, :dim_y])
-        ci_x = collect(confint(OneSampleTTest(ena.unitModel[!, :dim_x])))
-        ci_y = collect(confint(OneSampleTTest(ena.unitModel[!, :dim_y])))
+    if nrow(ena.refitUnitModel) > 1
+        mu_x = mean(ena.refitUnitModel[!, :pos_x])
+        mu_y = mean(ena.refitUnitModel[!, :pos_y])
+        ci_x = collect(confint(OneSampleTTest(ena.refitUnitModel[!, :pos_x])))
+        ci_y = collect(confint(OneSampleTTest(ena.refitUnitModel[!, :pos_y])))
         CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
         push!(confidenceIntervals, CI)
-    elseif nrow(ena.unitModel) == 1
-        mu_x = mean(ena.unitModel[!, :dim_x])
-        mu_y = mean(ena.unitModel[!, :dim_y])
+    elseif nrow(ena.refitUnitModel) == 1
+        mu_x = mean(ena.refitUnitModel[!, :pos_x])
+        mu_y = mean(ena.refitUnitModel[!, :pos_y])
         CI = (mu_x, mu_y, [mu_x, mu_x], [mu_y, mu_y], color, shape, size)
         push!(confidenceIntervals, CI)
     else
@@ -133,16 +133,16 @@ end
 # MeansArtist
 function (artist::MeansArtist)(cb, ena, scene)
     ##Pre-splitting the groups
-    controlUnits = filter(ena.unitModel) do unitRow
-        if unitRow[artist.groupVar] == artist.controlGroup
+    controlUnits = filter(ena.refitUnitModel) do refitRow
+        if refitRow[artist.groupVar] == artist.controlGroup
             return true
         else
             return false
         end
     end
 
-    treatmentUnits = filter(ena.unitModel) do unitRow
-        if unitRow[artist.groupVar] == artist.treatmentGroup
+    treatmentUnits = filter(ena.refitUnitModel) do refitRow
+        if refitRow[artist.groupVar] == artist.treatmentGroup
             return true
         else
             return false
@@ -153,10 +153,10 @@ function (artist::MeansArtist)(cb, ena, scene)
     # ### Find the "direction", "strength", and "angle" for the line size
     # ### Thicker lines are those whose rotation weights are more towards
     # ### one side of the difference of the means
-    # mu_x_control = mean(controlUnits[!, :dim_x])
-    # mu_y_control = mean(controlUnits[!, :dim_y])
-    # mu_x_treatment = mean(treatmentUnits[!, :dim_x])
-    # mu_y_treatment = mean(treatmentUnits[!, :dim_y])
+    # mu_x_control = mean(controlUnits[!, :pos_x])
+    # mu_y_control = mean(controlUnits[!, :pos_y])
+    # mu_x_treatment = mean(treatmentUnits[!, :pos_x])
+    # mu_y_treatment = mean(treatmentUnits[!, :pos_y])
     # mu_x_all = (mu_x_treatment + mu_x_control) / 2
     # mu_y_all = (mu_y_treatment + mu_y_control) / 2
     # vt = Vector{Float64}([
@@ -198,10 +198,10 @@ function (artist::MeansArtist)(cb, ena, scene)
         end
     end
 
-    unitColors = map(eachrow(ena.unitModel)) do unitRow
-        if unitRow[artist.groupVar] == artist.controlGroup
+    unitColors = map(eachrow(ena.refitUnitModel)) do refitRow
+        if refitRow[artist.groupVar] == artist.controlGroup
             return :purple
-        elseif unitRow[artist.groupVar] == artist.treatmentGroup
+        elseif refitRow[artist.groupVar] == artist.treatmentGroup
             return :orange
         else
             return :black
@@ -213,7 +213,7 @@ function (artist::MeansArtist)(cb, ena, scene)
     end
 
     ## Shapes
-    unitShapes = map(eachrow(ena.unitModel)) do unitRow
+    unitShapes = map(eachrow(ena.refitUnitModel)) do refitRow
         return :x
     end
 
@@ -228,7 +228,7 @@ function (artist::MeansArtist)(cb, ena, scene)
         return abs(lineStrengthsControl[r] - lineStrengthsTreatment[r])
     end
 
-    unitMarkerSizes = map(eachrow(ena.unitModel)) do unitRow
+    unitMarkerSizes = map(eachrow(ena.refitUnitModel)) do refitRow
         return 1
     end
 
@@ -257,15 +257,15 @@ function (artist::MeansArtist)(cb, ena, scene)
     shape = :square
     size = 4
     if nrow(controlUnits) > 1
-        mu_x = mean(controlUnits[!, :dim_x])
-        mu_y = mean(controlUnits[!, :dim_y])
-        ci_x = collect(confint(OneSampleTTest(controlUnits[!, :dim_x])))
-        ci_y = collect(confint(OneSampleTTest(controlUnits[!, :dim_y])))
+        mu_x = mean(controlUnits[!, :pos_x])
+        mu_y = mean(controlUnits[!, :pos_y])
+        ci_x = collect(confint(OneSampleTTest(controlUnits[!, :pos_x])))
+        ci_y = collect(confint(OneSampleTTest(controlUnits[!, :pos_y])))
         CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
         push!(confidenceIntervals, CI)
     elseif nrow(controlUnits) == 1
-        mu_x = mean(controlUnits[!, :dim_x])
-        mu_y = mean(controlUnits[!, :dim_y])
+        mu_x = mean(controlUnits[!, :pos_x])
+        mu_y = mean(controlUnits[!, :pos_y])
         CI = (mu_x, mu_y, [mu_x, mu_x], [mu_y, mu_y], color, shape, size)
         push!(confidenceIntervals, CI)
     else
@@ -277,15 +277,15 @@ function (artist::MeansArtist)(cb, ena, scene)
     shape = :square
     size = 4
     if nrow(treatmentUnits) > 1
-        mu_x = mean(treatmentUnits[!, :dim_x])
-        mu_y = mean(treatmentUnits[!, :dim_y])
-        ci_x = collect(confint(OneSampleTTest(treatmentUnits[!, :dim_x])))
-        ci_y = collect(confint(OneSampleTTest(treatmentUnits[!, :dim_y])))
+        mu_x = mean(treatmentUnits[!, :pos_x])
+        mu_y = mean(treatmentUnits[!, :pos_y])
+        ci_x = collect(confint(OneSampleTTest(treatmentUnits[!, :pos_x])))
+        ci_y = collect(confint(OneSampleTTest(treatmentUnits[!, :pos_y])))
         CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
         push!(confidenceIntervals, CI)
     elseif nrow(treatmentUnits) == 1
-        mu_x = mean(treatmentUnits[!, :dim_x])
-        mu_y = mean(treatmentUnits[!, :dim_y])
+        mu_x = mean(treatmentUnits[!, :pos_x])
+        mu_y = mean(treatmentUnits[!, :pos_y])
         CI = (mu_x, mu_y, [mu_x, mu_x], [mu_y, mu_y], color, shape, size)
         push!(confidenceIntervals, CI)
     else
@@ -307,36 +307,36 @@ end
 # WindowsArtist
 function (artist::WindowsArtist)(cb, ena, scene)
     # ##Pre-splitting the groups
-    group00Units = filter(ena.unitModel) do unitRow
-        if unitRow[artist.groupVar1] == artist.controlGroup1 &&
-           unitRow[artist.groupVar2] == artist.controlGroup2
+    group00Units = filter(ena.refitUnitModel) do refitRow
+        if refitRow[artist.groupVar1] == artist.controlGroup1 &&
+           refitRow[artist.groupVar2] == artist.controlGroup2
             return true
         else
             return false
         end
     end
 
-    group01Units = filter(ena.unitModel) do unitRow
-        if unitRow[artist.groupVar1] == artist.controlGroup1 &&
-           unitRow[artist.groupVar2] == artist.treatmentGroup2
+    group01Units = filter(ena.refitUnitModel) do refitRow
+        if refitRow[artist.groupVar1] == artist.controlGroup1 &&
+           refitRow[artist.groupVar2] == artist.treatmentGroup2
             return true
         else
             return false
         end
     end
 
-    group10Units = filter(ena.unitModel) do unitRow
-        if unitRow[artist.groupVar1] == artist.treatmentGroup1 &&
-           unitRow[artist.groupVar2] == artist.controlGroup2
+    group10Units = filter(ena.refitUnitModel) do refitRow
+        if refitRow[artist.groupVar1] == artist.treatmentGroup1 &&
+           refitRow[artist.groupVar2] == artist.controlGroup2
             return true
         else
             return false
         end
     end
 
-    group11Units = filter(ena.unitModel) do unitRow
-        if unitRow[artist.groupVar1] == artist.treatmentGroup1 &&
-           unitRow[artist.groupVar2] == artist.treatmentGroup2
+    group11Units = filter(ena.refitUnitModel) do refitRow
+        if refitRow[artist.groupVar1] == artist.treatmentGroup1 &&
+           refitRow[artist.groupVar2] == artist.treatmentGroup2
             return true
         else
             return false
@@ -381,18 +381,18 @@ function (artist::WindowsArtist)(cb, ena, scene)
         return lineColors[r]
     end
 
-    unitColors = map(eachrow(ena.unitModel)) do unitRow
-        if unitRow[artist.groupVar1] == artist.controlGroup1 &&
-           unitRow[artist.groupVar2] == artist.controlGroup2
+    unitColors = map(eachrow(ena.refitUnitModel)) do refitRow
+        if refitRow[artist.groupVar1] == artist.controlGroup1 &&
+           refitRow[artist.groupVar2] == artist.controlGroup2
             return :blue
-        elseif unitRow[artist.groupVar1] == artist.controlGroup1 &&
-               unitRow[artist.groupVar2] == artist.treatmentGroup2
+        elseif refitRow[artist.groupVar1] == artist.controlGroup1 &&
+               refitRow[artist.groupVar2] == artist.treatmentGroup2
             return :purple
-        elseif unitRow[artist.groupVar1] == artist.treatmentGroup1 &&
-               unitRow[artist.groupVar2] == artist.controlGroup2
+        elseif refitRow[artist.groupVar1] == artist.treatmentGroup1 &&
+               refitRow[artist.groupVar2] == artist.controlGroup2
             return :green
-        elseif unitRow[artist.groupVar1] == artist.treatmentGroup1 &&
-               unitRow[artist.groupVar2] == artist.treatmentGroup2
+        elseif refitRow[artist.groupVar1] == artist.treatmentGroup1 &&
+               refitRow[artist.groupVar2] == artist.treatmentGroup2
             return :orange
         else
             return :black
@@ -404,7 +404,7 @@ function (artist::WindowsArtist)(cb, ena, scene)
     end
 
     ## Shapes
-    unitShapes = map(eachrow(ena.unitModel)) do unitRow
+    unitShapes = map(eachrow(ena.refitUnitModel)) do refitRow
         return :x
     end
 
@@ -418,7 +418,7 @@ function (artist::WindowsArtist)(cb, ena, scene)
         return lineStrengths[r]
     end
 
-    unitMarkerSizes = map(eachrow(ena.unitModel)) do unitRow
+    unitMarkerSizes = map(eachrow(ena.refitUnitModel)) do refitRow
         return 1
     end
 
@@ -447,15 +447,15 @@ function (artist::WindowsArtist)(cb, ena, scene)
         shape = :square
         size = 4
         if nrow(groupedUnits) > 1
-            mu_x = mean(groupedUnits[!, :dim_x])
-            mu_y = mean(groupedUnits[!, :dim_y])
-            ci_x = collect(confint(OneSampleTTest(groupedUnits[!, :dim_x])))
-            ci_y = collect(confint(OneSampleTTest(groupedUnits[!, :dim_y])))
+            mu_x = mean(groupedUnits[!, :pos_x])
+            mu_y = mean(groupedUnits[!, :pos_y])
+            ci_x = collect(confint(OneSampleTTest(groupedUnits[!, :pos_x])))
+            ci_y = collect(confint(OneSampleTTest(groupedUnits[!, :pos_y])))
             CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
             push!(confidenceIntervals, CI)
         elseif nrow(groupedUnits) == 1
-            mu_x = mean(groupedUnits[!, :dim_x])
-            mu_y = mean(groupedUnits[!, :dim_y])
+            mu_x = mean(groupedUnits[!, :pos_x])
+            mu_y = mean(groupedUnits[!, :pos_y])
             CI = (mu_x, mu_y, [mu_x, mu_x], [mu_y, mu_y], color, shape, size)
             push!(confidenceIntervals, CI)
         else
@@ -478,52 +478,52 @@ end
 # TVRemoteArtist
 function (artist::TVRemoteArtist)(cb, ena, scene)
     ##Pre-splitting the groups
-    group0xUnits = filter(ena.unitModel) do unitRow
-        if unitRow[artist.groupVar1] == artist.controlGroup1
+    group0xUnits = filter(ena.refitUnitModel) do refitRow
+        if refitRow[artist.groupVar1] == artist.controlGroup1
             return true
         else
             return false
         end
     end
 
-    group1xUnits = filter(ena.unitModel) do unitRow
-        if unitRow[artist.groupVar1] == artist.treatmentGroup1
+    group1xUnits = filter(ena.refitUnitModel) do refitRow
+        if refitRow[artist.groupVar1] == artist.treatmentGroup1
             return true
         else
             return false
         end
     end
 
-    group00Units = filter(ena.unitModel) do unitRow
-        if unitRow[artist.groupVar1] == artist.controlGroup1 &&
-           unitRow[artist.groupVar2] == artist.controlGroup2
+    group00Units = filter(ena.refitUnitModel) do refitRow
+        if refitRow[artist.groupVar1] == artist.controlGroup1 &&
+           refitRow[artist.groupVar2] == artist.controlGroup2
             return true
         else
             return false
         end
     end
 
-    group01Units = filter(ena.unitModel) do unitRow
-        if unitRow[artist.groupVar1] == artist.controlGroup1 &&
-           unitRow[artist.groupVar2] == artist.treatmentGroup2
+    group01Units = filter(ena.refitUnitModel) do refitRow
+        if refitRow[artist.groupVar1] == artist.controlGroup1 &&
+           refitRow[artist.groupVar2] == artist.treatmentGroup2
             return true
         else
             return false
         end
     end
 
-    group10Units = filter(ena.unitModel) do unitRow
-        if unitRow[artist.groupVar1] == artist.treatmentGroup1 &&
-           unitRow[artist.groupVar2] == artist.controlGroup2
+    group10Units = filter(ena.refitUnitModel) do refitRow
+        if refitRow[artist.groupVar1] == artist.treatmentGroup1 &&
+           refitRow[artist.groupVar2] == artist.controlGroup2
             return true
         else
             return false
         end
     end
 
-    group11Units = filter(ena.unitModel) do unitRow
-        if unitRow[artist.groupVar1] == artist.treatmentGroup1 &&
-           unitRow[artist.groupVar2] == artist.treatmentGroup2
+    group11Units = filter(ena.refitUnitModel) do refitRow
+        if refitRow[artist.groupVar1] == artist.treatmentGroup1 &&
+           refitRow[artist.groupVar2] == artist.treatmentGroup2
             return true
         else
             return false
@@ -541,10 +541,10 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
     # ### Find the "direction", "strength", and "angle" for the line size
     # ### Thicker lines are those whose rotation weights are more towards
     # ### one side of the difference of the means
-    # mu_x_control = mean(group0xUnits[!, :dim_x])
-    # mu_y_control = mean(group0xUnits[!, :dim_y])
-    # mu_x_treatment = mean(group1xUnits[!, :dim_x])
-    # mu_y_treatment = mean(group1xUnits[!, :dim_y])
+    # mu_x_control = mean(group0xUnits[!, :pos_x])
+    # mu_y_control = mean(group0xUnits[!, :pos_y])
+    # mu_x_treatment = mean(group1xUnits[!, :pos_x])
+    # mu_y_treatment = mean(group1xUnits[!, :pos_y])
     # mu_x_all = (mu_x_treatment + mu_x_control) / 2
     # mu_y_all = (mu_y_treatment + mu_y_control) / 2
     # vt = Vector{Float64}([
@@ -591,18 +591,18 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
         end
     end
 
-    unitColors = map(eachrow(ena.unitModel)) do unitRow
-        if unitRow[artist.groupVar1] == artist.controlGroup1 &&
-           unitRow[artist.groupVar2] == artist.controlGroup2
+    unitColors = map(eachrow(ena.refitUnitModel)) do refitRow
+        if refitRow[artist.groupVar1] == artist.controlGroup1 &&
+           refitRow[artist.groupVar2] == artist.controlGroup2
             return :purple
-        elseif unitRow[artist.groupVar1] == artist.controlGroup1 &&
-               unitRow[artist.groupVar2] == artist.treatmentGroup2
+        elseif refitRow[artist.groupVar1] == artist.controlGroup1 &&
+               refitRow[artist.groupVar2] == artist.treatmentGroup2
             return :purple
-        elseif unitRow[artist.groupVar1] == artist.treatmentGroup1 &&
-               unitRow[artist.groupVar2] == artist.controlGroup2
+        elseif refitRow[artist.groupVar1] == artist.treatmentGroup1 &&
+               refitRow[artist.groupVar2] == artist.controlGroup2
             return :orange
-        elseif unitRow[artist.groupVar1] == artist.treatmentGroup1 &&
-               unitRow[artist.groupVar2] == artist.treatmentGroup2
+        elseif refitRow[artist.groupVar1] == artist.treatmentGroup1 &&
+               refitRow[artist.groupVar2] == artist.treatmentGroup2
             return :orange
         else
             return :black
@@ -618,7 +618,7 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
     end
 
     ## Shapes
-    unitShapes = map(eachrow(ena.unitModel)) do unitRow
+    unitShapes = map(eachrow(ena.refitUnitModel)) do refitRow
         return :x
     end
 
@@ -633,7 +633,7 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
         return abs(lineStrengths0x[r] - lineStrengths1x[r])
     end
 
-    unitMarkerSizes = map(eachrow(ena.unitModel)) do unitRow
+    unitMarkerSizes = map(eachrow(ena.refitUnitModel)) do refitRow
         return 1
     end
 
@@ -666,15 +666,15 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
             (i == 5 && nrow(group00Units) > 0 && nrow(group01Units) > 0) || # draw an omnibus CI only if each of its quadrants have something
             (i == 6 && nrow(group10Units) > 0 && nrow(group11Units) > 0)
             
-            mu_x = mean(groupedUnits[!, :dim_x])
-            mu_y = mean(groupedUnits[!, :dim_y])
-            ci_x = collect(confint(OneSampleTTest(groupedUnits[!, :dim_x])))
-            ci_y = collect(confint(OneSampleTTest(groupedUnits[!, :dim_y])))
+            mu_x = mean(groupedUnits[!, :pos_x])
+            mu_y = mean(groupedUnits[!, :pos_y])
+            ci_x = collect(confint(OneSampleTTest(groupedUnits[!, :pos_x])))
+            ci_y = collect(confint(OneSampleTTest(groupedUnits[!, :pos_y])))
             CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
             push!(confidenceIntervals, CI)
         elseif (i < 5 && nrow(groupedUnits) == 1) # only for quadrant CIs
-            mu_x = mean(groupedUnits[!, :dim_x])
-            mu_y = mean(groupedUnits[!, :dim_y])
+            mu_x = mean(groupedUnits[!, :pos_x])
+            mu_y = mean(groupedUnits[!, :pos_y])
             CI = (mu_x, mu_y, [mu_x, mu_x], [mu_y, mu_y], color, shape, size)
             push!(confidenceIntervals, CI)
         else
