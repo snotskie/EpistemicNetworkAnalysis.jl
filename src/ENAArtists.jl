@@ -186,6 +186,13 @@ function (artist::MeansArtist)(cb, ena, scene)
         r = networkRow[:relationship]
         lineStrengthsControl[r] = sum(controlUnits[!, r]) / nrow(controlUnits)
         lineStrengthsTreatment[r] = sum(treatmentUnits[!, r]) / nrow(treatmentUnits)
+        if isnan(lineStrengthsControl[r])
+            lineStrengthsControl[r] = 0
+        end
+
+        if isnan(lineStrengthsTreatment[r])
+            lineStrengthsTreatment[r] = 0
+        end
     end
 
     ## Colors
@@ -367,6 +374,14 @@ function (artist::WindowsArtist)(cb, ena, scene)
             antiGroupedUnits = vcat(setdiff(allGroupedUnits, [groupedUnits])...)
             groupStrength = sum(groupedUnits[!, r]) / nrow(groupedUnits)
             antiGroupStrength = sum(antiGroupedUnits[!, r]) / nrow(antiGroupedUnits)
+            if isnan(groupStrength)
+                groupStrength = 0
+            end
+            
+            if isnan(antiGroupStrength)
+                antiGroupStrength = 0
+            end
+            
             netStrength = groupStrength - antiGroupStrength
             if netStrength > lineStrengths[r]
                 lineStrengths[r] = netStrength
@@ -579,6 +594,13 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
         r = networkRow[:relationship]
         lineStrengths0x[r] = sum(group0xUnits[!, r]) / nrow(group0xUnits)
         lineStrengths1x[r] = sum(group1xUnits[!, r]) / nrow(group1xUnits)
+        if isnan(lineStrengths0x[r])
+            lineStrengths0x[r] = 0
+        end
+
+        if isnan(lineStrengths1x[r])
+            lineStrengths1x[r] = 0
+        end
     end
 
     ## Colors
