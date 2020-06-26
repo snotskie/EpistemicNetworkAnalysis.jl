@@ -33,7 +33,7 @@ function Plots.plot(ena::ENAModel;
     showunits::Bool=true,
     showlines::Bool=true,
     showcodes::Bool=true,
-    showconfidence::Bool=false)
+    showconfidence::Bool=true)
 
     # Plot
     p = plot(leg=false, margin=10mm, size=(500, 500))
