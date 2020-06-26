@@ -23,7 +23,8 @@ struct ENAModel
 end
 
 function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
-    windowSize::Int=4, rotateBy::T=SVDRotation(), sphereNormalize::Bool=true, subsetFilter::Function=x->true) where {T<:ENARotation}
+    windowSize::Int=4, rotateBy::T=SVDRotation(), sphereNormalize::Bool=true, dropEmpty::Bool=true,
+    subsetFilter::Function=x->true) where {T<:ENARotation}
 
     # Preparing model structures
     ## Relationships between codes
@@ -45,8 +46,6 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
 
     unitModel = hcat(unitModel, DataFrame(pos_x=Real[0 for i in 1:nrow(unitModel)], # my position on the x and y axes
                                           pos_y=Real[0 for i in 1:nrow(unitModel)])) 
-    
-    refitUnitModel = copy(unitModel)
 
     ## Network model placeholders
     networkModel = DataFrame(relationship=collect(keys(relationships)),
@@ -111,8 +110,19 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         end
     end
 
-    # User-defined unit subsetting
+    # Filtering
+    ## User-defined unit subsetting
     filter!(subsetFilter, unitModel)
+
+    ## Drop empty values
+    if dropEmpty
+        filter!(unitModel) do unitRow
+            return !all(iszero.(values(unitRow[networkModel[!, :relationship]])))
+        end
+    end
+
+    ## Copy the refit model here since now we have all the data in the original unit model
+    refitUnitModel = copy(unitModel)
 
     # Compute the position of the codes in the approximated high-dimensional space
     ## Compute the density of each network row line
@@ -139,15 +149,12 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
 
     ## Regression model for placing the code dots into the approximated high-dimensional space
     X = Matrix{Float64}(zeros(nrow(unitModel), 1 + nrow(codeModel)))
-    X = Matrix{Float64}(zeros(nrow(unitModel), nrow(codeModel)))
+    X[:, 1] .= 1 # Intercept term
     for (i, unitRow) in enumerate(eachrow(unitModel))
-        denom = 2 #* sum(unitRow[t] for t in keys(relationships))
-        if denom != 0
-            for r in keys(relationships)
-                a, b = relationships[r]
-                X[i, a] += unitRow[r] / denom
-                X[i, b] += unitRow[r] / denom
-            end
+        for r in keys(relationships)
+            a, b = relationships[r]
+            X[i, a+1] += unitRow[r] / 2 # +1 because of intercept
+            X[i, b+1] += unitRow[r] / 2 # +1 because of intercept
         end
     end
 
@@ -157,24 +164,21 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     for networkRow in eachrow(networkModel)
         r = networkRow[:relationship]
         y = Vector{Float64}(unitModel[:, r])
-        codeModel[:, r] = X * y
+        r_coefs = X * y
+        codeModel[:, r] = r_coefs[2:end] # 2:end because of intercept
     end
 
     ## Refit the units: in high-d space, the refit units are as close as possible to their center of mass wrt the network
     ## This is by-definition the refit space
     for networkRow in eachrow(networkModel)
         r = networkRow[:relationship]
-        refitUnitModel[!, r] = unitModel[:, r]
-        for refitRow in eachrow(refitUnitModel)
-            denom = 2 #* sum(refitRow[t] for t in keys(relationships))
-            if denom != 0
-                refitRow[r] =
-                    sum(
-                        codeModel[relationships[k][1], r] * refitRow[r] + # NOTE this is okay since we are just running a "fit" on the ols from above
-                        codeModel[relationships[k][2], r] * refitRow[r]
-                        for k in keys(relationships)
-                    ) / denom
-            end
+        for (i, refitRow) in enumerate(eachrow(refitUnitModel))
+            refitRow[r] =
+                sum(
+                    codeModel[relationships[k][1], r] * unitModel[i, k] +
+                    codeModel[relationships[k][2], r] * unitModel[i, k]
+                    for k in keys(relationships)
+                ) / 2
         end
     end
 
@@ -216,7 +220,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     ## in the same high-d space as what is really drawn, that we interpret in terms of the
     ## center of mass. If we *were* to use these to compute what's really drawn,
     ## it should actually give us the same result as the projection we used for refitRow's above,
-    ## since that's the protperty we defined the refit space to have. (ignoring the intercept)
+    ## since that's the property we defined the refit space to have. (ignoring the intercept)
     for codeRow in eachrow(codeModel)
         codeRow[:pos_x] = sum(
             networkRow[:weight_x] * codeRow[networkRow[:relationship]]
@@ -229,7 +233,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         )
     end
 
-    ## Translate everything to account for overall means
+    ## Translate everything so overall mean lies at the origin
     refitUnitModel[!, :pos_x] = refitUnitModel[!, :pos_x] .- mean(refitUnitModel[!, :pos_x])
     refitUnitModel[!, :pos_y] = refitUnitModel[!, :pos_y] .- mean(refitUnitModel[!, :pos_y])
     codeModel[!, :pos_x] = codeModel[!, :pos_x] .- mean(refitUnitModel[!, :pos_x])
@@ -281,138 +285,4 @@ And this can cause problems with ENA's optimization algorithm fitting the codes 
     return ENAModel(unitJoinedData, codes, conversations, units,
                     windowSize, rotateBy, unitModel, networkModel, codeModel, refitUnitModel,
                     relationships, p, pearson, variance_x, variance_y)
-
-    # Layout step
-    # ## Compute the density of each network row line
-    # for networkRow in eachrow(networkModel)
-    #     r = networkRow[:relationship]
-    #     networkRow[:density] = sum(unitModel[!, r])
-    # end
-
-    # ## Normalize the network densities
-    # s = maximum(networkModel[!, :density])
-    # networkModel[!, :density] /= s
-
-    # ## Compute the density of each code row dot, by "splitting" the density of each line between its two codes
-    # for networkRow in eachrow(networkModel)
-    #     r = networkRow[:relationship]
-    #     i, j = relationships[r]
-    #     codeModel[i, :density] += networkRow[:density] # TODO check, is this the right way to do this?
-    #     codeModel[j, :density] += networkRow[:density]
-    # end
-
-    # ## Normalize the code densities
-    # s = maximum(codeModel[!, :density])
-    # codeModel[!, :density] /= s
-
-    # ## Place the code dots into fit_x, fit_y, by predicting unit dim_x and dim_y values
-    # ## This is a projection of the relationship space into the code space
-    # ## TODO verify
-    # X = Matrix{Float64}(zeros(nrow(unitModel), 1 + nrow(codeModel)))
-    # X = Matrix{Float64}(zeros(nrow(unitModel), nrow(codeModel)))
-    # for (i, unitRow) in enumerate(eachrow(unitModel))
-    #     denom = 2 * sum(unitRow[t] for t in keys(relationships))
-    #     if denom != 0
-    #         for r in keys(relationships)
-    #             a, b = relationships[r]
-    #             X[i, a] += unitRow[r] / denom
-    #             X[i, b] += unitRow[r] / denom
-    #         end
-    #     end
-    # end
-
-    # X = (transpose(X) * X)^-1 * transpose(X)
-
-    # ## fit_x
-    # y = Vector{Float64}(unitModel[:, :dim_x])
-    # x_axis_coefs = X * y
-    # for i in 1:nrow(codeModel)
-    #     codeModel[i, :fit_x] = x_axis_coefs[i]
-    # end
-
-    # ## fit_y
-    # y = Vector{Float64}(unitModel[:, :dim_y])
-    # y_axis_coefs = X * y
-    # for i in 1:nrow(codeModel)
-    #     codeModel[i, :fit_y] = y_axis_coefs[i]
-    # end
-
-    # ## Fit the units
-    # # TODO verify
-    # for unitRow in eachrow(unitModel)
-    #     denom = 2 * sum(unitRow[t] for t in keys(relationships))
-    #     if denom != 0
-    #         unitRow[:fit_x] =
-    #             sum(
-    #                 codeModel[relationships[r][1], :fit_x] * unitRow[r] +
-    #                 codeModel[relationships[r][2], :fit_x] * unitRow[r]
-    #                 for r in keys(relationships)
-    #             ) / denom
-
-    #         unitRow[:fit_y] =
-    #             sum(
-    #                 codeModel[relationships[r][1], :fit_y] * unitRow[r] +
-    #                 codeModel[relationships[r][2], :fit_y] * unitRow[r]
-    #                 for r in keys(relationships)
-    #             ) / denom
-    #     end
-    # end
-
-    # ## Translate everything to account for overall mean
-    # mu_x = mean(unitModel[!, :fit_x])
-    # mu_y = mean(unitModel[!, :fit_y])
-    # unitModel[!, :fit_x] = unitModel[!, :fit_x] .- mu_x
-    # unitModel[!, :fit_y] = unitModel[!, :fit_y] .- mu_y
-    # codeModel[!, :fit_x] = codeModel[!, :fit_x] .- mu_x
-    # codeModel[!, :fit_y] = codeModel[!, :fit_y] .- mu_y
-
-    # mu_x = mean(unitModel[!, :dim_x])
-    # mu_y = mean(unitModel[!, :dim_y])
-    # unitModel[!, :dim_x] = unitModel[!, :dim_x] .- mu_x
-    # unitModel[!, :dim_y] = unitModel[!, :dim_y] .- mu_y
-
-    # # Testing step
-    # ## Run tests for how well the fit models the dims
-    # fitDiffs = Real[]
-    # dimDiffs = Real[]
-    # for (i, unitRowA) in enumerate(eachrow(unitModel))
-    #     for (j, unitRowB) in enumerate(eachrow(unitModel))
-    #         if i < j
-    #             push!(fitDiffs, unitRowA[:fit_x] - unitRowB[:fit_x])
-    #             push!(fitDiffs, unitRowA[:fit_y] - unitRowB[:fit_y])
-    #             push!(dimDiffs, unitRowA[:dim_x] - unitRowB[:dim_x])
-    #             push!(dimDiffs, unitRowA[:dim_y] - unitRowB[:dim_y])
-    #         end
-    #     end
-    # end
-
-    # p = pvalue(OneSampleTTest(fitDiffs, dimDiffs))
-    # pearson = cor(fitDiffs, dimDiffs)
-    # # pvalue(EqualVarianceTTest(x, y))
-    # # pvalue(UnequalVarianceTTest(x, y))
-    # # pvalue(MannWhitneyUTest(x, y))
-    # # pvalue(SignedRankTest(x, y))
-
-#     ## Test that the angle between the dimensions is 90 degrees
-#     theta = dot(networkModel[!, :weight_x], networkModel[!, :weight_y])
-#     theta /= sqrt(dot(networkModel[!, :weight_x], networkModel[!, :weight_x]))
-#     theta /= sqrt(dot(networkModel[!, :weight_y], networkModel[!, :weight_y]))
-#     angle = acos(theta) * 180 / pi
-#     if abs(angle-90) > 0.0001 # allow for a little approximation error
-#         @warn """The angle between the axes of this model is $(angle) degrees, when it should be 90.
-# This can lead to strange visual effects when plotting on orthogonal axes.
-# This can undermine interpreting betweenness between units.
-# This can undermind interpreting variance explained by the axes.
-# And this can cause problems with ENA's optimization algorithm fitting the codes and the lines."""
-#     end
-
-#     ## Compute the variance explained by the axes
-#     total_variance = sum(var.(eachcol(unitModel[!, networkModel[!, :relationship]])))
-#     variance_x = var(unitModel[!, :dim_x]) / total_variance
-#     variance_y = var(unitModel[!, :dim_y]) / total_variance
-
-#     # Done!
-#     return ENAModel(unitJoinedData, codes, conversations, units,
-#                     windowSize, rotateBy, unitModel, networkModel, codeModel, relationships,
-#                     p, pearson, variance_x, variance_y, total_variance)
 end
