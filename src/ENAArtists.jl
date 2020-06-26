@@ -64,7 +64,7 @@ function (artist::DefaultArtist)(cb, ena, scene)
 
     ## Shapes
     unitShapes = map(eachrow(ena.refitUnitModel)) do refitRow
-        return :x
+        return :circle
     end
 
     codeShapes = map(eachrow(ena.codeModel)) do codeRow
@@ -91,7 +91,7 @@ function (artist::DefaultArtist)(cb, ena, scene)
 
     s = maximum(unitMarkerSizes)
     unitMarkerSizes /= s
-    unitMarkerSizes *= 4
+    unitMarkerSizes *= 1.5
 
     s = maximum(codeMarkerSizes)
     codeMarkerSizes /= s
@@ -214,7 +214,7 @@ function (artist::MeansArtist)(cb, ena, scene)
 
     ## Shapes
     unitShapes = map(eachrow(ena.refitUnitModel)) do refitRow
-        return :x
+        return :circle
     end
 
     codeShapes = map(eachrow(ena.codeModel)) do codeRow
@@ -243,7 +243,7 @@ function (artist::MeansArtist)(cb, ena, scene)
 
     s = maximum(unitMarkerSizes)
     unitMarkerSizes /= s
-    unitMarkerSizes *= 4
+    unitMarkerSizes *= 1.5
 
     s = maximum(codeMarkerSizes)
     codeMarkerSizes /= s
@@ -405,7 +405,7 @@ function (artist::WindowsArtist)(cb, ena, scene)
 
     ## Shapes
     unitShapes = map(eachrow(ena.refitUnitModel)) do refitRow
-        return :x
+        return :circle
     end
 
     codeShapes = map(eachrow(ena.codeModel)) do codeRow
@@ -433,7 +433,7 @@ function (artist::WindowsArtist)(cb, ena, scene)
 
     s = maximum(unitMarkerSizes)
     unitMarkerSizes /= s
-    unitMarkerSizes *= 4
+    unitMarkerSizes *= 1.5
 
     s = maximum(codeMarkerSizes)
     codeMarkerSizes /= s
@@ -619,7 +619,7 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
 
     ## Shapes
     unitShapes = map(eachrow(ena.refitUnitModel)) do refitRow
-        return :x
+        return :circle
     end
 
     codeShapes = map(eachrow(ena.codeModel)) do codeRow
@@ -648,7 +648,7 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
 
     s = maximum(unitMarkerSizes)
     unitMarkerSizes /= s
-    unitMarkerSizes *= 4
+    unitMarkerSizes *= 1.5
 
     s = maximum(codeMarkerSizes)
     codeMarkerSizes /= s
