@@ -33,7 +33,13 @@ function Plots.plot(ena::ENAModel;
     showunits::Bool=true,
     showlines::Bool=true,
     showcodes::Bool=true,
-    showconfidence::Bool=true)
+    showconfidence::Bool=true,
+    subsetFilter::Function=x->true)
+
+    prevUnitModel = ena.unitModel
+    prevRefitUnitModel = ena.refitUnitModel
+    ena.unitModel = filter(subsetFilter, ena.unitModel)
+    ena.refitUnitModel = filter(subsetFilter, ena.refitUnitModel)
 
     # Plot
     p = plot(leg=false, margin=10mm, size=(500, 500))
@@ -135,6 +141,9 @@ function Plots.plot(ena::ENAModel;
         xlabel!(p, "$xaxisname ($(round(Int, ena.variance_x*100))%)")
         ylabel!(p, "$yaxisname ($(round(Int, ena.variance_y*100))%)")
     end
+
+     ena.unitModel = prevUnitModel
+     ena.refitUnitModel = prevRefitUnitModel
 
     return p
 end
