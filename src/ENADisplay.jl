@@ -36,16 +36,29 @@ function Plots.plot(ena::ENAModel;
     showconfidence::Bool=true,
     subsetFilter::Function=x->true)
 
-    prevUnitModel = ena.unitModel
-    prevRefitUnitModel = ena.refitUnitModel
-    ena.unitModel = filter(subsetFilter, ena.unitModel)
-    ena.refitUnitModel = filter(subsetFilter, ena.refitUnitModel)
+    ena_to_plot = ENAModel(
+        ena.data,
+        ena.codes,
+        ena.conversations,
+        ena.units,
+        ena.windowSize,
+        ena.rotation,
+        filter(subsetFilter, ena.unitModel),
+        ena.networkModel,
+        ena.codeModel,
+        filter(subsetFilter, ena.refitUnitModel),
+        ena.relationshipMap,
+        ena.pvalue,
+        ena.pearson,
+        ena.variance_x,
+        ena.variance_y
+    )
 
     # Plot
     p = plot(leg=false, margin=10mm, size=(500, 500))
 
     # Artist (to choose the colors etc.)
-    artist(ena, p) do networkColors,
+    artist(ena_to_plot, p) do networkColors,
                    unitColors,
                    codeColors,
                    unitShapes,
@@ -57,7 +70,7 @@ function Plots.plot(ena::ENAModel;
     
         # Draw Units
         if showoriginalspace
-            plot!(p, ena.unitModel[!, :pos_x], ena.unitModel[!, :pos_y],
+            plot!(p, ena_to_plot.unitModel[!, :pos_x], ena_to_plot.unitModel[!, :pos_y],
                 seriestype=:scatter,
                 markershape=unitShapes,
                 markersize=unitMarkerSizes,
@@ -66,7 +79,7 @@ function Plots.plot(ena::ENAModel;
         end
 
         if showunits
-            plot!(p, ena.refitUnitModel[!, :pos_x], ena.refitUnitModel[!, :pos_y],
+            plot!(p, ena_to_plot.refitUnitModel[!, :pos_x], ena_to_plot.refitUnitModel[!, :pos_y],
                 seriestype=:scatter,
                 markershape=unitShapes,
                 markersize=unitMarkerSizes,
@@ -76,9 +89,9 @@ function Plots.plot(ena::ENAModel;
         
         # Draw Lines
         if showlines
-            for (i, networkRow) in enumerate(eachrow(ena.networkModel))
-                j, k = ena.relationshipMap[networkRow[:relationship]]
-                plot!(p, ena.codeModel[[j, k], :pos_x], ena.codeModel[[j, k], :pos_y],
+            for (i, networkRow) in enumerate(eachrow(ena_to_plot.networkModel))
+                j, k = ena_to_plot.relationshipMap[networkRow[:relationship]]
+                plot!(p, ena_to_plot.codeModel[[j, k], :pos_x], ena_to_plot.codeModel[[j, k], :pos_y],
                     seriestype=:line,
                     linewidth=networkLineWidths[i],
                     linecolor=networkColors[i])
@@ -87,9 +100,9 @@ function Plots.plot(ena::ENAModel;
 
         # Draw Codes (dots)
         if showcodes
-            plot!(p, ena.codeModel[!, :pos_x], ena.codeModel[!, :pos_y],
+            plot!(p, ena_to_plot.codeModel[!, :pos_x], ena_to_plot.codeModel[!, :pos_y],
                 seriestype=:scatter,
-                series_annotations=map(label->text(label, :top, 5), ena.codeModel[!, :code]),
+                series_annotations=map(label->text(label, :top, 5), ena_to_plot.codeModel[!, :code]),
                 markershape=codeShapes,
                 markersize=codeMarkerSizes,
                 markercolor=codeColors,
@@ -138,12 +151,9 @@ function Plots.plot(ena::ENAModel;
         yticks!(p, [-1, 0, 1])
         xlims!(p, -1.5, 1.5)
         ylims!(p, -1.5, 1.5)
-        xlabel!(p, "$xaxisname ($(round(Int, ena.variance_x*100))%)")
-        ylabel!(p, "$yaxisname ($(round(Int, ena.variance_y*100))%)")
+        xlabel!(p, "$xaxisname ($(round(Int, ena_to_plot.variance_x*100))%)")
+        ylabel!(p, "$yaxisname ($(round(Int, ena_to_plot.variance_y*100))%)")
     end
-
-     ena.unitModel = prevUnitModel
-     ena.refitUnitModel = prevRefitUnitModel
 
     return p
 end
