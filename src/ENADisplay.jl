@@ -34,7 +34,7 @@ function Plots.plot(ena::ENAModel;
     showlines::Bool=true,
     showcodes::Bool=true,
     showconfidence::Bool=true,
-    subsetFilter::Function=x->true)
+    displayFilter::Function=x->true)
 
     ena_to_plot = ENAModel(
         ena.data,
@@ -43,10 +43,10 @@ function Plots.plot(ena::ENAModel;
         ena.units,
         ena.windowSize,
         ena.rotation,
-        filter(subsetFilter, ena.unitModel),
+        filter(displayFilter, ena.unitModel),
         ena.networkModel,
         ena.codeModel,
-        filter(subsetFilter, ena.refitUnitModel),
+        filter(displayFilter, ena.refitUnitModel),
         ena.relationshipMap,
         ena.pvalue,
         ena.pearson,
@@ -102,7 +102,7 @@ function Plots.plot(ena::ENAModel;
         if showcodes
             plot!(p, ena_to_plot.codeModel[!, :pos_x], ena_to_plot.codeModel[!, :pos_y],
                 seriestype=:scatter,
-                series_annotations=map(label->text(label, :top, 5), ena_to_plot.codeModel[!, :code]),
+                series_annotations=map(label->text(label, :top, 8), ena_to_plot.codeModel[!, :code]),
                 markershape=codeShapes,
                 markersize=codeMarkerSizes,
                 markercolor=codeColors,
