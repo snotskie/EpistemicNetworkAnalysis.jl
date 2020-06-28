@@ -48,6 +48,7 @@ struct FormulaRotation{T <: RegressionModel} <: ENARotation
     regression_model::Type{T}
     coefindex::Int
     f1::FormulaTerm
+    contrasts::Union{Nothing,Dict}
 end
 
 ## Aliasing
@@ -60,9 +61,11 @@ struct Formula2Rotation{T <: RegressionModel, U <: RegressionModel} <: ENARotati
     regression_model1::Type{T}
     coefindex1::Int
     f1::FormulaTerm
+    contrasts1::Union{Nothing,Dict}
     regression_model2::Type{U}
     coefindex2::Int
     f2::FormulaTerm
+    contrasts2::Union{Nothing,Dict}
 end
 
 # SVD Rotation
@@ -91,7 +94,7 @@ function rotate!(rotation::MeansRotation, networkModel::DataFrame, refitUnitMode
     factoredUnitModel = hcat(filteredUnitModel, DataFrame(:factoredGroupVar => factors))
 
     ## Use a FormulaRotation to do the rest of the work
-    fr = FormulaRotation(LinearModel, 2, @formula(y ~ 1 + factoredGroupVar))
+    fr = FormulaRotation(LinearModel, 2, @formula(y ~ 1 + factoredGroupVar), nothing)
     rotate!(fr, networkModel, factoredUnitModel)
 end
 
@@ -120,9 +123,16 @@ function rotate!(rotation::FormulaRotation, networkModel::DataFrame, refitUnitMo
         r = networkRow[:relationship]
         f1 = FormulaTerm(term(r), rotation.f1.rhs)
         try
-            m1 = fit(rotation.regression_model, f1, filteredUnitModel)
-            slope = coef(m1)[rotation.coefindex]
-            networkRow[:weight_x] = slope
+            if rotation.contrasts isa Nothing
+                m1 = fit(rotation.regression_model, f1, filteredUnitModel)
+                slope = coef(m1)[rotation.coefindex]
+                networkRow[:weight_x] = slope
+            else
+                m1 = fit(rotation.regression_model, f1, filteredUnitModel, contrasts=rotation.contrasts)
+                slope = coef(m1)[rotation.coefindex]
+                networkRow[:weight_x] = slope
+            end
+
         catch e
             error("""
             An error occured running a regression during the rotation step of this ENA model.
@@ -181,9 +191,15 @@ function rotate!(rotation::Formula2Rotation, networkModel::DataFrame, refitUnitM
         r = networkRow[:relationship]
         f1 = FormulaTerm(term(r), rotation.f1.rhs)
         try
-            m1 = fit(rotation.regression_model1, f1, filteredUnitModel)
-            slope = coef(m1)[rotation.coefindex1]
-            networkRow[:weight_x] = slope
+            if rotation.contrasts1 isa Nothing
+                m1 = fit(rotation.regression_model1, f1, filteredUnitModel)
+                slope = coef(m1)[rotation.coefindex1]
+                networkRow[:weight_x] = slope
+            else
+                m1 = fit(rotation.regression_model1, f1, filteredUnitModel, contrasts=rotation.contrasts1)
+                slope = coef(m1)[rotation.coefindex1]
+                networkRow[:weight_x] = slope
+            end
         catch e
             error("""
             An error occured running a regression during the rotation step of this ENA model.
@@ -197,9 +213,15 @@ function rotate!(rotation::Formula2Rotation, networkModel::DataFrame, refitUnitM
         r = networkRow[:relationship]
         f2 = FormulaTerm(term(r), rotation.f2.rhs)
         try
-            m2 = fit(rotation.regression_model2, f2, filteredUnitModel)
-            slope = coef(m2)[rotation.coefindex2]
-            networkRow[:weight_y] = slope
+            if rotation.contrasts2 isa Nothing
+                m2 = fit(rotation.regression_model2, f2, filteredUnitModel)
+                slope = coef(m2)[rotation.coefindex2]
+                networkRow[:weight_y] = slope
+            else
+                m2 = fit(rotation.regression_model2, f2, filteredUnitModel, contrasts=rotation.contrasts2)
+                slope = coef(m2)[rotation.coefindex2]
+                networkRow[:weight_y] = slope
+            end
         catch e
             error("""
             An error occured running a regression during the rotation step of this ENA model.
