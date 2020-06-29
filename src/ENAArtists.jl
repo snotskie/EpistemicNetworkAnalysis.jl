@@ -495,7 +495,7 @@ end
 # TVRemoteArtist
 function (artist::TVRemoteArtist)(cb, ena, scene)
     ##Pre-splitting the groups
-    group0xUnits = filter(ena.refitUnitModel) do refitRow
+    group0xUnits = filter(ena.unitModel) do refitRow
         if refitRow[artist.groupVar1] == artist.controlGroup1
             return true
         else
@@ -503,7 +503,7 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
         end
     end
 
-    group1xUnits = filter(ena.refitUnitModel) do refitRow
+    group1xUnits = filter(ena.unitModel) do refitRow
         if refitRow[artist.groupVar1] == artist.treatmentGroup1
             return true
         else
@@ -511,7 +511,7 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
         end
     end
 
-    group00Units = filter(ena.refitUnitModel) do refitRow
+    group00Units = filter(ena.unitModel) do refitRow
         if refitRow[artist.groupVar1] == artist.controlGroup1 &&
            refitRow[artist.groupVar2] == artist.controlGroup2
             return true
@@ -520,7 +520,7 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
         end
     end
 
-    group01Units = filter(ena.refitUnitModel) do refitRow
+    group01Units = filter(ena.unitModel) do refitRow
         if refitRow[artist.groupVar1] == artist.controlGroup1 &&
            refitRow[artist.groupVar2] == artist.treatmentGroup2
             return true
@@ -529,7 +529,7 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
         end
     end
 
-    group10Units = filter(ena.refitUnitModel) do refitRow
+    group10Units = filter(ena.unitModel) do refitRow
         if refitRow[artist.groupVar1] == artist.treatmentGroup1 &&
            refitRow[artist.groupVar2] == artist.controlGroup2
             return true
@@ -538,7 +538,7 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
         end
     end
 
-    group11Units = filter(ena.refitUnitModel) do refitRow
+    group11Units = filter(ena.unitModel) do refitRow
         if refitRow[artist.groupVar1] == artist.treatmentGroup1 &&
            refitRow[artist.groupVar2] == artist.treatmentGroup2
             return true
@@ -553,6 +553,66 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
         group11Units,
         group0xUnits,
         group1xUnits]
+    
+    
+    refit0xUnits = filter(ena.refitUnitModel) do refitRow
+        if refitRow[artist.groupVar1] == artist.controlGroup1
+            return true
+        else
+            return false
+        end
+    end
+
+    refit1xUnits = filter(ena.refitUnitModel) do refitRow
+        if refitRow[artist.groupVar1] == artist.treatmentGroup1
+            return true
+        else
+            return false
+        end
+    end
+
+    refit00Units = filter(ena.refitUnitModel) do refitRow
+        if refitRow[artist.groupVar1] == artist.controlGroup1 &&
+           refitRow[artist.groupVar2] == artist.controlGroup2
+            return true
+        else
+            return false
+        end
+    end
+
+    refit01Units = filter(ena.refitUnitModel) do refitRow
+        if refitRow[artist.groupVar1] == artist.controlGroup1 &&
+           refitRow[artist.groupVar2] == artist.treatmentGroup2
+            return true
+        else
+            return false
+        end
+    end
+
+    refit10Units = filter(ena.refitUnitModel) do refitRow
+        if refitRow[artist.groupVar1] == artist.treatmentGroup1 &&
+           refitRow[artist.groupVar2] == artist.controlGroup2
+            return true
+        else
+            return false
+        end
+    end
+
+    refit11Units = filter(ena.refitUnitModel) do refitRow
+        if refitRow[artist.groupVar1] == artist.treatmentGroup1 &&
+           refitRow[artist.groupVar2] == artist.treatmentGroup2
+            return true
+        else
+            return false
+        end
+    end
+
+    allRefitUnits = [refit00Units,
+        refit01Units,
+        refit10Units,
+        refit11Units,
+        refit0xUnits,
+        refit1xUnits]
 
     # ## Pre-processing the size of the network lines
     # ### Find the "direction", "strength", and "angle" for the line size
@@ -594,8 +654,8 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
     lineStrengths1x = Dict{Symbol,Float64}()
     for networkRow in eachrow(ena.networkModel)
         r = networkRow[:relationship]
-        lineStrengths0x[r] = max(0, sum(group0xUnits[!, r] .- minimum(ena.refitUnitModel[!, r]))) / nrow(group0xUnits)
-        lineStrengths1x[r] = max(0, sum(group1xUnits[!, r] .- minimum(ena.refitUnitModel[!, r]))) / nrow(group1xUnits)
+        lineStrengths0x[r] = sum(group0xUnits[!, r]) / nrow(group0xUnits)
+        lineStrengths1x[r] = sum(group1xUnits[!, r]) / nrow(group1xUnits)
         if isnan(lineStrengths0x[r])
             lineStrengths0x[r] = 0
         end
@@ -684,23 +744,23 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
     confidenceIntervals = []
     colors = [:purple, :purple, :orange, :orange, :purple, :orange]
     shapes = [:dtriangle, :utriangle, :dtriangle, :utriangle, :square, :square]
-    for (i, groupedUnits) in enumerate(allGroupedUnits)
+    for (i, refitUnits) in enumerate(allRefitUnits)
         color = colors[i]
         shape = shapes[i]
         size = 4
-        if (i < 5 && nrow(groupedUnits) > 1) || # draw a quadrant CI if we have enough
-            (i == 5 && nrow(group00Units) > 0 && nrow(group01Units) > 0) || # draw an omnibus CI only if each of its quadrants have something
-            (i == 6 && nrow(group10Units) > 0 && nrow(group11Units) > 0)
+        if (i < 5 && nrow(refitUnits) > 1) || # draw a quadrant CI if we have enough
+            (i == 5 && nrow(refit00Units) > 0 && nrow(refit01Units) > 0) || # draw an omnibus CI only if each of its quadrants have something
+            (i == 6 && nrow(refit10Units) > 0 && nrow(refit11Units) > 0)
             
-            mu_x = mean(groupedUnits[!, :pos_x])
-            mu_y = mean(groupedUnits[!, :pos_y])
-            ci_x = collect(confint(OneSampleTTest(groupedUnits[!, :pos_x])))
-            ci_y = collect(confint(OneSampleTTest(groupedUnits[!, :pos_y])))
+            mu_x = mean(refitUnits[!, :pos_x])
+            mu_y = mean(refitUnits[!, :pos_y])
+            ci_x = collect(confint(OneSampleTTest(refitUnits[!, :pos_x])))
+            ci_y = collect(confint(OneSampleTTest(refitUnits[!, :pos_y])))
             CI = (mu_x, mu_y, ci_x, ci_y, color, shape, size)
             push!(confidenceIntervals, CI)
-        elseif (i < 5 && nrow(groupedUnits) == 1) # only for quadrant CIs
-            mu_x = mean(groupedUnits[!, :pos_x])
-            mu_y = mean(groupedUnits[!, :pos_y])
+        elseif (i < 5 && nrow(refitUnits) == 1) # only for quadrant CIs
+            mu_x = mean(refitUnits[!, :pos_x])
+            mu_y = mean(refitUnits[!, :pos_y])
             CI = (mu_x, mu_y, [mu_x, mu_x], [mu_y, mu_y], color, shape, size)
             push!(confidenceIntervals, CI)
         else
