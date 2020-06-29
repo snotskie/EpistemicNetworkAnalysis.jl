@@ -594,8 +594,8 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
     lineStrengths1x = Dict{Symbol,Float64}()
     for networkRow in eachrow(ena.networkModel)
         r = networkRow[:relationship]
-        lineStrengths0x[r] = sum(group0xUnits[!, r] .- minimum(ena.refitUnitModel[!, r])) / nrow(group0xUnits)
-        lineStrengths1x[r] = sum(group1xUnits[!, r] .- minimum(ena.refitUnitModel[!, r])) / nrow(group1xUnits)
+        lineStrengths0x[r] = max(0, sum(group0xUnits[!, r] .- minimum(ena.refitUnitModel[!, r]))) / nrow(group0xUnits)
+        lineStrengths1x[r] = max(0, sum(group1xUnits[!, r] .- minimum(ena.refitUnitModel[!, r]))) / nrow(group1xUnits)
         if isnan(lineStrengths0x[r])
             lineStrengths0x[r] = 0
         end
