@@ -200,8 +200,10 @@ function (artist::MeansArtist)(cb, ena, scene)
         r = networkRow[:relationship]
         if lineStrengthsControl[r] - lineStrengthsTreatment[r] > 0
             return :purple
-        else
+        elseif lineStrengthsControl[r] - lineStrengthsTreatment[r] < 0
             return :orange
+        else
+            return :white
         end
     end
 
@@ -608,8 +610,10 @@ function (artist::TVRemoteArtist)(cb, ena, scene)
         r = networkRow[:relationship]
         if lineStrengths0x[r] - lineStrengths1x[r] > 0
             return :purple
-        else
+        elseif lineStrengths0x[r] - lineStrengths1x[r] < 0
             return :orange
+        else
+            return :white
         end
     end
 
