@@ -16,6 +16,12 @@ with the confounds is guaranteed, just approximated. This approximation
 should be good enough to interpret the quadrants.
 """
 struct SVDRotation <: ENARotation
+    flipsvd_x::Bool
+    flipsvd_y::Bool
+end
+
+function SVDRotation(; flipsvd_x::Bool=false, flipsvd_y::Bool=false)
+    return SVDRotation(flipsvd_x, flipsvd_y)
 end
 
 """
@@ -34,6 +40,11 @@ struct MeansRotation <: ENARotation
     groupVar::Symbol
     controlGroup::Any
     treatmentGroup::Any
+    flipsvd::Bool
+end
+
+function MeansRotation(groupVar::Symbol, controlGroup::Any, treatmentGroup::Any; flipsvd::Bool=false)
+    return MeansRotation(groupVar, controlGroup, treatmentGroup, flipsvd)
 end
 
 """
@@ -49,6 +60,11 @@ struct FormulaRotation{T <: RegressionModel} <: ENARotation
     coefindex::Int
     f1::FormulaTerm
     contrasts::Union{Nothing,Dict}
+    flipsvd::Bool
+end
+
+function FormulaRotation(regression_model::Type{T}, coefindex::Int, f1::FormulaTerm, contrasts::Union{Nothing,Dict}=nothing; flipsvd::Bool=false) where {T <: RegressionModel}
+    return FormulaRotation(regression_model, coefindex, f1, contrasts, flipsvd)
 end
 
 ## Aliasing
@@ -69,10 +85,17 @@ struct Formula2Rotation{T <: RegressionModel, U <: RegressionModel} <: ENARotati
 end
 
 # SVD Rotation
-function rotate!(::SVDRotation, networkModel::DataFrame, refitUnitModel::DataFrame)
+function rotate!(rotation::SVDRotation, networkModel::DataFrame, refitUnitModel::DataFrame)
     pcaModel = projection(help_deflating_svd(networkModel, refitUnitModel))
     networkModel[!, :weight_x] = pcaModel[:, 1]
     networkModel[!, :weight_y] = pcaModel[:, 2]
+    if rotation.flipsvd_x
+        networkModel[!, :weight_x] *= 1
+    end
+
+    if rotation.flipsvd_y
+        networkModel[!, :weight_y] *= 1
+    end
 end
 
 # Means Rotation
@@ -94,7 +117,7 @@ function rotate!(rotation::MeansRotation, networkModel::DataFrame, refitUnitMode
     factoredUnitModel = hcat(filteredUnitModel, DataFrame(:factoredGroupVar => factors))
 
     ## Use a FormulaRotation to do the rest of the work
-    fr = FormulaRotation(LinearModel, 2, @formula(y ~ 1 + factoredGroupVar), nothing)
+    fr = FormulaRotation(LinearModel, 2, @formula(y ~ 1 + factoredGroupVar), nothing, flipsvd=rotation.flipsvd)
     rotate!(fr, networkModel, factoredUnitModel)
 end
 
@@ -156,6 +179,10 @@ function rotate!(rotation::FormulaRotation, networkModel::DataFrame, refitUnitMo
     controlModel = DataFrame(xAxis)
     pcaModel = projection(help_deflating_svd(networkModel, refitUnitModel, controlModel))
     networkModel[!, :weight_y] = pcaModel[:, 1]
+
+    if rotation.flipsvd
+        networkModel[!, :weight_y] *= 1
+    end
 end
 
 # Formula2 Rotation
