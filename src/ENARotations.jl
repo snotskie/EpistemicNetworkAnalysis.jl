@@ -90,11 +90,11 @@ function rotate!(rotation::SVDRotation, networkModel::DataFrame, refitUnitModel:
     networkModel[!, :weight_x] = pcaModel[:, 1]
     networkModel[!, :weight_y] = pcaModel[:, 2]
     if rotation.flipsvd_x
-        networkModel[!, :weight_x] *= 1
+        networkModel[!, :weight_x] *= -1
     end
 
     if rotation.flipsvd_y
-        networkModel[!, :weight_y] *= 1
+        networkModel[!, :weight_y] *= -1
     end
 end
 
@@ -181,7 +181,7 @@ function rotate!(rotation::FormulaRotation, networkModel::DataFrame, refitUnitMo
     networkModel[!, :weight_y] = pcaModel[:, 1]
 
     if rotation.flipsvd
-        networkModel[!, :weight_y] *= 1
+        networkModel[!, :weight_y] *= -1
     end
 end
 
