@@ -25,3 +25,44 @@ function help_deflating_svd(networkModel::DataFrame, unitModel::DataFrame, contr
     pcaModel = fit(PCA, X', pratio=1.0)
     return pcaModel
 end
+
+function help_plot_ci(p, xs, ys, color, shape)
+    if length(xs) > 0
+        x = mean(xs)
+        y = mean(ys)
+        Plots.plot!(p, [x], [y], 
+            seriestype=:scatter,
+            markersize=4,
+            markershape=shape,
+            markercolor=color,
+            markerstrokecolor=color)
+    end
+
+    if length(xs) > 1
+        ci_x = collect(confint(OneSampleTTest(xs)))
+        ci_y = collect(confint(OneSampleTTest(ys)))    
+        Plots.plot!(p, [ci_x[1], ci_x[2]], [ci_y[1], ci_y[1]], 
+            seriestype=:line,
+            linewidth=1,
+            linestyle=:dash,
+            linecolor=color)
+
+        Plots.plot!(p, [ci_x[1], ci_x[2]], [ci_y[2], ci_y[2]], 
+            seriestype=:line,
+            linewidth=1,
+            linestyle=:dash,
+            linecolor=color)
+
+        Plots.plot!(p, [ci_x[1], ci_x[1]], [ci_y[1], ci_y[2]], 
+            seriestype=:line,
+            linewidth=1,
+            linestyle=:dash,
+            linecolor=color)
+
+        Plots.plot!(p, [ci_x[2], ci_x[2]], [ci_y[1], ci_y[2]], 
+            seriestype=:line,
+            linewidth=1,
+            linestyle=:dash,
+            linecolor=color)
+    end
+end
