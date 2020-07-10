@@ -32,7 +32,7 @@ function relationships(ena::AbstractENAModel)
     return ena.relationshipMap #! assumes this field by default
 end
 
-function codes(ena::AbstractENAModel)
+function nodes(ena::AbstractENAModel)
     return ena.codeModel #! assumes this field by default
 end
 
@@ -50,7 +50,7 @@ function Base.display(ena::AbstractENAModel) # TODO should this be print, displa
     show(centroids(ena)[!, [:ENA_UNIT, :pos_x, :pos_y]], allrows=true)
     println()
     println("Codes:")
-    show(codes(ena), allrows=true)
+    show(nodes(ena), allrows=true)
     println()
     println("Network:")
     show(network(ena), allrows=true)
@@ -69,10 +69,10 @@ end
 ## Plotting
 ### Top-level wrapper
 function plot(ena::AbstractENAModel;
-    margin=10mm, size=500, lims=1.5, ticks=[-1, 0, 1], xlabel="X", ylabel="Y", title="",
+    margin=10mm, size=500, lims=1, ticks=[-1, 0, 1], xlabel="X", ylabel="Y", title="",
     kwargs...)
 
-    p = Plots.plot(leg=false, margin=margin, size=(size, size))
+    p = plot(leg=false, margin=margin, size=(size, size))
     plot!(p, ena; kwargs...)
     xticks!(p, ticks)
     yticks!(p, ticks)
@@ -85,7 +85,7 @@ function plot(ena::AbstractENAModel;
 end
 
 ### Mutating wrapper
-function plot!(p::Plots.Plot, ena::AbstractENAModel;
+function plot!(p::Plot, ena::AbstractENAModel;
     showUnits::Bool=true, showNetwork::Bool=true, showIntervals::Bool=true, showExtras::Bool=true,
     display_filter=x->true,
     kwargs...)
@@ -111,13 +111,13 @@ function plot!(p::Plots.Plot, ena::AbstractENAModel;
 end
 
 ### Unit-level helper
-function plot_units!(p::Plots.Plot, ena::AbstractENAModel, displayCentroids::DataFrame, displayCounts::DataFrame;
+function plot_units!(p::Plot, ena::AbstractENAModel, displayCentroids::DataFrame, displayCounts::DataFrame;
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)
 
     x = displayCentroids[!, :pos_x] * (flipX ? -1 : 1)
     y = displayCentroids[!, :pos_y] * (flipY ? -1 : 1)
-    Plots.plot!(p, x, y,
+    plot!(p, x, y,
         seriestype=:scatter,
         markershape=:circle,
         markersize=1.5,
@@ -126,7 +126,7 @@ function plot_units!(p::Plots.Plot, ena::AbstractENAModel, displayCentroids::Dat
 end
 
 ### Network-level helper
-function plot_network!(p::Plots.Plot, ena::AbstractENAModel, displayCentroids::DataFrame, displayCounts::DataFrame;
+function plot_network!(p::Plot, ena::AbstractENAModel, displayCentroids::DataFrame, displayCounts::DataFrame;
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)
 
@@ -135,25 +135,25 @@ function plot_network!(p::Plots.Plot, ena::AbstractENAModel, displayCentroids::D
     end
 
     lineWidths *= 2 / maximum(lineWidths)
-    codeWidths = zeros(nrow(codes(ena)))
+    codeWidths = zeros(nrow(nodes(ena)))
     for (i, networkRow) in enumerate(eachrow(network(ena)))
         j, k = relationships(ena)[networkRow[:relationship]]
         codeWidths[j] += lineWidths[i]
         codeWidths[k] += lineWidths[i]
 
-        x = codes(ena)[[j, k], :pos_x] * (flipX ? -1 : 1)
-        y = codes(ena)[[j, k], :pos_y] * (flipY ? -1 : 1)
-        Plots.plot!(p, x, y,
+        x = nodes(ena)[[j, k], :pos_x] * (flipX ? -1 : 1)
+        y = nodes(ena)[[j, k], :pos_y] * (flipY ? -1 : 1)
+        plot!(p, x, y,
             seriestype=:line,
             linewidth=lineWidths[i],
             linecolor=:black)
     end
 
     codeWidths *= 8 / maximum(codeWidths)
-    x = codes(ena)[!, :pos_x] * (flipX ? -1 : 1)
-    y = codes(ena)[!, :pos_y] * (flipY ? -1 : 1)
-    labels = map(label->text(label, :top, 8), codes(ena)[!, :code])
-    Plots.plot!(p, x, y,
+    x = nodes(ena)[!, :pos_x] * (flipX ? -1 : 1)
+    y = nodes(ena)[!, :pos_y] * (flipY ? -1 : 1)
+    labels = map(label->text(label, :top, 8), nodes(ena)[!, :code])
+    plot!(p, x, y,
         seriestype=:scatter,
         series_annotations=labels,
         markershape=:circle,
@@ -163,11 +163,15 @@ function plot_network!(p::Plots.Plot, ena::AbstractENAModel, displayCentroids::D
 end
 
 ### CI-level helper
-function plot_intervals!(p::Plots.Plot, ena::AbstractENAModel, displayCentroids::DataFrame, displayCounts::DataFrame; kwargs...)
+function plot_intervals!(p::Plot, ena::AbstractENAModel, displayCentroids::DataFrame, displayCounts::DataFrame;
+    flipX::Bool=false, flipY::Bool=false,
+    kwargs...)
     # do nothing
 end
 
 ### Extras helper
-function plot_extras!(p::Plots.Plot, ena::AbstractENAModel, displayCentroids::DataFrame, displayCounts::DataFrame; kwargs...)
+function plot_extras!(p::Plot, ena::AbstractENAModel, displayCentroids::DataFrame, displayCounts::DataFrame;
+    flipX::Bool=false, flipY::Bool=false,
+    kwargs...)
     # do nothing
 end

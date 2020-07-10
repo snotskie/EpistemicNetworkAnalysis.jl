@@ -4,6 +4,9 @@ module EpistemicNetworkAnalysis
 ## Plotting
 using Plots
 using Plots.PlotMeasures
+import Plots.plot
+import Plots.plot!
+import Plots.Plot
 
 ## Data
 using DataFrames
@@ -21,6 +24,8 @@ using GLM
 include("./helpers.jl")
 include("./typetree.jl")
 include("./SVDRotation.jl")
+include("./FormulaRotation.jl")
+include("./Formula2Rotation.jl")
 include("./ENAModel.jl")
 include("./RSData.jl")
 
@@ -43,17 +48,22 @@ include("./RSData.jl")
 
 # @warn "Running EpistemicNetworkAnalysis.jl as main. Performing kitchen sink operation."
 # RSdata = ena_dataset("RS.data")
-# myCodes = [:Data,
+# codes = [:Data,
 #     :Technical_Constraints,
 #     :Performance_Parameters,
 #     :Client_and_Consultant_Requests,
 #     :Design_Reasoning,
 #     :Collaboration]
 
-# myConversations = [:Condition, :GameHalf, :GroupName]
-# myUnits = [:Condition, :GameHalf, :UserName]
-# myRotation = SVDRotation()
-# myENA = ENAModel(RSdata, myCodes, myConversations, myUnits, rotateBy=myRotation)
+# conversations = [:Condition, :GameHalf, :GroupName]
+# units = [:Condition, :GameHalf, :UserName]
+# # rotation = SVDRotation()
+# rotation = Formula2Rotation(
+#     LinearModel, 2, @formula(y ~ 1 + Condition), Dict(:Condition => DummyCoding()),
+#     LinearModel, 2, @formula(y ~ 1 + GameHalf), Dict(:GameHalf => DummyCoding())
+# )
+
+# myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 # display(myENA)
 # p = plot(myENA, title="test", flipX=true, groupVar=:Condition)
 # display(p)

@@ -13,7 +13,7 @@ end
 
 # Override plotting pieces
 ## Units - we can color them into n groups
-function plot_units!(p::Plots.Plot, ena::AbstractENAModel{SVDRotation}, displayCentroids::DataFrame, displayCounts::DataFrame;
+function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractSVDRotation}, displayCentroids::DataFrame, displayCounts::DataFrame;
     flipX::Bool=false, flipY::Bool=false, groupVar::Union{Symbol,Nothing}=nothing,
     kwargs...)
 
@@ -33,7 +33,7 @@ function plot_units!(p::Plots.Plot, ena::AbstractENAModel{SVDRotation}, displayC
 
     x = displayCentroids[!, :pos_x] * (flipX ? -1 : 1)
     y = displayCentroids[!, :pos_y] * (flipY ? -1 : 1)
-    Plots.plot!(p, x, y,
+    plot!(p, x, y,
         seriestype=:scatter,
         markershape=:circle,
         markersize=1.5,
@@ -42,7 +42,7 @@ function plot_units!(p::Plots.Plot, ena::AbstractENAModel{SVDRotation}, displayC
 end
 
 ## CIs - we can color them into n groups
-function plot_intervals!(p::Plots.Plot, ena::AbstractENAModel{SVDRotation}, displayCentroids::DataFrame, displayCounts::DataFrame;
+function plot_intervals!(p::Plot, ena::AbstractENAModel{<:AbstractSVDRotation}, displayCentroids::DataFrame, displayCounts::DataFrame;
     flipX::Bool=false, flipY::Bool=false, groupVar::Union{Symbol,Nothing}=nothing,
     kwargs...)
 
