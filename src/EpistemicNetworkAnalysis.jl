@@ -46,27 +46,31 @@ include("./RSData.jl")
 
 
 
-# @warn "Running EpistemicNetworkAnalysis.jl as main. Performing kitchen sink operation."
-# RSdata = ena_dataset("RS.data")
-# codes = [:Data,
-#     :Technical_Constraints,
-#     :Performance_Parameters,
-#     :Client_and_Consultant_Requests,
-#     :Design_Reasoning,
-#     :Collaboration]
+@warn "Running EpistemicNetworkAnalysis.jl as main. Performing kitchen sink operation."
+RSdata = ena_dataset("RS.data")
+codes = [:Data,
+    :Technical_Constraints,
+    :Performance_Parameters,
+    :Client_and_Consultant_Requests,
+    :Design_Reasoning,
+    :Collaboration]
 
-# conversations = [:Condition, :GameHalf, :GroupName]
-# units = [:Condition, :GameHalf, :UserName]
-# # rotation = SVDRotation()
+conversations = [:Condition, :GameHalf, :GroupName]
+units = [:Condition, :GameHalf, :UserName]
+# rotation = SVDRotation()
+rotation = FormulaRotation(
+    LinearModel, 2, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding())
+)
+
 # rotation = Formula2Rotation(
-#     LinearModel, 2, @formula(y ~ 1 + Condition), Dict(:Condition => DummyCoding()),
-#     LinearModel, 2, @formula(y ~ 1 + GameHalf), Dict(:GameHalf => DummyCoding())
+#     LinearModel, 2, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding()),
+#     LinearModel, 2, @formula(y ~ 1 + GameHalf + Condition), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding())
 # )
 
-# myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
-# display(myENA)
-# p = plot(myENA, title="test", flipX=true, groupVar=:Condition)
-# display(p)
+myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
+display(myENA)
+p = plot(myENA, title="test", xlabel="Condition", ylabel="SVD", groupVar=:Condition)
+display(p)
 
 
 

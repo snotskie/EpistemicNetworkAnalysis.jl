@@ -113,72 +113,55 @@ This can undermine interpreting the y-axis in terms of the requested effect."""
 end
 
 # Override plotting pieces
-## CIs - we can mark how well the formula predicts the axes
-function plot_intervals!(p::Plot, ena::AbstractENAModel{<:AbstractFormula2Rotation}, displayCentroids::DataFrame, displayCounts::DataFrame;
-    flipX::Bool=false, flipY::Bool=false,
+## Labels - we should also report the p-value and effect size
+function plot_labels!(p::Plot, ena::AbstractENAModel{<:AbstractFormula2Rotation};
+    xlabel="X", ylabel="Y",
     kwargs...)
 
-    xslope, xlow, xhigh = 0, -1, 1
-    fx = FormulaTerm(term(:pos_x), ena.rotation.f1.rhs)
+    total_variance = sum(var.(eachcol(centroids(ena)[!, network(ena)[!, :relationship]])))
+    variance_x = var(centroids(ena)[!, :pos_x]) / total_variance
+    variance_y = var(centroids(ena)[!, :pos_y]) / total_variance
+
+    fxab = FormulaTerm(term(:pos_x), ena.rotation.f1.rhs)
+    fxa = FormulaTerm(term(:pos_x), ena.rotation.f1.rhs[1:end .!= ena.rotation.coefindex])
+    variance_xab = 0
+    variance_xa = 0
+    pvalue_x = 1
     if ena.rotation.contrasts isa Nothing
-        mx = fit(ena.rotation.regression_model, fx, centroids(ena))
-        xslope = coef(mx)[ena.rotation.coefindex] / 2
-        xlow = confint(mx)[ena.rotation.coefindex,1] / 2
-        xhigh = confint(mx)[ena.rotation.coefindex,2] / 2
+        mxab = fit(ena.rotation.regression_model, fxab, centroids(ena))
+        mxa = fit(ena.rotation.regression_model, fxa, centroids(ena))
+        variance_xab = var(predict(mxab)) / var(centroids(ena)[!, :pos_x])
+        variance_xa = var(predict(mxa)) / var(centroids(ena)[!, :pos_x])
+        pvalue_x = coeftable(mxab).cols[4][ena.rotation.coefindex]
     else
-        mx = fit(ena.rotation.regression_model, fx, centroids(ena), contrasts=ena.rotation.contrasts)
-        xslope = coef(mx)[ena.rotation.coefindex] / 2
-        xlow = confint(mx)[ena.rotation.coefindex,1] / 2
-        xhigh = confint(mx)[ena.rotation.coefindex,2] / 2
+        mxab = fit(ena.rotation.regression_model, fxab, centroids(ena), contrasts=ena.rotation.contrasts)
+        mxa = fit(ena.rotation.regression_model, fxa, centroids(ena), contrasts=ena.rotation.contrasts)
+        variance_xab = var(predict(mxab)) / var(centroids(ena)[!, :pos_x])
+        variance_xa = var(predict(mxa)) / var(centroids(ena)[!, :pos_x])
+        pvalue_x = coeftable(mxab).cols[4][ena.rotation.coefindex]
     end
 
-    if flipX
-        xlow, xhigh = -xlow, -xhigh
-    end
-
-    x1 = -0.25 * xslope / xlow
-    x2 = -0.25 * xslope / xhigh
-    x3 = +0.25 * xslope / xlow
-    x4 = +0.25 * xslope / xhigh
-    plot!(p, [x1, x2], [0, 0],
-        seriestype=:line,
-        linewidth=4,
-        linecolor=:purple)
-    
-    plot!(p, [x3, x4], [0, 0],
-        seriestype=:line,
-        linewidth=4,
-        linecolor=:orange)
-
-    yslope, ylow, yhigh = 0, -1, 1
-    fy = FormulaTerm(term(:pos_y), ena.rotation.f2.rhs)
+    fyab = FormulaTerm(term(:pos_y), ena.rotation.f2.rhs)
+    fya = FormulaTerm(term(:pos_y), ena.rotation.f2.rhs[1:end .!= ena.rotation.coefindex2])
+    variance_yab = 0
+    variance_ya = 0
+    pvalue_y = 1
     if ena.rotation.contrasts isa Nothing
-        my = fit(ena.rotation.regression_model2, fy, centroids(ena))
-        yslope = coef(my)[ena.rotation.coefindex2] / 2
-        ylow = confint(my)[ena.rotation.coefindex2,1] / 2
-        yhigh = confint(my)[ena.rotation.coefindex2,2] / 2
+        myab = fit(ena.rotation.regression_model, fyab, centroids(ena))
+        mya = fit(ena.rotation.regression_model, fya, centroids(ena))
+        variance_yab = var(predict(myab)) / var(centroids(ena)[!, :pos_y])
+        variance_ya = var(predict(mya)) / var(centroids(ena)[!, :pos_y])
+        pvalue_y = coeftable(myab).cols[4][ena.rotation.coefindex2]
     else
-        my = fit(ena.rotation.regression_model2, fy, centroids(ena), contrasts=ena.rotation.contrasts2)
-        yslope = coef(my)[ena.rotation.coefindex2] / 2
-        ylow = confint(my)[ena.rotation.coefindex2,1] / 2
-        yhigh = confint(my)[ena.rotation.coefindex2,2] / 2
+        myab = fit(ena.rotation.regression_model, fyab, centroids(ena), contrasts=ena.rotation.contrasts)
+        mya = fit(ena.rotation.regression_model, fya, centroids(ena), contrasts=ena.rotation.contrasts)
+        variance_yab = var(predict(myab)) / var(centroids(ena)[!, :pos_y])
+        variance_ya = var(predict(mya)) / var(centroids(ena)[!, :pos_y])
+        pvalue_y = coeftable(myab).cols[4][ena.rotation.coefindex2]
     end
 
-    if flipY
-        ylow, yhigh = -ylow, -yhigh
-    end
-
-    y1 = -0.25 * yslope / ylow
-    y2 = -0.25 * yslope / yhigh
-    y3 = +0.25 * yslope / ylow
-    y4 = +0.25 * yslope / yhigh
-    plot!(p, [0, 0], [y1, y2],
-        seriestype=:line,
-        linewidth=4,
-        linecolor=:green)
-    
-    plot!(p, [0, 0], [y3, y4],
-        seriestype=:line,
-        linewidth=4,
-        linecolor=:blue)
+    f2_x = (variance_xab - variance_xa) / (1 - variance_xab)
+    f2_y = (variance_yab - variance_ya) / (1 - variance_yab)
+    xlabel!(p, "$xlabel ($(round(Int, variance_x*100))%, p<$(ceil(pvalue_x, digits=4)), f²=$(round(f2_x, digits=4)))")
+    ylabel!(p, "$ylabel ($(round(Int, variance_y*100))%, p<$(ceil(pvalue_y, digits=4)), f²=$(round(f2_y, digits=4)))")
 end

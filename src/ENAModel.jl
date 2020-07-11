@@ -17,8 +17,6 @@ struct ENAModel{T} <: AbstractENAModel{T}
     centroidModel::DataFrame # countModel with re-approximated relationship columns
     relationshipMap::Any
     pearson::Real
-    variance_x::Real
-    variance_y::Real
 end
 
 function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
@@ -275,13 +273,8 @@ This can undermind interpreting variance explained by the axes.
 And this can cause problems with ENA's optimization algorithm fitting the codes and the lines."""
     end
 
-    ## Compute the variance explained by the axes
-    total_variance = sum(var.(eachcol(centroidModel[!, networkModel[!, :relationship]])))
-    variance_x = var(centroidModel[!, :pos_x]) / total_variance
-    variance_y = var(centroidModel[!, :pos_y]) / total_variance
-
     # Done!
     return ENAModel(unitJoinedData, codes, conversations, units,
                     windowSize, rotateBy, countModel, networkModel, codeModel, centroidModel,
-                    relationshipMap, pearson, variance_x, variance_y)
+                    relationshipMap, pearson)
 end

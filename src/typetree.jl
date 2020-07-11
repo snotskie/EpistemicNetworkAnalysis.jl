@@ -1,10 +1,10 @@
 # Rotations
 abstract type AbstractENARotation end
 abstract type AbstractSVDRotation <: AbstractENARotation end
-abstract type AbstractMeansRotation <: AbstractENARotation end
-abstract type AbstractDoubleMeansRotation <: AbstractMeansRotation end
 abstract type AbstractFormulaRotation <: AbstractENARotation end
 abstract type AbstractFormula2Rotation <: AbstractFormulaRotation end
+abstract type AbstractMeansRotation <: AbstractFormulaRotation end
+abstract type AbstractDoubleMeansRotation <: AbstractFormula2Rotation end
 
 # Models
 abstract type AbstractENAModel{T<:AbstractENARotation} end
@@ -41,7 +41,7 @@ function variance(ena::AbstractENAModel)
 end
 
 function pearson(ena::AbstractENAModel)
-return ena.pearson #! assumes this field by default
+    return ena.pearson #! assumes this field by default
 end
 
 ## Text display
@@ -58,18 +58,12 @@ function Base.display(ena::AbstractENAModel) # TODO should this be print, displa
     println("Model fit (Pearson):")
     println(round(pearson(ena), digits=4))
     println()
-    println("Model fit (Variance explained on x-axis):")
-    println(round(variance(ena)[1], digits=4))
-    println()
-    println("Model fit (Variance explained on y-axis):")
-    println(round(variance(ena)[2], digits=4))
-    println()
 end
 
 ## Plotting
 ### Top-level wrapper
 function plot(ena::AbstractENAModel;
-    margin=10mm, size=500, lims=1, ticks=[-1, 0, 1], xlabel="X", ylabel="Y", title="",
+    margin=10mm, size=500, lims=1, ticks=[-1, 0, 1], title="", 
     kwargs...)
 
     p = plot(leg=false, margin=margin, size=(size, size))
@@ -78,8 +72,6 @@ function plot(ena::AbstractENAModel;
     yticks!(p, ticks)
     xlims!(p, -lims, lims)
     ylims!(p, -lims, lims)
-    xlabel!(p, "$xlabel ($(round(Int, variance(ena)[1]*100))%)")
-    ylabel!(p, "$ylabel ($(round(Int, variance(ena)[2]*100))%)")
     title!(p, title)
     return p
 end
@@ -108,6 +100,8 @@ function plot!(p::Plot, ena::AbstractENAModel;
     if showExtras
         plot_extras!(p, ena, displayCentroids, displayCounts; kwargs...)
     end
+
+    plot_labels!(p, ena; kwargs...)
 end
 
 ### Unit-level helper
@@ -174,4 +168,16 @@ function plot_extras!(p::Plot, ena::AbstractENAModel, displayCentroids::DataFram
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)
     # do nothing
+end
+
+### Labels helper
+function plot_labels!(p::Plot, ena::AbstractENAModel;
+    xlabel="X", ylabel="Y",
+    kwargs...)
+
+    total_variance = sum(var.(eachcol(centroids(ena)[!, network(ena)[!, :relationship]])))
+    variance_x = var(centroids(ena)[!, :pos_x]) / total_variance
+    variance_y = var(centroids(ena)[!, :pos_y]) / total_variance
+    xlabel!(p, "$xlabel ($(round(Int, variance_x*100))%)")
+    ylabel!(p, "$ylabel ($(round(Int, variance_y*100))%)")
 end
