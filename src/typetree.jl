@@ -36,10 +36,6 @@ function nodes(ena::AbstractENAModel)
     return ena.codeModel #! assumes this field by default
 end
 
-function variance(ena::AbstractENAModel)
-    return (ena.variance_x, ena.variance_y) #! assumes this field by default
-end
-
 function pearson(ena::AbstractENAModel)
     return ena.pearson #! assumes this field by default
 end
