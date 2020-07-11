@@ -1,68 +1,108 @@
 # Rotations
-abstract type AbstractENARotation end
-abstract type AbstractSVDRotation <: AbstractENARotation end
-abstract type AbstractFormulaRotation <: AbstractENARotation end
-abstract type AbstractFormula2Rotation <: AbstractFormulaRotation end
-abstract type AbstractMeansRotation <: AbstractFormulaRotation end
-abstract type AbstractDoubleMeansRotation <: AbstractFormula2Rotation end
+abstract type AbstractENARotation
+    # fields: (none)
+    # plot accepts: flipX, flipY, xlabel, ylabel
+    # test reports: variance_x, variance_y
+end
 
-# Models
-abstract type AbstractENAModel{T<:AbstractENARotation} end
+abstract type AbstractSVDRotation <: AbstractENARotation
+    # fields: (inherit)
+    # plot accepts: (inherit), groupVar
+    # test reports: (inherit)
+end
+
+abstract type AbstractFormulaRotation <: AbstractENARotation
+    # fields: (inherit), regression_model, coefindex, f1, contrasts
+    # plot accepts: (inherit), minLabel, maxLabel
+    # test reports: (inherit), pvalue, effect_size
+end
+
+abstract type AbstractFormula2Rotation <: AbstractFormulaRotation
+    # fields: (inherit), regression_model2, coefindex2, f2, contrasts
+    # plot accepts: (inherit)
+    # test reports: (inherit), pvalue2, effect_size2
+end
+
+abstract type AbstractMeansRotation <: AbstractFormulaRotation
+    # fields: (inherit), groupVar, controlGroup, treatmentGroup
+    # plot accepts: (inherit)
+    # test reports: (inherit)
+end
+
+abstract type AbstractDoubleMeansRotation <: AbstractFormula2Rotation
+    # fields: (inherit), groupVar, controlGroup, treatmentGroup, groupVar2, controlGroup2, treatmentGroup2
+    # plot accepts: (inherit)
+    # test reports: (inherit)
+end
+
+# Accumulation Models
+abstract type AbstractENAModel{T<:AbstractENARotation}
+    # fields: units, conversations, codes, rotation, accumModel, centroidModel, metadata, codeModel, networkModel, relationshipMap
+    # test reports: coregistration
+end
 
 # Default Functions
 ## Rotations
-function rotate!(rotation::AbstractENARotation, networkModel::DataFrame, centroidModel::DataFrame)
+function rotate!(rotation::AbstractENARotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame)
     error("Unimplemented")
 end
 
-## Model Access
-function centroids(ena::AbstractENAModel)
-    return ena.centroidModel #! assumes this field by default
-end
+## Tests
+function test(ena::AbstractENAModel)
 
-function counts(ena::AbstractENAModel)
-    return ena.countModel #! assumes this field by default
-end
+    # For reference:
+    # p = pvalue(OneSampleTTest(fitDiffs, dimDiffs))
+    # pvalue(EqualVarianceTTest(x, y))
+    # pvalue(UnequalVarianceTTest(x, y))
+    # pvalue(MannWhitneyUTest(x, y))
+    # pvalue(SignedRankTest(x, y))
 
-function network(ena::AbstractENAModel)
-    return ena.networkModel #! assumes this field by default
-end
+    fitDiffs = Real[]
+    dimDiffs = Real[]
+    for (i, unitRowA) in enumerate(eachrow(ena.accumModel))
+        for (j, unitRowB) in enumerate(eachrow(ena.accumModel))
+            if i < j
+                push!(fitDiffs, ena.centroidModel[i, :pos_x] - ena.centroidModel[j, :pos_x])
+                push!(fitDiffs, ena.centroidModel[i, :pos_y] - ena.centroidModel[j, :pos_y])
+                push!(dimDiffs, unitRowA[:pos_x] - unitRowB[:pos_x])
+                push!(dimDiffs, unitRowA[:pos_y] - unitRowB[:pos_y])
+            end
+        end
+    end
 
-function relationships(ena::AbstractENAModel)
-    return ena.relationshipMap #! assumes this field by default
-end
-
-function nodes(ena::AbstractENAModel)
-    return ena.codeModel #! assumes this field by default
-end
-
-function pearson(ena::AbstractENAModel)
-    return ena.pearson #! assumes this field by default
+    pearson = cor(fitDiffs, dimDiffs)
+    total_variance = sum(var.(eachcol(ena.centroidModel[!, ena.networkModel[!, :relationship]])))
+    variance_x = var(ena.centroidModel[!, :pos_x]) / total_variance
+    variance_y = var(ena.centroidModel[!, :pos_y]) / total_variance
+    return Dict(:coregistration => pearson, :variance_x => variance_x, :variance_y => variance_y)
 end
 
 ## Text display
 function Base.display(ena::AbstractENAModel) # TODO should this be print, display, or show?
     println("Units (centroids):")
-    show(centroids(ena)[!, [:ENA_UNIT, :pos_x, :pos_y]], allrows=true)
+    show(ena.centroidModel[!, [:ENA_UNIT, :pos_x, :pos_y]], allrows=true)
     println()
     println("Codes:")
-    show(nodes(ena), allrows=true)
+    show(ena.codeModel, allrows=true)
     println()
     println("Network:")
-    show(network(ena), allrows=true)
+    show(ena.networkModel, allrows=true)
     println()
-    println("Model fit (Pearson):")
-    println(round(pearson(ena), digits=4))
-    println()
+    results = test(ena)
+    for key in keys(results)
+        println("$key:")
+        println(results[key])
+        println()
+    end
 end
 
 ## Plotting
-### Top-level wrapper
+### Top-level wrapper - Do not override
 function plot(ena::AbstractENAModel;
-    margin=10mm, size=500, lims=1, ticks=[-1, 0, 1], title="", 
+    margin=10mm, size=500, lims=1, ticks=[-1, 0, 1], title="", leg=:bottomleft,
     kwargs...)
 
-    p = plot(leg=false, margin=margin, size=(size, size))
+    p = plot(leg=leg, margin=margin, size=(size, size))
     plot!(p, ena; kwargs...)
     xticks!(p, ticks)
     yticks!(p, ticks)
@@ -72,42 +112,42 @@ function plot(ena::AbstractENAModel;
     return p
 end
 
-### Mutating wrapper
+### Mutating wrapper - Do not override
 function plot!(p::Plot, ena::AbstractENAModel;
     showUnits::Bool=true, showNetwork::Bool=true, showIntervals::Bool=true, showExtras::Bool=true,
     display_filter=x->true,
     kwargs...)
 
-    goodRows = map(display_filter, eachrow(centroids(ena)))
-    displayCentroids = centroids(ena)[goodRows, :]
-    displayCounts = counts(ena)[goodRows, :]
+    displayRows = map(display_filter, eachrow(ena.centroidModel))
     if showUnits
-        plot_units!(p, ena, displayCentroids, displayCounts; kwargs...)
+        plot_units!(p, ena, displayRows; kwargs...)
     end
 
     if showNetwork
-        plot_network!(p, ena, displayCentroids, displayCounts; kwargs...)
+        plot_network!(p, ena, displayRows; kwargs...)
     end
 
     if showIntervals
-        plot_intervals!(p, ena, displayCentroids, displayCounts; kwargs...)
+        plot_intervals!(p, ena, displayRows; kwargs...)
     end
 
     if showExtras
-        plot_extras!(p, ena, displayCentroids, displayCounts; kwargs...)
+        plot_extras!(p, ena, displayRows; kwargs...)
     end
 
     plot_labels!(p, ena; kwargs...)
 end
 
 ### Unit-level helper
-function plot_units!(p::Plot, ena::AbstractENAModel, displayCentroids::DataFrame, displayCounts::DataFrame;
+function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)
 
+    displayCentroids = ena.centroidModel[displayRows, :]
     x = displayCentroids[!, :pos_x] * (flipX ? -1 : 1)
     y = displayCentroids[!, :pos_y] * (flipY ? -1 : 1)
     plot!(p, x, y,
+        label="Units",
         seriestype=:scatter,
         markershape=:circle,
         markersize=1.5,
@@ -116,34 +156,37 @@ function plot_units!(p::Plot, ena::AbstractENAModel, displayCentroids::DataFrame
 end
 
 ### Network-level helper
-function plot_network!(p::Plot, ena::AbstractENAModel, displayCentroids::DataFrame, displayCounts::DataFrame;
+function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)
 
-    lineWidths = map(eachrow(network(ena))) do networkRow
-        return sum(displayCounts[!, networkRow[:relationship]])
+    displayAccums = ena.accumModel[displayRows, :]
+    lineWidths = map(eachrow(ena.networkModel)) do networkRow
+        return sum(displayAccums[!, networkRow[:relationship]])
     end
 
     lineWidths *= 2 / maximum(lineWidths)
-    codeWidths = zeros(nrow(nodes(ena)))
-    for (i, networkRow) in enumerate(eachrow(network(ena)))
-        j, k = relationships(ena)[networkRow[:relationship]]
+    codeWidths = zeros(nrow(ena.codeModel))
+    for (i, networkRow) in enumerate(eachrow(ena.networkModel))
+        j, k = ena.relationshipMap[networkRow[:relationship]]
         codeWidths[j] += lineWidths[i]
         codeWidths[k] += lineWidths[i]
 
-        x = nodes(ena)[[j, k], :pos_x] * (flipX ? -1 : 1)
-        y = nodes(ena)[[j, k], :pos_y] * (flipY ? -1 : 1)
+        x = ena.codeModel[[j, k], :pos_x] * (flipX ? -1 : 1)
+        y = ena.codeModel[[j, k], :pos_y] * (flipY ? -1 : 1)
         plot!(p, x, y,
+            label=nothing,
             seriestype=:line,
             linewidth=lineWidths[i],
             linecolor=:black)
     end
 
     codeWidths *= 8 / maximum(codeWidths)
-    x = nodes(ena)[!, :pos_x] * (flipX ? -1 : 1)
-    y = nodes(ena)[!, :pos_y] * (flipY ? -1 : 1)
-    labels = map(label->text(label, :top, 8), nodes(ena)[!, :code])
+    x = ena.codeModel[!, :pos_x] * (flipX ? -1 : 1)
+    y = ena.codeModel[!, :pos_y] * (flipY ? -1 : 1)
+    labels = map(label->text(label, :top, 8), ena.codeModel[!, :code])
     plot!(p, x, y,
+        label=nothing,
         seriestype=:scatter,
         series_annotations=labels,
         markershape=:circle,
@@ -153,14 +196,14 @@ function plot_network!(p::Plot, ena::AbstractENAModel, displayCentroids::DataFra
 end
 
 ### CI-level helper
-function plot_intervals!(p::Plot, ena::AbstractENAModel, displayCentroids::DataFrame, displayCounts::DataFrame;
+function plot_intervals!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)
     # do nothing
 end
 
 ### Extras helper
-function plot_extras!(p::Plot, ena::AbstractENAModel, displayCentroids::DataFrame, displayCounts::DataFrame;
+function plot_extras!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)
     # do nothing
@@ -171,9 +214,7 @@ function plot_labels!(p::Plot, ena::AbstractENAModel;
     xlabel="X", ylabel="Y",
     kwargs...)
 
-    total_variance = sum(var.(eachcol(centroids(ena)[!, network(ena)[!, :relationship]])))
-    variance_x = var(centroids(ena)[!, :pos_x]) / total_variance
-    variance_y = var(centroids(ena)[!, :pos_y]) / total_variance
-    xlabel!(p, "$xlabel ($(round(Int, variance_x*100))%)")
-    ylabel!(p, "$ylabel ($(round(Int, variance_y*100))%)")
+    results = test(ena)
+    xlabel!(p, "$xlabel ($(round(Int, results[:variance_x]*100))%)")
+    ylabel!(p, "$ylabel ($(round(Int, results[:variance_y]*100))%)")
 end

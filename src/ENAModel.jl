@@ -5,18 +5,20 @@
 TODO: document
 """
 struct ENAModel{T} <: AbstractENAModel{T}
-    data::DataFrame # the raw data
+    # Inherits:
     codes::Array{Symbol,1}
     conversations::Array{Symbol,1}
     units::Array{Symbol,1}
-    windowSize::Int
     rotation::T
-    countModel::DataFrame # all the unit-level data we compute
-    networkModel::DataFrame # all the connections-level data we compute
+    accumModel::DataFrame # all the unit-level data we compute
+    centroidModel::DataFrame # accumModel with re-approximated relationship columns
+    metadata::DataFrame
     codeModel::DataFrame # all the code-level data we compute
-    centroidModel::DataFrame # countModel with re-approximated relationship columns
+    networkModel::DataFrame # all the connections-level data we compute
     relationshipMap::Any
-    pearson::Real
+
+    # Adds:
+    windowSize::Int
 end
 
 function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
@@ -31,17 +33,17 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
                          if i < j)
 
     ## Adding a new column to the raw data that labels each unit properly
-    unitJoinedData = hcat(data, DataFrame(:ENA_UNIT => map(eachrow(data)) do dataRow
+    data = hcat(data, DataFrame(:ENA_UNIT => map(eachrow(data)) do dataRow
         return join(dataRow[units], ".")
     end))
 
     ## Unit model placeholders
-    countModel = combine(first, groupby(unitJoinedData, :ENA_UNIT))
-    countModel = hcat(countModel, DataFrame(Dict(r => Real[0 for i in 1:nrow(countModel)] # my relative strength for each relationship
+    accumModel = combine(first, groupby(data, :ENA_UNIT))
+    accumModel = hcat(accumModel, DataFrame(Dict(r => Real[0 for i in 1:nrow(accumModel)] # my relative strength for each relationship
                                                for r in keys(relationshipMap))))
 
-    countModel = hcat(countModel, DataFrame(pos_x=Real[0 for i in 1:nrow(countModel)], # my position on the x and y axes
-                                          pos_y=Real[0 for i in 1:nrow(countModel)])) 
+    accumModel = hcat(accumModel, DataFrame(pos_x=Real[0 for i in 1:nrow(accumModel)], # my position on the x and y axes
+                                          pos_y=Real[0 for i in 1:nrow(accumModel)])) 
 
     ## Network model placeholders
     networkModel = DataFrame(relationship=collect(keys(relationshipMap)),
@@ -61,11 +63,11 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     # Accumulation step
     ## Raw counts for all the units
     counts = Dict(unit => [[0 for j in codes] for i in codes]
-                  for unit in countModel[!, :ENA_UNIT])
+                  for unit in accumModel[!, :ENA_UNIT])
 
-    prev_convo = unitJoinedData[1, conversations]
+    prev_convo = data[1, conversations]
     howrecents = [Inf for c in codes]
-    for line in eachrow(unitJoinedData)
+    for line in eachrow(data)
         if prev_convo != line[conversations]
             prev_convo = line[conversations]
             howrecents .= Inf
@@ -92,7 +94,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
 
     ## Normalize and overwrite the unit model's placeholders
     if sphereNormalize
-        for unitRow in eachrow(countModel)
+        for unitRow in eachrow(accumModel)
             unit = unitRow[:ENA_UNIT]
             vector = [counts[unit][i][j] for (i,j) in values(relationshipMap)]
             s = sqrt(sum(vector .^ 2))
@@ -108,24 +110,25 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
 
     # Filtering
     ## User-defined unit subsetting - we kept all the data in the count model up to this point so the user can define filters as they please
-    filter!(subsetFilter, countModel)
+    filter!(subsetFilter, accumModel)
 
     ## Drop empty values
     if dropEmpty
-        filter!(countModel) do unitRow
+        filter!(accumModel) do unitRow
             return !all(iszero.(values(unitRow[networkModel[!, :relationship]])))
         end
     end
 
-    ## Now that we have all the data counted, copy it into the centroid model, then narrow the count model down to just the cols that matter there
-    centroidModel = countModel
-    countModel = copy(countModel[!, [:ENA_UNIT, :pos_x, :pos_y, networkModel[!, :relationship]...]])
+    ## Now that we have all the data counted, divvy and copy it between accumModel, centroidModel, and metadata
+    metadata = accumModel[!, setdiff(Symbol.(names(accumModel)), [:pos_x, :pos_y, networkModel[!, :relationship]...])]
+    centroidModel = copy(accumModel[!, [:ENA_UNIT, :pos_x, :pos_y, networkModel[!, :relationship]...]])
+    accumModel = accumModel[!, [:ENA_UNIT, :pos_x, :pos_y, networkModel[!, :relationship]...]]
 
     # Compute the position of the codes in the approximated high-dimensional space
     ## Compute the density of each network row line
     for networkRow in eachrow(networkModel)
         r = networkRow[:relationship]
-        networkRow[:density] = sum(countModel[!, r])
+        networkRow[:density] = sum(accumModel[!, r])
     end
 
     ## Normalize the network densities
@@ -145,9 +148,9 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     codeModel[!, :density] /= s
 
     ## Regression model for placing the code dots into the approximated high-dimensional space
-    X = Matrix{Float64}(zeros(nrow(countModel), 1 + nrow(codeModel)))
+    X = Matrix{Float64}(zeros(nrow(accumModel), 1 + nrow(codeModel)))
     X[:, 1] .= 1 # Intercept term
-    for (i, unitRow) in enumerate(eachrow(countModel))
+    for (i, unitRow) in enumerate(eachrow(accumModel))
         for r in keys(relationshipMap)
             a, b = relationshipMap[r]
             X[i, a+1] += unitRow[r] / 2 # +1 because of intercept
@@ -160,7 +163,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     ## Fit each dimension of the original high-dimensional space
     for networkRow in eachrow(networkModel)
         r = networkRow[:relationship]
-        y = Vector{Float64}(countModel[:, r])
+        y = Vector{Float64}(accumModel[:, r])
         r_coefs = X * y
         codeModel[:, r] = r_coefs[2:end] # 2:end because of intercept
     end
@@ -169,11 +172,11 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     ## This is by-definition the refit space
     for networkRow in eachrow(networkModel)
         r = networkRow[:relationship]
-        for (i, centroidRow) in enumerate(eachrow(centroidModel))
-            centroidRow[r] =
+        for (i, unitRow) in enumerate(eachrow(centroidModel))
+            unitRow[r] =
                 sum(
-                    codeModel[relationshipMap[k][1], r] * countModel[i, k] +
-                    codeModel[relationshipMap[k][2], r] * countModel[i, k]
+                    codeModel[relationshipMap[k][1], r] * accumModel[i, k] +
+                    codeModel[relationshipMap[k][2], r] * accumModel[i, k]
                     for k in keys(relationshipMap)
                 ) / 2
         end
@@ -181,12 +184,12 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
 
     # Rotation step
     ## Use the given lambda, probably one of the out-of-the-box ENARotations, but could be anything user defined
-    rotate!(rotateBy, networkModel, centroidModel)
+    rotate!(rotateBy, networkModel, centroidModel, metadata)
 
     # Layout step
     ## Project the pos_x and pos_y for the original units onto the plane, now that we have the rotation
     ## This is really only for testing the goodness of fit
-    for unitRow in eachrow(countModel)
+    for unitRow in eachrow(accumModel)
         unitRow[:pos_x] = sum(
             networkRow[:weight_x] * unitRow[networkRow[:relationship]]
             for networkRow in eachrow(networkModel)
@@ -200,14 +203,14 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
 
     ## Same for the refit units
     ## These are what are really drawn
-    for centroidRow in eachrow(centroidModel)
-        centroidRow[:pos_x] = sum(
-            networkRow[:weight_x] * centroidRow[networkRow[:relationship]]
+    for unitRow in eachrow(centroidModel)
+        unitRow[:pos_x] = sum(
+            networkRow[:weight_x] * unitRow[networkRow[:relationship]]
             for networkRow in eachrow(networkModel)
         )
 
-        centroidRow[:pos_y] = sum(
-            networkRow[:weight_y] * centroidRow[networkRow[:relationship]]
+        unitRow[:pos_y] = sum(
+            networkRow[:weight_y] * unitRow[networkRow[:relationship]]
             for networkRow in eachrow(networkModel)
         )
     end
@@ -235,31 +238,10 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     centroidModel[!, :pos_y] = centroidModel[!, :pos_y] .- mean(centroidModel[!, :pos_y])
     codeModel[!, :pos_x] = codeModel[!, :pos_x] .- mean(centroidModel[!, :pos_x])
     codeModel[!, :pos_y] = codeModel[!, :pos_y] .- mean(centroidModel[!, :pos_y])
-    countModel[!, :pos_x] = countModel[!, :pos_x] .- mean(countModel[!, :pos_x])
-    countModel[!, :pos_y] = countModel[!, :pos_y] .- mean(countModel[!, :pos_y])
+    accumModel[!, :pos_x] = accumModel[!, :pos_x] .- mean(accumModel[!, :pos_x])
+    accumModel[!, :pos_y] = accumModel[!, :pos_y] .- mean(accumModel[!, :pos_y])
 
     # Testing step
-    ## Run tests for how well the refit space coregisters with the original space
-    fitDiffs = Real[]
-    dimDiffs = Real[]
-    for (i, unitRowA) in enumerate(eachrow(countModel))
-        for (j, unitRowB) in enumerate(eachrow(countModel))
-            if i < j
-                push!(fitDiffs, centroidModel[i, :pos_x] - centroidModel[j, :pos_x])
-                push!(fitDiffs, centroidModel[i, :pos_y] - centroidModel[j, :pos_y])
-                push!(dimDiffs, unitRowA[:pos_x] - unitRowB[:pos_x])
-                push!(dimDiffs, unitRowA[:pos_y] - unitRowB[:pos_y])
-            end
-        end
-    end
-
-    pearson = cor(fitDiffs, dimDiffs)
-    # p = pvalue(OneSampleTTest(fitDiffs, dimDiffs))
-    # pvalue(EqualVarianceTTest(x, y))
-    # pvalue(UnequalVarianceTTest(x, y))
-    # pvalue(MannWhitneyUTest(x, y))
-    # pvalue(SignedRankTest(x, y))
-
     ## Test that the angle between the dimensions is 90 degrees
     theta = dot(networkModel[!, :weight_x], networkModel[!, :weight_y])
     theta /= sqrt(dot(networkModel[!, :weight_x], networkModel[!, :weight_x]))
@@ -274,7 +256,10 @@ And this can cause problems with ENA's optimization algorithm fitting the codes 
     end
 
     # Done!
-    return ENAModel(unitJoinedData, codes, conversations, units,
-                    windowSize, rotateBy, countModel, networkModel, codeModel, centroidModel,
-                    relationshipMap, pearson)
+    return ENAModel(
+        codes, conversations, units, rotateBy,
+        accumModel, centroidModel, metadata, codeModel, networkModel,
+        relationshipMap,
+        windowSize
+    )
 end

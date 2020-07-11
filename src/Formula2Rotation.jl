@@ -13,31 +13,31 @@ struct Formula2Rotation{T <: RegressionModel, U <: RegressionModel} <: AbstractF
 end
 
 # Implement rotation
-function rotate!(rotation::AbstractFormula2Rotation, networkModel::DataFrame, centroidModel::DataFrame)
+function rotate!(rotation::AbstractFormula2Rotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame)
     ## TODO check assumptions about f1 and f2
 
     ## Filter missing data
-    filteredUnitModel = centroidModel
+    regressionData = hcat(unitModel, metadata, makeunique=true)
     for t in rotation.f1.rhs
         if isa(t, Term)
             col = Symbol(t)
-            goodRows = completecases(filteredUnitModel[!, [col]])
-            filteredUnitModel = filteredUnitModel[goodRows, :]
+            goodRows = completecases(regressionData[!, [col]])
+            regressionData = regressionData[goodRows, :]
         end
     end
 
     for t in rotation.f2.rhs
         if isa(t, Term)
             col = Symbol(t)
-            goodRows = completecases(filteredUnitModel[!, [col]])
-            filteredUnitModel = filteredUnitModel[goodRows, :]
+            goodRows = completecases(regressionData[!, [col]])
+            regressionData = regressionData[goodRows, :]
         end
     end
 
     ## Bugfix: https://github.com/JuliaStats/GLM.jl/issues/239
     for networkRow in eachrow(networkModel)
         r = networkRow[:relationship]
-        filteredUnitModel[!, r] = map(Float64, filteredUnitModel[!, r])
+        regressionData[!, r] = map(Float64, regressionData[!, r])
     end
 
     ## For each relationship, find the effect of the first predictor after the intercept
@@ -46,11 +46,11 @@ function rotate!(rotation::AbstractFormula2Rotation, networkModel::DataFrame, ce
         f1 = FormulaTerm(term(r), rotation.f1.rhs)
         try
             if rotation.contrasts isa Nothing
-                m1 = fit(rotation.regression_model, f1, filteredUnitModel)
+                m1 = fit(rotation.regression_model, f1, regressionData)
                 slope = coef(m1)[rotation.coefindex]
                 networkRow[:weight_x] = slope
             else
-                m1 = fit(rotation.regression_model, f1, filteredUnitModel, contrasts=rotation.contrasts)
+                m1 = fit(rotation.regression_model, f1, regressionData, contrasts=rotation.contrasts)
                 slope = coef(m1)[rotation.coefindex]
                 networkRow[:weight_x] = slope
             end
@@ -68,11 +68,11 @@ function rotate!(rotation::AbstractFormula2Rotation, networkModel::DataFrame, ce
         f2 = FormulaTerm(term(r), rotation.f2.rhs)
         try
             if rotation.contrasts2 isa Nothing
-                m2 = fit(rotation.regression_model2, f2, filteredUnitModel)
+                m2 = fit(rotation.regression_model2, f2, regressionData)
                 slope = coef(m2)[rotation.coefindex2]
                 networkRow[:weight_y] = slope
             else
-                m2 = fit(rotation.regression_model2, f2, filteredUnitModel, contrasts=rotation.contrasts2)
+                m2 = fit(rotation.regression_model2, f2, regressionData, contrasts=rotation.contrasts2)
                 slope = coef(m2)[rotation.coefindex2]
                 networkRow[:weight_y] = slope
             end
@@ -112,56 +112,42 @@ This can undermine interpreting the y-axis in terms of the requested effect."""
     end
 end
 
-# Override plotting pieces
-## Labels - we should also report the p-value and effect size
-function plot_labels!(p::Plot, ena::AbstractENAModel{<:AbstractFormula2Rotation};
-    xlabel="X", ylabel="Y",
-    kwargs...)
-
-    total_variance = sum(var.(eachcol(centroids(ena)[!, network(ena)[!, :relationship]])))
-    variance_x = var(centroids(ena)[!, :pos_x]) / total_variance
-    variance_y = var(centroids(ena)[!, :pos_y]) / total_variance
-
-    fxab = FormulaTerm(term(:pos_x), ena.rotation.f1.rhs)
-    fxa = FormulaTerm(term(:pos_x), ena.rotation.f1.rhs[1:end .!= ena.rotation.coefindex])
-    variance_xab = 0
-    variance_xa = 0
-    pvalue_x = 1
-    if ena.rotation.contrasts isa Nothing
-        mxab = fit(ena.rotation.regression_model, fxab, centroids(ena))
-        mxa = fit(ena.rotation.regression_model, fxa, centroids(ena))
-        variance_xab = var(predict(mxab)) / var(centroids(ena)[!, :pos_x])
-        variance_xa = var(predict(mxa)) / var(centroids(ena)[!, :pos_x])
-        pvalue_x = coeftable(mxab).cols[4][ena.rotation.coefindex]
-    else
-        mxab = fit(ena.rotation.regression_model, fxab, centroids(ena), contrasts=ena.rotation.contrasts)
-        mxa = fit(ena.rotation.regression_model, fxa, centroids(ena), contrasts=ena.rotation.contrasts)
-        variance_xab = var(predict(mxab)) / var(centroids(ena)[!, :pos_x])
-        variance_xa = var(predict(mxa)) / var(centroids(ena)[!, :pos_x])
-        pvalue_x = coeftable(mxab).cols[4][ena.rotation.coefindex]
-    end
-
+# Override tests
+function test(ena::AbstractENAModel{<:AbstractFormula2Rotation})
+    results = invoke(test, Tuple{AbstractENAModel{<:AbstractFormulaRotation}}, ena)
+    regressionData = hcat(ena.centroidModel, ena.metadata, makeunique=true)
     fyab = FormulaTerm(term(:pos_y), ena.rotation.f2.rhs)
     fya = FormulaTerm(term(:pos_y), ena.rotation.f2.rhs[1:end .!= ena.rotation.coefindex2])
     variance_yab = 0
     variance_ya = 0
     pvalue_y = 1
     if ena.rotation.contrasts isa Nothing
-        myab = fit(ena.rotation.regression_model, fyab, centroids(ena))
-        mya = fit(ena.rotation.regression_model, fya, centroids(ena))
-        variance_yab = var(predict(myab)) / var(centroids(ena)[!, :pos_y])
-        variance_ya = var(predict(mya)) / var(centroids(ena)[!, :pos_y])
+        myab = fit(ena.rotation.regression_model, fyab, regressionData)
+        mya = fit(ena.rotation.regression_model, fya, regressionData)
+        variance_yab = var(predict(myab)) / var(regressionData[!, :pos_y])
+        variance_ya = var(predict(mya)) / var(regressionData[!, :pos_y])
         pvalue_y = coeftable(myab).cols[4][ena.rotation.coefindex2]
     else
-        myab = fit(ena.rotation.regression_model, fyab, centroids(ena), contrasts=ena.rotation.contrasts)
-        mya = fit(ena.rotation.regression_model, fya, centroids(ena), contrasts=ena.rotation.contrasts)
-        variance_yab = var(predict(myab)) / var(centroids(ena)[!, :pos_y])
-        variance_ya = var(predict(mya)) / var(centroids(ena)[!, :pos_y])
+        myab = fit(ena.rotation.regression_model, fyab, regressionData, contrasts=ena.rotation.contrasts)
+        mya = fit(ena.rotation.regression_model, fya, regressionData, contrasts=ena.rotation.contrasts)
+        variance_yab = var(predict(myab)) / var(regressionData[!, :pos_y])
+        variance_ya = var(predict(mya)) / var(regressionData[!, :pos_y])
         pvalue_y = coeftable(myab).cols[4][ena.rotation.coefindex2]
     end
 
-    f2_x = (variance_xab - variance_xa) / (1 - variance_xab)
     f2_y = (variance_yab - variance_ya) / (1 - variance_yab)
-    xlabel!(p, "$xlabel ($(round(Int, variance_x*100))%, p<$(ceil(pvalue_x, digits=4)), f²=$(round(f2_x, digits=4)))")
-    ylabel!(p, "$ylabel ($(round(Int, variance_y*100))%, p<$(ceil(pvalue_y, digits=4)), f²=$(round(f2_y, digits=4)))")
+    results[:f2_y] = f2_y
+    results[:pvalue_y] = pvalue_y
+    return results
+end
+
+# Override plotting pieces
+## Labels - we should also report the p-value and effect size
+function plot_labels!(p::Plot, ena::AbstractENAModel{<:AbstractFormula2Rotation};
+    xlabel="X", ylabel="Y",
+    kwargs...)
+    
+    results = test(ena)
+    xlabel!(p, "$xlabel ($(round(Int, results[:variance_x]*100))%, p<$(ceil(results[:pvalue_x], digits=4)), f²=$(round(results[:f2_x], digits=4)))")
+    ylabel!(p, "$ylabel ($(round(Int, results[:variance_y]*100))%, p<$(ceil(results[:pvalue_y], digits=4)), f²=$(round(results[:f2_y], digits=4)))")
 end
