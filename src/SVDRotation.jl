@@ -5,7 +5,7 @@ struct SVDRotation <: AbstractSVDRotation
 end
 
 # Implement rotation
-function rotate!(rotation::SVDRotation, networkModel::DataFrame, centroidModel::DataFrame)
+function rotate!(rotation::AbstractSVDRotation, networkModel::DataFrame, centroidModel::DataFrame)
     pcaModel = projection(help_deflating_svd(networkModel, centroidModel))
     networkModel[!, :weight_x] = pcaModel[:, 1]
     networkModel[!, :weight_y] = pcaModel[:, 2]

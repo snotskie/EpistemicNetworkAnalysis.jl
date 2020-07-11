@@ -26,6 +26,7 @@ include("./typetree.jl")
 include("./SVDRotation.jl")
 include("./FormulaRotation.jl")
 include("./Formula2Rotation.jl")
+include("./MeansRotation.jl")
 include("./ENAModel.jl")
 include("./RSData.jl")
 
@@ -58,8 +59,12 @@ include("./RSData.jl")
 # conversations = [:Condition, :GameHalf, :GroupName]
 # units = [:Condition, :GameHalf, :UserName]
 # # rotation = SVDRotation()
-# rotation = FormulaRotation(
-#     LinearModel, 2, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding())
+# # rotation = FormulaRotation(
+# #     LinearModel, 2, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding())
+# # )
+
+# rotation = MeansRotation(
+#     :Condition, "FirstGame", "SecondGame"
 # )
 
 # # rotation = Formula2Rotation(

@@ -9,7 +9,7 @@ struct FormulaRotation{T <: RegressionModel} <: AbstractFormulaRotation
 end
 
 # Implement rotation
-function rotate!(rotation::FormulaRotation, networkModel::DataFrame, centroidModel::DataFrame)
+function rotate!(rotation::AbstractFormulaRotation, networkModel::DataFrame, centroidModel::DataFrame)
     ## TODO check assumptions about f1
 
     ## Filter missing data
