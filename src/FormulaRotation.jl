@@ -100,3 +100,39 @@ function plot_labels!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation};
     xlabel!(p, "$xlabel ($(round(Int, variance_x*100))%, p<$(ceil(pvalue_x, digits=4)), f²=$(round(f2_x, digits=4)))")
     ylabel!(p, "$ylabel ($(round(Int, variance_y*100))%)")
 end
+
+## Units - we can color them by the coef variable, if a simple term
+function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, displayCentroids::DataFrame, displayCounts::DataFrame;
+    flipX::Bool=false, flipY::Bool=false,
+    kwargs...)
+
+    unitColors = [:black for unitRow in eachrow(displayCentroids)]
+    col = Symbol(ena.rotation.f1.rhs[ena.rotation.coefindex])
+    if col in Symbol.(names(displayCentroids))
+        vals = filter(x->!ismissing(x), displayCentroids[!, col])
+        if first(vals) isa Number
+            colorMap = range(colorant"purple", colorant"orange", length=101)
+            lo = minimum(vals)
+            hi = maximum(vals)
+            if hi != lo
+                unitColors = map(eachrow(displayCentroids)) do unitRow
+                    if !ismissing(unitRow[col])
+                        index = round(Int, 100 * (unitRow[col] - lo) / (hi - lo) + 1)
+                        return colorMap[index]
+                    else
+                        return :black
+                    end
+                end
+            end
+        end
+    end
+
+    x = displayCentroids[!, :pos_x] * (flipX ? -1 : 1)
+    y = displayCentroids[!, :pos_y] * (flipY ? -1 : 1)
+    plot!(p, x, y,
+        seriestype=:scatter,
+        markershape=:circle,
+        markersize=3,
+        markercolor=unitColors,
+        markerstrokecolor=unitColors)
+end

@@ -39,31 +39,31 @@ function rotate!(rotation::AbstractMeansRotation, networkModel::DataFrame, centr
 end
 
 # Override plotting pieces
-## Units - we can color them into two groups
-function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractMeansRotation}, displayCentroids::DataFrame, displayCounts::DataFrame;
-    flipX::Bool=false, flipY::Bool=false,
-    kwargs...)
+# ## Units - we can color them into two groups
+# function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractMeansRotation}, displayCentroids::DataFrame, displayCounts::DataFrame;
+#     flipX::Bool=false, flipY::Bool=false,
+#     kwargs...)
 
 
-    unitColors = map(eachrow(displayCentroids)) do unitRow
-        if unitRow[ena.rotation.groupVar] == ena.rotation.controlGroup
-            return :purple
-        elseif unitRow[ena.rotation.groupVar] == ena.rotation.treatmentGroup
-            return :orange
-        else
-            return :black
-        end
-    end
+#     unitColors = map(eachrow(displayCentroids)) do unitRow
+#         if unitRow[ena.rotation.groupVar] == ena.rotation.controlGroup
+#             return :purple
+#         elseif unitRow[ena.rotation.groupVar] == ena.rotation.treatmentGroup
+#             return :orange
+#         else
+#             return :black
+#         end
+#     end
 
-    x = displayCentroids[!, :pos_x] * (flipX ? -1 : 1)
-    y = displayCentroids[!, :pos_y] * (flipY ? -1 : 1)
-    plot!(p, x, y,
-        seriestype=:scatter,
-        markershape=:circle,
-        markersize=1.5,
-        markercolor=unitColors,
-        markerstrokecolor=unitColors)
-end
+#     x = displayCentroids[!, :pos_x] * (flipX ? -1 : 1)
+#     y = displayCentroids[!, :pos_y] * (flipY ? -1 : 1)
+#     plot!(p, x, y,
+#         seriestype=:scatter,
+#         markershape=:circle,
+#         markersize=1.5,
+#         markercolor=unitColors,
+#         markerstrokecolor=unitColors)
+# end
 
 ## CIs - we can color them into two groups
 function plot_intervals!(p::Plot, ena::AbstractENAModel{<:AbstractMeansRotation}, displayCentroids::DataFrame, displayCounts::DataFrame;

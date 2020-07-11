@@ -7,6 +7,7 @@ using Plots.PlotMeasures
 import Plots.plot
 import Plots.plot!
 import Plots.Plot
+using Colors
 
 ## Data
 using DataFrames
@@ -56,6 +57,7 @@ include("./RSData.jl")
 #     :Design_Reasoning,
 #     :Collaboration]
 
+# RSdata[!, :RND] = rand(nrow(RSdata))
 # conversations = [:Condition, :GameHalf, :GroupName]
 # units = [:Condition, :GameHalf, :UserName]
 # # rotation = SVDRotation()
@@ -63,18 +65,22 @@ include("./RSData.jl")
 # #     LinearModel, 2, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding())
 # # )
 
-# rotation = MeansRotation(
-#     :Condition, "FirstGame", "SecondGame"
-# )
-
-# # rotation = Formula2Rotation(
-# #     LinearModel, 2, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding()),
-# #     LinearModel, 2, @formula(y ~ 1 + GameHalf + Condition), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding())
+# # rotation = FormulaRotation(
+# #     LinearModel, 2, @formula(y ~ 1 + RND), nothing
 # # )
+
+# # rotation = MeansRotation(
+# #     :Condition, "FirstGame", "SecondGame"
+# # )
+
+# rotation = Formula2Rotation(
+#     LinearModel, 2, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding()),
+#     LinearModel, 2, @formula(y ~ 1 + GameHalf + Condition), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding())
+# )
 
 # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 # display(myENA)
-# p = plot(myENA, title="test", xlabel="Condition", ylabel="SVD", groupVar=:Condition)
+# p = plot(myENA, title="test", xlabel="RND", ylabel="SVD", groupVar=:Condition)
 # display(p)
 
 
