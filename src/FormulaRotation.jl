@@ -12,8 +12,10 @@ end
 function rotate!(rotation::AbstractFormulaRotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame)
     ## TODO check assumptions about f1
 
-    ## Filter missing data
+    ## Grab the data we need as one data frame
     regressionData = hcat(unitModel, metadata, makeunique=true)
+
+    ## Filter out rows with missing data
     for t in rotation.f1.rhs
         if isa(t, Term)
             col = Symbol(t)
@@ -28,12 +30,13 @@ function rotate!(rotation::AbstractFormulaRotation, networkModel::DataFrame, uni
         regressionData[!, r] = map(Float64, regressionData[!, r])
     end
 
-    ## For each relationship, find the effect of the first predictor after the intercept
+    ## For each relationship, find the effect of the requested predictor, use those as the axis weights
     for networkRow in eachrow(networkModel)
         r = networkRow[:relationship]
         f1 = FormulaTerm(term(r), rotation.f1.rhs)
         try
-            if rotation.contrasts isa Nothing
+            ## The function call is different when we have contrasts
+            if isnothing(rotation.contrasts)
                 m1 = fit(rotation.regression_model, f1, regressionData)
                 slope = coef(m1)[rotation.coefindex]
                 networkRow[:weight_x] = slope
@@ -43,6 +46,7 @@ function rotate!(rotation::AbstractFormulaRotation, networkModel::DataFrame, uni
                 networkRow[:weight_x] = slope
             end
         catch e
+            println(e)
             error("""
             An error occured running a regression during the rotation step of this ENA model.
             Usually, this occurs because the data, the regression model, and regression formula are not in agreement.
@@ -52,7 +56,7 @@ function rotate!(rotation::AbstractFormulaRotation, networkModel::DataFrame, uni
         end
     end
 
-    ## Normalize the weights
+    ## Normalize the axis weights
     s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
     if s != 0
         networkModel[!, :weight_x] /= s
@@ -69,14 +73,24 @@ end
 
 # Override tests
 function test(ena::AbstractENAModel{<:AbstractFormulaRotation})
+
+    ## Get results from parent
     results = invoke(test, Tuple{AbstractENAModel{<:AbstractENARotation}}, ena)
+
+    ## Grab data we need as a single data frame
     regressionData = hcat(ena.centroidModel, ena.metadata, makeunique=true)
+
+    ## Construct regression formulas
     fxab = FormulaTerm(term(:pos_x), ena.rotation.f1.rhs)
     fxa = FormulaTerm(term(:pos_x), ena.rotation.f1.rhs[1:end .!= ena.rotation.coefindex])
+
+    ## Placeholders
     variance_xab = 0
     variance_xa = 0
     pvalue_x = 1
-    if ena.rotation.contrasts isa Nothing
+
+    ## Run regression models; the function call is different when we have constrasts
+    if isnothing(ena.rotation.contrasts)
         mxab = fit(ena.rotation.regression_model, fxab, regressionData)
         mxa = fit(ena.rotation.regression_model, fxa, regressionData)
         variance_xab = var(predict(mxab)) / var(regressionData[!, :pos_x])
@@ -90,6 +104,7 @@ function test(ena::AbstractENAModel{<:AbstractFormulaRotation})
         pvalue_x = coeftable(mxab).cols[4][ena.rotation.coefindex]
     end
 
+    ## Compute f^2 and add our values to the results and return
     f2_x = (variance_xab - variance_xa) / (1 - variance_xab)
     results[:f2_x] = f2_x
     results[:pvalue_x] = pvalue_x
@@ -102,6 +117,7 @@ function plot_labels!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation};
     xlabel="X", ylabel="Y",
     kwargs...)
 
+    ### Run tests, then put the values into the axis labels
     results = test(ena)
     xlabel!(p, "$xlabel ($(round(Int, results[:variance_x]*100))%, p<$(ceil(results[:pvalue_x], digits=4)), f²=$(round(results[:f2_x], digits=4)))")
     ylabel!(p, "$ylabel ($(round(Int, results[:variance_y]*100))%)")
@@ -112,19 +128,36 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
     flipX::Bool=false, flipY::Bool=false, minLabel::Union{Nothing,String}=nothing, maxLabel::Union{Nothing,String}=nothing,
     kwargs...)
 
+    ### Grab filtered values
     displayCentroids = ena.centroidModel[displayRows, :]
     displayMetadata = ena.metadata[displayRows, :]
+
+    ### Default, when we don't have a good column to use for a numeric variable, use all black
     unitColors = [:black for unitRow in eachrow(displayCentroids)]
+
+    ### Grab the name of the potential column as a Symbol
     col = Symbol(ena.rotation.f1.rhs[ena.rotation.coefindex])
+
+    ### Default, don't do anything fancy with the legend
     legend_col = nothing
+
+    ### If the column exists in the metadata...
     if col in Symbol.(names(ena.metadata))
+
+        ### ...and the first non-missing value overall is a number...
         vals = filter(x->!ismissing(x), ena.metadata[!, col])
         if first(vals) isa Number
-            legend_col = col
-            colorMap = range(colorant"purple", colorant"orange", length=101)
+
+            ### ...and there is a non-zero range of values
             lo = minimum(vals)
             hi = maximum(vals)
             if hi != lo
+
+                ### ...then let's use that column in the legend...
+                legend_col = col
+
+                ### ...and color-code the units based on a gradient, using black for those with missing values
+                colorMap = range(colorant"purple", colorant"orange", length=101)
                 unitColors = map(eachrow(displayMetadata)) do unitRow
                     if !ismissing(unitRow[col])
                         index = round(Int, 100 * (unitRow[col] - lo) / (hi - lo) + 1)
@@ -137,9 +170,14 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
         end
     end
 
+    ### Find the x/y positions
     x = displayCentroids[!, :pos_x] * (flipX ? -1 : 1)
     y = displayCentroids[!, :pos_y] * (flipY ? -1 : 1)
+
+    ### When we used gradient color-coding...
     if !isnothing(legend_col)
+
+        ### ...use meaningful legend labels
         if isnothing(minLabel)
             minLabel = "Min $legend_col"
         end
@@ -148,6 +186,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
             maxLabel = "Max $legend_col"
         end
 
+        ### ...and add those to the legend
         plot!(p, x, y,
             label=minLabel,
             seriestype=:scatter,
@@ -164,6 +203,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
             markercolor=:orange,
             markerstrokecolor=:orange)
         
+        ### ...and plot the points with the correct gradient colors
         plot!(p, x, y,
             label=nothing,
             seriestype=:scatter,
@@ -172,6 +212,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
             markercolor=unitColors,
             markerstrokecolor=unitColors)
     else
+        ### Otherwise, just show units in black
         plot!(p, x, y,
             label="Units",
             seriestype=:scatter,

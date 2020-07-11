@@ -57,37 +57,51 @@ function test(ena::AbstractENAModel)
     # pvalue(MannWhitneyUTest(x, y))
     # pvalue(SignedRankTest(x, y))
 
-    fitDiffs = Real[]
-    dimDiffs = Real[]
+    ### Find difference between each pair of points, in accum and centroid
+    centroidDiffs = Real[]
+    accumDiffs = Real[]
     for (i, unitRowA) in enumerate(eachrow(ena.accumModel))
         for (j, unitRowB) in enumerate(eachrow(ena.accumModel))
             if i < j
-                push!(fitDiffs, ena.centroidModel[i, :pos_x] - ena.centroidModel[j, :pos_x])
-                push!(fitDiffs, ena.centroidModel[i, :pos_y] - ena.centroidModel[j, :pos_y])
-                push!(dimDiffs, unitRowA[:pos_x] - unitRowB[:pos_x])
-                push!(dimDiffs, unitRowA[:pos_y] - unitRowB[:pos_y])
+                push!(centroidDiffs, ena.centroidModel[i, :pos_x] - ena.centroidModel[j, :pos_x])
+                push!(centroidDiffs, ena.centroidModel[i, :pos_y] - ena.centroidModel[j, :pos_y])
+                push!(accumDiffs, unitRowA[:pos_x] - unitRowB[:pos_x])
+                push!(accumDiffs, unitRowA[:pos_y] - unitRowB[:pos_y])
             end
         end
     end
 
-    pearson = cor(fitDiffs, dimDiffs)
+    ### Do those differences correlate?
+    pearson = cor(centroidDiffs, accumDiffs)
+
+    ### Find the percent variance explained by the x and y axis of the entire high dimensional space
     total_variance = sum(var.(eachcol(ena.centroidModel[!, ena.networkModel[!, :relationship]])))
     variance_x = var(ena.centroidModel[!, :pos_x]) / total_variance
     variance_y = var(ena.centroidModel[!, :pos_y]) / total_variance
+
+    ### Package and return
     return Dict(:coregistration => pearson, :variance_x => variance_x, :variance_y => variance_y)
 end
 
 ## Text display
 function Base.display(ena::AbstractENAModel) # TODO should this be print, display, or show?
+
+    ### Show centroids
     println("Units (centroids):")
-    show(ena.centroidModel[!, [:ENA_UNIT, :pos_x, :pos_y]], allrows=true)
+    show(ena.centroidModel, allrows=true)
     println()
+
+    ### Show codes
     println("Codes:")
     show(ena.codeModel, allrows=true)
     println()
+
+    ### Show network
     println("Network:")
     show(ena.networkModel, allrows=true)
     println()
+
+    ### Show every test result we have
     results = test(ena)
     for key in keys(results)
         println("$key:")
@@ -102,13 +116,20 @@ function plot(ena::AbstractENAModel;
     margin=10mm, size=500, lims=1, ticks=[-1, 0, 1], title="", leg=:bottomleft,
     kwargs...)
 
+    #### Create and empty plot
     p = plot(leg=leg, margin=margin, size=(size, size))
+
+    #### Call mutating wrapper
     plot!(p, ena; kwargs...)
+
+    #### Set ticks, limits, and title
     xticks!(p, ticks)
     yticks!(p, ticks)
     xlims!(p, -lims, lims)
     ylims!(p, -lims, lims)
     title!(p, title)
+
+    #### Done, return so user can modify from there
     return p
 end
 
@@ -118,7 +139,10 @@ function plot!(p::Plot, ena::AbstractENAModel;
     display_filter=x->true,
     kwargs...)
 
+    #### Run the filter just this once, pass to helpers
     displayRows = map(display_filter, eachrow(ena.centroidModel))
+
+    #### Call each helper, unless the user asked us not to
     if showUnits
         plot_units!(p, ena, displayRows; kwargs...)
     end
@@ -135,6 +159,7 @@ function plot!(p::Plot, ena::AbstractENAModel;
         plot_extras!(p, ena, displayRows; kwargs...)
     end
 
+    #### Always call the helper to label the axes
     plot_labels!(p, ena; kwargs...)
 end
 
@@ -143,9 +168,12 @@ function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)
 
+    #### Get the x/y positions
     displayCentroids = ena.centroidModel[displayRows, :]
     x = displayCentroids[!, :pos_x] * (flipX ? -1 : 1)
     y = displayCentroids[!, :pos_y] * (flipY ? -1 : 1)
+
+    #### Draw them in black
     plot!(p, x, y,
         label="Units",
         seriestype=:scatter,
@@ -160,18 +188,27 @@ function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)
 
+    #### Find the true weight on each line
     displayAccums = ena.accumModel[displayRows, :]
     lineWidths = map(eachrow(ena.networkModel)) do networkRow
         return sum(displayAccums[!, networkRow[:relationship]])
     end
 
+    #### Rescale the lines
     lineWidths *= 2 / maximum(lineWidths)
+
+    #### Initialize code widths, compute while we visit each line
     codeWidths = zeros(nrow(ena.codeModel))
+
+    #### For each line...
     for (i, networkRow) in enumerate(eachrow(ena.networkModel))
         j, k = ena.relationshipMap[networkRow[:relationship]]
+
+        #### ...add to its code weights
         codeWidths[j] += lineWidths[i]
         codeWidths[k] += lineWidths[i]
 
+        #### and plot that line
         x = ena.codeModel[[j, k], :pos_x] * (flipX ? -1 : 1)
         y = ena.codeModel[[j, k], :pos_y] * (flipY ? -1 : 1)
         plot!(p, x, y,
@@ -181,6 +218,7 @@ function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1
             linecolor=:black)
     end
 
+    #### Rescale and draw the codes
     codeWidths *= 8 / maximum(codeWidths)
     x = ena.codeModel[!, :pos_x] * (flipX ? -1 : 1)
     y = ena.codeModel[!, :pos_y] * (flipY ? -1 : 1)
@@ -199,14 +237,14 @@ end
 function plot_intervals!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)
-    # do nothing
+    #### do nothing
 end
 
 ### Extras helper
 function plot_extras!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)
-    # do nothing
+    #### do nothing
 end
 
 ### Labels helper
@@ -214,6 +252,7 @@ function plot_labels!(p::Plot, ena::AbstractENAModel;
     xlabel="X", ylabel="Y",
     kwargs...)
 
+    #### Run tests and report the variances explained in the axis labels
     results = test(ena)
     xlabel!(p, "$xlabel ($(round(Int, results[:variance_x]*100))%)")
     ylabel!(p, "$ylabel ($(round(Int, results[:variance_y]*100))%)")

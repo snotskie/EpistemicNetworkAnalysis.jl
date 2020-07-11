@@ -13,6 +13,7 @@ end
 
 # Simplified constructor
 function MeansRotation(groupVar::Symbol, controlGroup::Any, treatmentGroup::Any)
+    ## Always use a univariate model for the formula rotation
     regression_model = LinearModel
     coefindex = 2
     f1 = @formula(y ~ 1 + FactoredGroupVar)
@@ -39,11 +40,12 @@ function rotate!(rotation::AbstractMeansRotation, networkModel::DataFrame, unitM
 end
 
 # Override plotting pieces
-# ## Units - different default for labels
+## Units - different default for labels
 function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractMeansRotation}, displayRows::Array{Bool,1};
     flipX::Bool=false, flipY::Bool=false, minLabel::Union{Nothing,String}=nothing, maxLabel::Union{Nothing,String}=nothing,
     kwargs...)
 
+    ### Use meaningful legend labels for the units
     if isnothing(minLabel)
         minLabel = "$(ena.rotation.controlGroup) Units"
     end
@@ -52,6 +54,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractMeansRotation}, di
         maxLabel = "$(ena.rotation.treatmentGroup) Units"
     end
 
+    ### Let formula rotation do the rest of the work
     invoke(plot_units!, Tuple{Plot, AbstractENAModel{<:AbstractFormulaRotation}, Array{Bool,1}},
         p, ena, displayRows; flipX=flipX, flipY=flipY, minLabel=minLabel, maxLabel=maxLabel, kwargs...)
 end
@@ -61,18 +64,20 @@ function plot_intervals!(p::Plot, ena::AbstractENAModel{<:AbstractMeansRotation}
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)
 
+    ### Grab filtered data
     displayCentroids = ena.centroidModel[displayRows, :]
     displayMetadata = ena.metadata[displayRows, :]
     controlRows = map(x->x[ena.rotation.groupVar] == ena.rotation.controlGroup, eachrow(displayMetadata))
     treatmentRows = map(x->x[ena.rotation.groupVar] == ena.rotation.treatmentGroup, eachrow(displayMetadata))
-
     controlUnits = displayCentroids[controlRows, :]
     treatmentUnits = displayCentroids[treatmentRows, :]
 
+    ### Plot control CI
     xs = controlUnits[!, :pos_x] * (flipX ? -1 : 1)
     ys = controlUnits[!, :pos_y] * (flipY ? -1 : 1)
     help_plot_ci(p, xs, ys, :purple, :square, "$(ena.rotation.controlGroup) Mean")
 
+    ### Plot treatment CI
     xs = treatmentUnits[!, :pos_x] * (flipX ? -1 : 1)
     ys = treatmentUnits[!, :pos_y] * (flipY ? -1 : 1)
     help_plot_ci(p, xs, ys, :orange, :square, "$(ena.rotation.treatmentGroup) Mean")
@@ -83,14 +88,18 @@ function plot_network!(p::Plot, ena::AbstractENAModel{<:AbstractMeansRotation}, 
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)
 
+    ### Grab filtered data
     displayAccum = ena.accumModel[displayRows, :]
     displayMetadata = ena.metadata[displayRows, :]
     controlRows = map(x->x[ena.rotation.groupVar] == ena.rotation.controlGroup, eachrow(displayMetadata))
     treatmentRows = map(x->x[ena.rotation.groupVar] == ena.rotation.treatmentGroup, eachrow(displayMetadata))
 
+    ### Computer line widths as treatment mean - control mean
     lineWidths = map(eachrow(ena.networkModel)) do networkRow
         controlMean = mean(displayAccum[controlRows, networkRow[:relationship]])
         treatmentMean = mean(displayAccum[treatmentRows, networkRow[:relationship]])
+
+        ### When control or treatment is empty, it's mean will be NaN, so use zero instead
         if !isnan(controlMean) && !isnan(treatmentMean)
             return treatmentMean - controlMean
         elseif !isnan(controlMean)
@@ -102,6 +111,7 @@ function plot_network!(p::Plot, ena::AbstractENAModel{<:AbstractMeansRotation}, 
         end
     end
 
+    ### Use purple for negative widths and orange for positive
     lineColors = map(lineWidths) do width
         if width < 0
             return :purple
@@ -110,14 +120,22 @@ function plot_network!(p::Plot, ena::AbstractENAModel{<:AbstractMeansRotation}, 
         end
     end
 
+    ### Convert negatives back to positive, then rescale
     lineWidths = abs.(lineWidths)
     lineWidths *= 2 / maximum(lineWidths)
+
+    ### Placeholder, let's compute code weights as we visit each line
     codeWidths = zeros(nrow(ena.codeModel))
+
+    ### For each line...
     for (i, networkRow) in enumerate(eachrow(ena.networkModel))
+
+        ### ...contribute to the code weights...
         j, k = ena.relationshipMap[networkRow[:relationship]]
         codeWidths[j] += lineWidths[i]
         codeWidths[k] += lineWidths[i]
 
+        ### ...and plot that line, in the right width and color
         x = ena.codeModel[[j, k], :pos_x] * (flipX ? -1 : 1)
         y = ena.codeModel[[j, k], :pos_y] * (flipY ? -1 : 1)
         plot!(p, x, y,
@@ -127,6 +145,7 @@ function plot_network!(p::Plot, ena::AbstractENAModel{<:AbstractMeansRotation}, 
             linecolor=lineColors[i])
     end
 
+    ### Rescale then plot the codes
     codeWidths *= 8 / maximum(codeWidths)
     x = ena.codeModel[!, :pos_x] * (flipX ? -1 : 1)
     y = ena.codeModel[!, :pos_y] * (flipY ? -1 : 1)

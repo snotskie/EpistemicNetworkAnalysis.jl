@@ -1,5 +1,4 @@
 # TODO make a few different ENAModel overlap wrappers
-# TODO make this more memory efficient by adding a unitMetadata df that holds the overlap between the two unit models
 
 """
 TODO: document

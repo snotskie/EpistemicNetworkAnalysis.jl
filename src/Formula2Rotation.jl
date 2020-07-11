@@ -16,8 +16,10 @@ end
 function rotate!(rotation::AbstractFormula2Rotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame)
     ## TODO check assumptions about f1 and f2
 
-    ## Filter missing data
+    ## Collect data we need into one data frame
     regressionData = hcat(unitModel, metadata, makeunique=true)
+
+    ## Filter out rows with missing data
     for t in rotation.f1.rhs
         if isa(t, Term)
             col = Symbol(t)
@@ -40,7 +42,7 @@ function rotate!(rotation::AbstractFormula2Rotation, networkModel::DataFrame, un
         regressionData[!, r] = map(Float64, regressionData[!, r])
     end
 
-    ## For each relationship, find the effect of the first predictor after the intercept
+    ## For each relationship, find the effect of the chosen predictor, use that as the axis weights
     for networkRow in eachrow(networkModel)
         r = networkRow[:relationship]
         f1 = FormulaTerm(term(r), rotation.f1.rhs)
@@ -55,6 +57,7 @@ function rotate!(rotation::AbstractFormula2Rotation, networkModel::DataFrame, un
                 networkRow[:weight_x] = slope
             end
         catch e
+            println(e)
             error("""
             An error occured running a regression during the rotation step of this ENA model.
             Usually, this occurs because the data, the regression model, and regression formula are not in agreement.
@@ -77,6 +80,7 @@ function rotate!(rotation::AbstractFormula2Rotation, networkModel::DataFrame, un
                 networkRow[:weight_y] = slope
             end
         catch e
+            println(e)
             error("""
             An error occured running a regression during the rotation step of this ENA model.
             Usually, this occurs because the data, the regression model, and regression formula are not in agreement.
@@ -100,7 +104,7 @@ function rotate!(rotation::AbstractFormula2Rotation, networkModel::DataFrame, un
 This can undermine interpreting the y-axis in terms of the requested effect."""
     end
 
-    ## Normalize the weights
+    ## Normalize the weights for both axes
     s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
     if s != 0
         networkModel[!, :weight_x] /= s
@@ -114,14 +118,24 @@ end
 
 # Override tests
 function test(ena::AbstractENAModel{<:AbstractFormula2Rotation})
+
+    ## Get results from parent
     results = invoke(test, Tuple{AbstractENAModel{<:AbstractFormulaRotation}}, ena)
+
+    ## Grab data we need as a single data frame
     regressionData = hcat(ena.centroidModel, ena.metadata, makeunique=true)
+
+    ## Construct formulas
     fyab = FormulaTerm(term(:pos_y), ena.rotation.f2.rhs)
     fya = FormulaTerm(term(:pos_y), ena.rotation.f2.rhs[1:end .!= ena.rotation.coefindex2])
+
+    ## Placeholders
     variance_yab = 0
     variance_ya = 0
     pvalue_y = 1
-    if ena.rotation.contrasts isa Nothing
+
+    ## Run the regression models; the function call is different when we have constrasts
+    if isnothing(ena.rotation.contrasts)
         myab = fit(ena.rotation.regression_model, fyab, regressionData)
         mya = fit(ena.rotation.regression_model, fya, regressionData)
         variance_yab = var(predict(myab)) / var(regressionData[!, :pos_y])
@@ -135,6 +149,7 @@ function test(ena::AbstractENAModel{<:AbstractFormula2Rotation})
         pvalue_y = coeftable(myab).cols[4][ena.rotation.coefindex2]
     end
 
+    ## Compute f^2 and report our results and return
     f2_y = (variance_yab - variance_ya) / (1 - variance_yab)
     results[:f2_y] = f2_y
     results[:pvalue_y] = pvalue_y
@@ -147,6 +162,7 @@ function plot_labels!(p::Plot, ena::AbstractENAModel{<:AbstractFormula2Rotation}
     xlabel="X", ylabel="Y",
     kwargs...)
     
+    ### Run tests, then put the values into the axis labels
     results = test(ena)
     xlabel!(p, "$xlabel ($(round(Int, results[:variance_x]*100))%, p<$(ceil(results[:pvalue_x], digits=4)), f²=$(round(results[:f2_x], digits=4)))")
     ylabel!(p, "$ylabel ($(round(Int, results[:variance_y]*100))%, p<$(ceil(results[:pvalue_y], digits=4)), f²=$(round(results[:f2_y], digits=4)))")
