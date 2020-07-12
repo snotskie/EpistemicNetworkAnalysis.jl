@@ -132,8 +132,9 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
     displayCentroids = ena.centroidModel[displayRows, :]
     displayMetadata = ena.metadata[displayRows, :]
 
-    ### Default, when we don't have a good column to use for a numeric variable, use all black
+    ### Default, when we don't have a good column to use for a numeric variable, use all black and no litmus
     unitColors = [:black for unitRow in eachrow(displayCentroids)]
+    litmusColors = [:black for unitRow in eachrow(displayCentroids)]
 
     ### Grab the name of the potential column as a Symbol
     col = Symbol(ena.rotation.f1.rhs[ena.rotation.coefindex])
@@ -164,6 +165,21 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
                         return colorMap[index]
                     else
                         return :black
+                    end
+                end
+
+                ### ...and similarly set the litmus sizes
+                litmusColors = map(eachrow(displayMetadata)) do unitRow
+                    if !ismissing(unitRow[col])
+                        if unitRow[col] < (hi - lo) / 2
+                            return :purple
+                        elseif unitRow[col] > (hi - lo) / 2
+                            return :orange
+                        else
+                            return :white
+                        end
+                    else
+                        return :white
                     end
                 end
             end
@@ -202,6 +218,16 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
             markersize=2,
             markercolor=:orange,
             markerstrokecolor=:orange)
+
+        ### ...and plot the litmus strip to give an indicator of how strong the effect was
+        plot!(p, x, 0*y.-.9,
+            label=nothing,
+            seriestype=:scatter,
+            markeralpha=0.10,
+            markershape=:square,
+            markersize=4,
+            markercolor=litmusColors,
+            markerstrokecolor=litmusColors)
         
         ### ...and plot the points with the correct gradient colors
         plot!(p, x, y,
