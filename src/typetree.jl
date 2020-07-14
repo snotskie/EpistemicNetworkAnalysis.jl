@@ -140,7 +140,7 @@ function plot!(p::Plot, ena::AbstractENAModel;
     kwargs...)
 
     #### Run the filter just this once, pass to helpers
-    displayRows = map(display_filter, eachrow(ena.centroidModel))
+    displayRows = map(display_filter, eachrow(ena.metadata))
 
     #### Call each helper, unless the user asked us not to
     if showUnits

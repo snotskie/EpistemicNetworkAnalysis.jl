@@ -132,9 +132,9 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
     displayCentroids = ena.centroidModel[displayRows, :]
     displayMetadata = ena.metadata[displayRows, :]
 
-    ### Default, when we don't have a good column to use for a numeric variable, use all black and no litmus
+    ### Default, when we don't have a good column to use for a numeric variable, use all black
     unitColors = [:black for unitRow in eachrow(displayCentroids)]
-    litmusColors = [:black for unitRow in eachrow(displayCentroids)]
+    unitRings = [:black for unitRow in eachrow(displayCentroids)]
 
     ### Grab the name of the potential column as a Symbol
     col = Symbol(ena.rotation.f1.rhs[ena.rotation.coefindex])
@@ -158,7 +158,23 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
                 legend_col = col
 
                 ### ...and color-code the units based on a gradient, using black for those with missing values
-                colorMap = range(colorant"purple", colorant"orange", length=101)
+                # colorMap = range(colorant"purple", colorant"orange", length=101)
+                med = mean(vals) #lo + (hi-lo)/2 #median(vals)
+                medIndex = round(Int, 100 * (med - lo) / (hi - lo) + 1)
+                colorMap = vcat(
+                    range(colorant"purple", colorant"white", length=medIndex-1),
+                    [colorant"white"],
+                    range(colorant"white", colorant"orange", length=100-medIndex+1)
+                )
+
+                ringMap = vcat(
+                    [:purple for i in 1:(medIndex-1)],
+                    [:white],
+                    [:orange for i in 1:(100-medIndex+1)]
+                )
+
+                # display(colorMap)
+
                 unitColors = map(eachrow(displayMetadata)) do unitRow
                     if !ismissing(unitRow[col])
                         index = round(Int, 100 * (unitRow[col] - lo) / (hi - lo) + 1)
@@ -168,18 +184,12 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
                     end
                 end
 
-                ### ...and similarly set the litmus sizes
-                litmusColors = map(eachrow(displayMetadata)) do unitRow
+                unitRings = map(eachrow(displayMetadata)) do unitRow
                     if !ismissing(unitRow[col])
-                        if unitRow[col] < (hi - lo) / 2
-                            return :purple
-                        elseif unitRow[col] > (hi - lo) / 2
-                            return :orange
-                        else
-                            return :white
-                        end
+                        index = round(Int, 100 * (unitRow[col] - lo) / (hi - lo) + 1)
+                        return ringMap[index]
                     else
-                        return :white
+                        return :black
                     end
                 end
             end
@@ -203,40 +213,33 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
         end
 
         ### ...and add those to the legend
-        plot!(p, x, y,
+        plot!(p, [-999], [-999],
             label=minLabel,
             seriestype=:scatter,
             markershape=:circle,
-            markersize=2,
+            markersize=4,
+            markerstrokewidth=2,
             markercolor=:purple,
             markerstrokecolor=:purple)
         
-        plot!(p, x, y,
+        plot!(p, [-999], [-999],
             label=maxLabel,
             seriestype=:scatter,
             markershape=:circle,
-            markersize=2,
+            markersize=4,
+            markerstrokewidth=2,
             markercolor=:orange,
             markerstrokecolor=:orange)
-
-        ### ...and plot the litmus strip to give an indicator of how strong the effect was
-        plot!(p, x, 0*y.-.9,
-            label=nothing,
-            seriestype=:scatter,
-            markeralpha=0.10,
-            markershape=:square,
-            markersize=4,
-            markercolor=litmusColors,
-            markerstrokecolor=litmusColors)
         
         ### ...and plot the points with the correct gradient colors
         plot!(p, x, y,
             label=nothing,
             seriestype=:scatter,
             markershape=:circle,
-            markersize=2,
+            markersize=4,
+            markerstrokewidth=2,
             markercolor=unitColors,
-            markerstrokecolor=unitColors)
+            markerstrokecolor=unitRings)
     else
         ### Otherwise, just show units in black
         plot!(p, x, y,
@@ -246,5 +249,94 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
             markersize=2,
             markercolor=unitColors,
             markerstrokecolor=unitColors)
+    end
+end
+
+## Extras - we can add a "litmus" strip to illustrate the strength of the continuous effect
+function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, displayRows::Array{Bool,1};
+    flipX::Bool=false, flipY::Bool=false,
+    kwargs...)
+    
+    ### Grab filtered values
+    displayCentroids = ena.centroidModel[displayRows, :]
+    displayMetadata = ena.metadata[displayRows, :]
+
+    ### Constant: how many bins for the histogram, on each side of the axis
+    bins = 10
+
+    ### Grab the name of the potential column as a Symbol
+    col = Symbol(ena.rotation.f1.rhs[ena.rotation.coefindex])
+
+    ### If the column exists in the metadata...
+    if col in Symbol.(names(ena.metadata))
+
+        ### ...and the first non-missing value overall is a number...
+        vals = filter(x->!ismissing(x), ena.metadata[!, col])
+        if first(vals) isa Number
+
+            ### ...and there is a non-zero range of values
+            lo = minimum(vals)
+            hi = maximum(vals)
+            if hi != lo
+
+                ### ...then let's prepare our gradient
+                # colorMap = range(colorant"purple", colorant"orange", length=101)
+                med = mean(vals) #lo + (hi-lo)/2 #median(vals)
+                medIndex = round(Int, 100 * (med - lo) / (hi - lo) + 1)
+                colorMap = vcat(
+                    range(colorant"purple", colorant"white", length=medIndex-1),
+                    [colorant"white"],
+                    range(colorant"white", colorant"orange", length=100-medIndex+1)
+                )
+
+                ### ...and for each bin...
+                for i in 1:bins
+
+                    ### ...find the rows in that bin, on both sides of the axis
+                    left = -1 + (i-1)/bins
+                    right = -1 + i/bins
+                    rowsInNegRange = map(eachrow(displayCentroids)) do unitRow
+                        if left <= unitRow[:pos_x] && unitRow[:pos_x] < right
+                            return true
+                        else
+                            return false
+                        end
+                    end
+
+                    rowsInPosRange = map(eachrow(displayCentroids)) do unitRow
+                        if -right <= unitRow[:pos_x] && unitRow[:pos_x] < -left
+                            return true
+                        else
+                            return false
+                        end
+                    end
+
+                    ### ...then draw a piece of the litmus using the average color for that bin
+                    if any(rowsInNegRange)
+                        unitsInNegRange = displayMetadata[rowsInNegRange, :]
+                        avgInNegRange = mean(unitRow[col] for unitRow in eachrow(unitsInNegRange) if !ismissing(unitRow[col]))
+                        index = round(Int, 100 * (avgInNegRange - lo) / (hi - lo) + 1)
+                        color = colorMap[index]
+                        plot!(p, [left, right], [-.9, -.9],
+                            label=nothing,
+                            seriestype=:line,
+                            linewidth=8,
+                            linecolor=color)
+                    end
+
+                    if any(rowsInPosRange)
+                        unitsInPosRange = displayMetadata[rowsInPosRange, :]
+                        avgInPosRange = mean(unitRow[col] for unitRow in eachrow(unitsInPosRange) if !ismissing(unitRow[col]))
+                        index = round(Int, 100 * (avgInPosRange - lo) / (hi - lo) + 1)
+                        color = colorMap[index]
+                        plot!(p, [-right, -left], [-.9, -.9],
+                            label=nothing,
+                            seriestype=:line,
+                            linewidth=8,
+                            linecolor=color)
+                    end
+                end
+            end
+        end
     end
 end
