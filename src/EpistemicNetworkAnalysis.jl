@@ -90,7 +90,7 @@ include("./RSData.jl")
 
 # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 # display(myENA)
-# p = plot(myENA, title="test", xlabel="Confidence PRE", ylabel="GameHalf")#, display_filter=unitRow->unitRow[:Condition]=="FirstGame")#, groupVar=:Condition)
+# p = plot(myENA, title="test", xlabel="RND", ylabel="GameHalf")#, display_filter=unitRow->unitRow[:Condition]=="FirstGame")#, groupVar=:Condition)
 # display(p)
 
 

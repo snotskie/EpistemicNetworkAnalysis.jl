@@ -112,6 +112,38 @@ function test(ena::AbstractENAModel{<:AbstractFormulaRotation})
 end
 
 # Override plotting pieces
+## Constant - gradient
+# FORMULA_ROTATION_COLOR_MAP = vcat(
+#     range(colorant"purple", colorant"blue", length=25),
+#     range(colorant"blue", colorant"cyan", length=25),
+#     range(colorant"cyan", colorant"grey", length=25),
+#     range(colorant"grey", colorant"green", length=25),
+#     range(colorant"green", colorant"yellow", length=25),
+#     range(colorant"yellow", colorant"orange", length=25)
+# )
+
+# FORMULA_ROTATION_COLOR_MAP = vcat(
+#     range(colorant"purple", colorant"blue", length=25),
+#     range(colorant"blue", colorant"grey", length=25),
+#     range(colorant"grey", colorant"green", length=25),
+#     range(colorant"green", colorant"orange", length=25)
+# )
+
+# FORMULA_ROTATION_COLOR_MAP = vcat(
+#     range(colorant"purple", colorant"grey", length=25),
+#     range(colorant"grey", colorant"orange", length=25)
+# )
+
+# FORMULA_ROTATION_COLOR_MAP = vcat(
+#     range(colorant"purple", colorant"white", length=25),
+#     range(colorant"white", colorant"orange", length=25)
+# )
+
+FORMULA_ROTATION_COLOR_MAP = vcat(
+    [weighted_color_mean((100-i)^2/10000, colorant"purple", colorant"white") for i in 1:100],
+    [weighted_color_mean(1-i^2/10000, colorant"white", colorant"orange") for i in 1:100]
+)
+
 ## Labels - we should also report the p-value and effect size
 function plot_labels!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation};
     xlabel="X", ylabel="Y",
@@ -161,12 +193,13 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
                 # colorMap = range(colorant"purple", colorant"orange", length=101)
                 med = mean(vals) #lo + (hi-lo)/2 #median(vals)
                 medIndex = round(Int, 100 * (med - lo) / (hi - lo) + 1)
-                colorMap = vcat(
-                    range(colorant"purple", colorant"white", length=medIndex-1),
-                    [colorant"white"],
-                    range(colorant"white", colorant"orange", length=100-medIndex+1)
-                )
+                # colorMap = vcat(
+                #     range(colorant"purple", colorant"white", length=medIndex-1),
+                #     [colorant"white"],
+                #     range(colorant"white", colorant"orange", length=100-medIndex+1)
+                # )
 
+                colorMap = FORMULA_ROTATION_COLOR_MAP
                 ringMap = vcat(
                     [:purple for i in 1:(medIndex-1)],
                     [:white],
@@ -177,7 +210,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
 
                 unitColors = map(eachrow(displayMetadata)) do unitRow
                     if !ismissing(unitRow[col])
-                        index = round(Int, 100 * (unitRow[col] - lo) / (hi - lo) + 1)
+                        index = round(Int, (length(colorMap) - 1) * (unitRow[col] - lo) / (hi - lo) + 1)
                         return colorMap[index]
                     else
                         return :black
@@ -218,7 +251,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
             seriestype=:scatter,
             markershape=:circle,
             markersize=4,
-            markerstrokewidth=2,
+            markerstrokewidth=1,
             markercolor=:purple,
             markerstrokecolor=:purple)
         
@@ -227,7 +260,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
             seriestype=:scatter,
             markershape=:circle,
             markersize=4,
-            markerstrokewidth=2,
+            markerstrokewidth=1,
             markercolor=:orange,
             markerstrokecolor=:orange)
         
@@ -237,7 +270,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
             seriestype=:scatter,
             markershape=:circle,
             markersize=4,
-            markerstrokewidth=2,
+            markerstrokewidth=1,
             markercolor=unitColors,
             markerstrokecolor=unitRings)
     else
@@ -262,7 +295,7 @@ function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation},
     displayMetadata = ena.metadata[displayRows, :]
 
     ### Constant: how many bins for the histogram, on each side of the axis
-    bins = 10
+    bins = 8
 
     ### Grab the name of the potential column as a Symbol
     col = Symbol(ena.rotation.f1.rhs[ena.rotation.coefindex])
@@ -283,11 +316,12 @@ function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation},
                 # colorMap = range(colorant"purple", colorant"orange", length=101)
                 med = mean(vals) #lo + (hi-lo)/2 #median(vals)
                 medIndex = round(Int, 100 * (med - lo) / (hi - lo) + 1)
-                colorMap = vcat(
-                    range(colorant"purple", colorant"white", length=medIndex-1),
-                    [colorant"white"],
-                    range(colorant"white", colorant"orange", length=100-medIndex+1)
-                )
+                # colorMap = vcat(
+                #     range(colorant"purple", colorant"white", length=medIndex-1),
+                #     [colorant"white"],
+                #     range(colorant"white", colorant"orange", length=100-medIndex+1)
+                # )
+                colorMap = FORMULA_ROTATION_COLOR_MAP
 
                 ### ...and for each bin...
                 for i in 1:bins
@@ -296,7 +330,7 @@ function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation},
                     left = -1 + (i-1)/bins
                     right = -1 + i/bins
                     rowsInNegRange = map(eachrow(displayCentroids)) do unitRow
-                        if left <= unitRow[:pos_x] && unitRow[:pos_x] < right
+                        if left - .5/bins <= unitRow[:pos_x] && unitRow[:pos_x] < right + .5/bins
                             return true
                         else
                             return false
@@ -304,7 +338,7 @@ function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation},
                     end
 
                     rowsInPosRange = map(eachrow(displayCentroids)) do unitRow
-                        if -right <= unitRow[:pos_x] && unitRow[:pos_x] < -left
+                        if -right - .5/bins <= unitRow[:pos_x] && unitRow[:pos_x] < -left + .5/bins
                             return true
                         else
                             return false
@@ -315,7 +349,8 @@ function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation},
                     if any(rowsInNegRange)
                         unitsInNegRange = displayMetadata[rowsInNegRange, :]
                         avgInNegRange = mean(unitRow[col] for unitRow in eachrow(unitsInNegRange) if !ismissing(unitRow[col]))
-                        index = round(Int, 100 * (avgInNegRange - lo) / (hi - lo) + 1)
+                        # index = round(Int, 100 * (avgInNegRange - lo) / (hi - lo) + 1)
+                        index = round(Int, (length(colorMap) - 1) * (avgInNegRange - lo) / (hi - lo) + 1)
                         color = colorMap[index]
                         plot!(p, [left, right], [-.9, -.9],
                             label=nothing,
@@ -327,7 +362,8 @@ function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation},
                     if any(rowsInPosRange)
                         unitsInPosRange = displayMetadata[rowsInPosRange, :]
                         avgInPosRange = mean(unitRow[col] for unitRow in eachrow(unitsInPosRange) if !ismissing(unitRow[col]))
-                        index = round(Int, 100 * (avgInPosRange - lo) / (hi - lo) + 1)
+                        # index = round(Int, 100 * (avgInPosRange - lo) / (hi - lo) + 1)
+                        index = round(Int, (length(colorMap) - 1) * (avgInPosRange - lo) / (hi - lo) + 1)
                         color = colorMap[index]
                         plot!(p, [-right, -left], [-.9, -.9],
                             label=nothing,
