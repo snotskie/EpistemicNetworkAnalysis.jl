@@ -59,16 +59,14 @@ include("./RSData.jl")
 # #     LinearModel, 2, @formula(y ~ 1 + RND), nothing
 # # )
 
-# # rotation = MeansRotation(
-# #     :Condition, "FirstGame", "SecondGame"
-# # )
+# rotation = MeansRotation(
+#     :Condition, "FirstGame", "SecondGame"
+# )
 
 # # rotation = Formula2Rotation(
 # #     LinearModel, 2, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding()),
 # #     LinearModel, 2, @formula(y ~ 1 + GameHalf + Condition), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding())
 # # )
-
-
 
 # # rotation = Formula2Rotation(
 # #     LinearModel, 2, @formula(y ~ 1 + CONFIDENCE_Pre + GameHalf), Dict(:GameHalf => EffectsCoding()),
@@ -87,15 +85,15 @@ include("./RSData.jl")
 # conversations = [:Condition, :GameHalf, :GroupName]
 # units = [:Condition, :GameHalf, :UserName]
 
-# rotation = Formula2Rotation(
-#     LinearModel, 2, @formula(y ~ 1 + RND + GameHalf), Dict(:GameHalf => EffectsCoding()),
-#     LinearModel, 2, @formula(y ~ 1 + GameHalf + RND), Dict(:GameHalf => EffectsCoding())
-# )
+# # rotation = Formula2Rotation(
+# #     LinearModel, 2, @formula(y ~ 1 + RND + GameHalf), Dict(:GameHalf => EffectsCoding()),
+# #     LinearModel, 2, @formula(y ~ 1 + GameHalf + RND), Dict(:GameHalf => EffectsCoding())
+# # )
 
 # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 # display(myENA)
 
-# p = plot(myENA, title="test", xlabel="RND", ylabel="GameHalf")
+# p = plot(myENA, title="test", xlabel="Condition", ylabel="SVD", minColor=colorant"blue", maxColor=colorant"red", display_filter=unitRow->unitRow[:Condition]=="SecondGame")
 # display(p)
 
 

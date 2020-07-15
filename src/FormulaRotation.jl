@@ -126,6 +126,7 @@ end
 ## Units - we can color them by the coef variable, if a simple term
 function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, displayRows::Array{Bool,1};
     flipX::Bool=false, flipY::Bool=false, minLabel::Union{Nothing,String}=nothing, maxLabel::Union{Nothing,String}=nothing,
+    minColor::Colorant=colorant"purple", maxColor::Colorant=colorant"orange",
     kwargs...)
 
     ### Grab filtered values
@@ -158,8 +159,8 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
                 legend_col = col
 
                 ### ...and color-code the units based on a gradient, using black for those with missing values
-                colorMap = help_nonlinear_gradient(colorant"purple", colorant"white", colorant"orange")
-                ringMap = help_nonlinear_gradient(colorant"purple", colorant"grey", colorant"orange")
+                colorMap = help_nonlinear_gradient(minColor, colorant"white", maxColor)
+                ringMap = help_nonlinear_gradient(minColor, RGB(.85, .85, .85), maxColor)
                 unitColors = map(eachrow(displayMetadata)) do unitRow
                     if !ismissing(unitRow[col])
                         index = round(Int, (length(colorMap) - 1) * (unitRow[col] - lo) / (hi - lo) + 1)
@@ -204,8 +205,8 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
             markershape=:circle,
             markersize=4,
             markerstrokewidth=1,
-            markercolor=:purple,
-            markerstrokecolor=:purple)
+            markercolor=minColor,
+            markerstrokecolor=minColor)
         
         plot!(p, [-999], [-999],
             label=maxLabel,
@@ -213,8 +214,8 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
             markershape=:circle,
             markersize=4,
             markerstrokewidth=1,
-            markercolor=:orange,
-            markerstrokecolor=:orange)
+            markercolor=maxColor,
+            markerstrokecolor=maxColor)
         
         ### ...and plot the points with the correct gradient colors
         plot!(p, x, y,
@@ -238,93 +239,131 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
 end
 
 # ## Extras - we can add a "litmus" strip to illustrate the strength of the continuous effect
-# function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, displayRows::Array{Bool,1};
-#     flipX::Bool=false, flipY::Bool=false,
-#     kwargs...)
+function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, displayRows::Array{Bool,1};
+    flipX::Bool=false, flipY::Bool=false, minColor::Colorant=colorant"purple", maxColor::Colorant=colorant"orange",
+    kwargs...)
     
-#     ### Grab filtered values
-#     displayCentroids = ena.centroidModel[displayRows, :]
-#     displayMetadata = ena.metadata[displayRows, :]
+    ### Grab filtered values
+    displayCentroids = ena.centroidModel[displayRows, :]
+    displayMetadata = ena.metadata[displayRows, :]
 
-#     ### Constant: how many bins for the histogram, on each side of the axis
-#     bins = 8
+    ### Constant: how many bins for the histogram, on each side of the axis
+    bins = 8
 
-#     ### Grab the name of the potential column as a Symbol
-#     col = Symbol(ena.rotation.f1.rhs[ena.rotation.coefindex])
+    ### Grab the name of the potential column as a Symbol
+    col = Symbol(ena.rotation.f1.rhs[ena.rotation.coefindex])
 
-#     ### If the column exists in the metadata...
-#     if col in Symbol.(names(ena.metadata))
+    ### If the column exists in the metadata...
+    if col in Symbol.(names(ena.metadata))
 
-#         ### ...and the first non-missing value overall is a number...
-#         vals = filter(x->!ismissing(x), ena.metadata[!, col])
-#         if first(vals) isa Number
+        ### ...and the first non-missing value overall is a number...
+        vals = filter(x->!ismissing(x), ena.metadata[!, col])
+        if first(vals) isa Number
 
-#             ### ...and there is a non-zero range of values
-#             lo = minimum(vals)
-#             hi = maximum(vals)
-#             if hi != lo
+            ### ...and there is a non-zero range of values
+            lo = minimum(vals)
+            hi = maximum(vals)
+            if hi != lo
 
-#                 ### ...then let's prepare our gradient
-#                 # colorMap = range(colorant"purple", colorant"orange", length=101)
-#                 med = mean(vals) #lo + (hi-lo)/2 #median(vals)
-#                 medIndex = round(Int, 100 * (med - lo) / (hi - lo) + 1)
-#                 # colorMap = vcat(
-#                 #     range(colorant"purple", colorant"white", length=medIndex-1),
-#                 #     [colorant"white"],
-#                 #     range(colorant"white", colorant"orange", length=100-medIndex+1)
-#                 # )
-#                 colorMap = FORMULA_ROTATION_COLOR_MAP
+                ### ...then let's prepare our gradient (same gradient used on the rings in plot_units)
+                binMap = help_nonlinear_gradient(minColor, RGB(.85, .85, .85), maxColor)
 
-#                 ### ...and for each bin...
-#                 for i in 1:bins
+                ### ...and prepare our placeholders
+                negBinColors = [colorant"black" for i in 1:bins] # average color in that bin
+                posBinColors = [colorant"black" for i in 1:bins]
+                negBinSizes = [0.0 for i in 1:bins] # number of units in that bin
+                posBinSizes = [0.0 for i in 1:bins]
+                negBinScalars = [0.0 for i in 1:bins] # 0 means all were min, 1 means all were max
+                posBinScalars = [0.0 for i in 1:bins]
 
-#                     ### ...find the rows in that bin, on both sides of the axis
-#                     left = -1 + (i-1)/bins
-#                     right = -1 + i/bins
-#                     rowsInNegRange = map(eachrow(displayCentroids)) do unitRow
-#                         if left - .5/bins <= unitRow[:pos_x] && unitRow[:pos_x] < right + .5/bins
-#                             return true
-#                         else
-#                             return false
-#                         end
-#                     end
+                ### ...then for each bin...
+                for i in 1:bins
 
-#                     rowsInPosRange = map(eachrow(displayCentroids)) do unitRow
-#                         if -right - .5/bins <= unitRow[:pos_x] && unitRow[:pos_x] < -left + .5/bins
-#                             return true
-#                         else
-#                             return false
-#                         end
-#                     end
+                    ### ...find the rows in that bin, on both sides of the axis
+                    left = -1 + (i-1)/bins
+                    right = -1 + i/bins
+                    rowsInNegRange = map(eachrow(displayCentroids)) do unitRow
+                        if left - .5/bins <= unitRow[:pos_x] && unitRow[:pos_x] < right + .5/bins
+                            return true
+                        else
+                            return false
+                        end
+                    end
 
-#                     ### ...then draw a piece of the litmus using the average color for that bin
-#                     if any(rowsInNegRange)
-#                         unitsInNegRange = displayMetadata[rowsInNegRange, :]
-#                         avgInNegRange = mean(unitRow[col] for unitRow in eachrow(unitsInNegRange) if !ismissing(unitRow[col]))
-#                         # index = round(Int, 100 * (avgInNegRange - lo) / (hi - lo) + 1)
-#                         index = round(Int, (length(colorMap) - 1) * (avgInNegRange - lo) / (hi - lo) + 1)
-#                         color = colorMap[index]
-#                         plot!(p, [left, right], [-.9, -.9],
-#                             label=nothing,
-#                             seriestype=:line,
-#                             linewidth=8,
-#                             linecolor=color)
-#                     end
+                    rowsInPosRange = map(eachrow(displayCentroids)) do unitRow
+                        if -right - .5/bins <= unitRow[:pos_x] && unitRow[:pos_x] < -left + .5/bins
+                            return true
+                        else
+                            return false
+                        end
+                    end
 
-#                     if any(rowsInPosRange)
-#                         unitsInPosRange = displayMetadata[rowsInPosRange, :]
-#                         avgInPosRange = mean(unitRow[col] for unitRow in eachrow(unitsInPosRange) if !ismissing(unitRow[col]))
-#                         # index = round(Int, 100 * (avgInPosRange - lo) / (hi - lo) + 1)
-#                         index = round(Int, (length(colorMap) - 1) * (avgInPosRange - lo) / (hi - lo) + 1)
-#                         color = colorMap[index]
-#                         plot!(p, [-right, -left], [-.9, -.9],
-#                             label=nothing,
-#                             seriestype=:line,
-#                             linewidth=8,
-#                             linecolor=color)
-#                     end
-#                 end
-#             end
-#         end
-#     end
-# end
+                    ### ...then draw a piece of the litmus using the average color for that bin
+                    if any(rowsInNegRange)
+                        unitsInNegRange = displayMetadata[rowsInNegRange, :]
+                        avgInNegRange = mean(unitRow[col] for unitRow in eachrow(unitsInNegRange) if !ismissing(unitRow[col]))
+                        index = round(Int, (length(binMap) - 1) * (avgInNegRange - lo) / (hi - lo) + 1)
+                        negBinColors[i] = binMap[index]
+                        negBinSizes[i] = nrow(unitsInNegRange)
+                        negBinScalars[i] = (avgInNegRange - lo) / (hi - lo)
+                    end
+
+                    if any(rowsInPosRange)
+                        unitsInPosRange = displayMetadata[rowsInPosRange, :]
+                        avgInPosRange = mean(unitRow[col] for unitRow in eachrow(unitsInPosRange) if !ismissing(unitRow[col]))
+                        index = round(Int, (length(binMap) - 1) * (avgInPosRange - lo) / (hi - lo) + 1)
+                        posBinColors[i] = binMap[index]
+                        posBinSizes[i] = nrow(unitsInPosRange)
+                        posBinScalars[i] = (avgInPosRange - lo) / (hi - lo)
+                    end
+                end
+
+                ### ...then rescale the bins
+                s = maximum(vcat(negBinSizes, posBinSizes)) / 50
+                negBinSizes /= s
+                posBinSizes /= s
+
+                ### ...then draw those bins
+                for i in 1:bins
+                    left = -1 + (i-1)/bins
+                    right = -1 + i/bins
+                    # plot!(p, [left, right], [-.9, -.9],
+                    #     label=nothing,
+                    #     seriestype=:line,
+                    #     linewidth=negBinSizes[i],
+                    #     linecolor=negBinColors[i])
+                    
+                    # plot!(p, [-right, -left], [-.9, -.9],
+                    #     label=nothing,
+                    #     seriestype=:line,
+                    #     linewidth=posBinSizes[i],
+                    #     linecolor=posBinColors[i])
+                    
+                    plot!(p, [left, right], [-1, -1],
+                        label=nothing,
+                        seriestype=:line,
+                        linewidth=negBinSizes[i],
+                        linecolor=minColor)
+                    
+                    plot!(p, [-right, -left], [-1, -1],
+                        label=nothing,
+                        seriestype=:line,
+                        linewidth=posBinSizes[i],
+                        linecolor=minColor)
+
+                    plot!(p, [left, right], [-1, -1],
+                        label=nothing,
+                        seriestype=:line,
+                        linewidth=negBinSizes[i] * negBinScalars[i],
+                        linecolor=maxColor)
+                    
+                    plot!(p, [-right, -left], [-1, -1],
+                        label=nothing,
+                        seriestype=:line,
+                        linewidth=posBinSizes[i] * posBinScalars[i],
+                        linecolor=maxColor)
+                end
+            end
+        end
+    end
+end

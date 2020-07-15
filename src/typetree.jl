@@ -13,7 +13,7 @@ end
 
 abstract type AbstractFormulaRotation <: AbstractENARotation
     # fields: (inherit), regression_model, coefindex, f1, contrasts
-    # plot accepts: (inherit), minLabel, maxLabel
+    # plot accepts: (inherit), minLabel, maxLabel, minColor, maxColor
     # test reports: (inherit), pvalue, effect_size
 end
 

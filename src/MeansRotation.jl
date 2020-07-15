@@ -61,7 +61,7 @@ end
 
 ## CIs - we can color them into two groups
 function plot_intervals!(p::Plot, ena::AbstractENAModel{<:AbstractMeansRotation}, displayRows::Array{Bool,1};
-    flipX::Bool=false, flipY::Bool=false,
+    flipX::Bool=false, flipY::Bool=false, minColor::Colorant=colorant"purple", maxColor::Colorant=colorant"orange",
     kwargs...)
 
     ### Grab filtered data
@@ -75,17 +75,17 @@ function plot_intervals!(p::Plot, ena::AbstractENAModel{<:AbstractMeansRotation}
     ### Plot control CI
     xs = controlUnits[!, :pos_x] * (flipX ? -1 : 1)
     ys = controlUnits[!, :pos_y] * (flipY ? -1 : 1)
-    help_plot_ci(p, xs, ys, :purple, :square, "$(ena.rotation.controlGroup) Mean")
+    help_plot_ci(p, xs, ys, minColor, :square, "$(ena.rotation.controlGroup) Mean")
 
     ### Plot treatment CI
     xs = treatmentUnits[!, :pos_x] * (flipX ? -1 : 1)
     ys = treatmentUnits[!, :pos_y] * (flipY ? -1 : 1)
-    help_plot_ci(p, xs, ys, :orange, :square, "$(ena.rotation.treatmentGroup) Mean")
+    help_plot_ci(p, xs, ys, maxColor, :square, "$(ena.rotation.treatmentGroup) Mean")
 end
 
 ## Network - we can do a subtraction plot
 function plot_network!(p::Plot, ena::AbstractENAModel{<:AbstractMeansRotation}, displayRows::Array{Bool,1};
-    flipX::Bool=false, flipY::Bool=false,
+    flipX::Bool=false, flipY::Bool=false, minColor::Colorant=colorant"purple", maxColor::Colorant=colorant"orange",
     kwargs...)
 
     ### Grab filtered data
@@ -114,9 +114,9 @@ function plot_network!(p::Plot, ena::AbstractENAModel{<:AbstractMeansRotation}, 
     ### Use purple for negative widths and orange for positive
     lineColors = map(lineWidths) do width
         if width < 0
-            return :purple
+            return minColor
         else
-            return :orange
+            return maxColor
         end
     end
 
