@@ -49,17 +49,7 @@ include("./RSData.jl")
 
 
 # @warn "Running EpistemicNetworkAnalysis.jl as main. Performing kitchen sink operation."
-# RSdata = ena_dataset("RS.data")
-# codes = [:Data,
-#     :Technical_Constraints,
-#     :Performance_Parameters,
-#     :Client_and_Consultant_Requests,
-#     :Design_Reasoning,
-#     :Collaboration]
 
-# RSdata[!, :RND] = rand(nrow(RSdata))
-# conversations = [:Condition, :GameHalf, :GroupName]
-# units = [:Condition, :GameHalf, :UserName]
 # # rotation = SVDRotation()
 # # rotation = FormulaRotation(
 # #     LinearModel, 2, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding())
@@ -69,28 +59,43 @@ include("./RSData.jl")
 # #     LinearModel, 2, @formula(y ~ 1 + RND), nothing
 # # )
 
-# rotation = MeansRotation(
-#     :Condition, "FirstGame", "SecondGame"
-# )
+# # rotation = MeansRotation(
+# #     :Condition, "FirstGame", "SecondGame"
+# # )
 
 # # rotation = Formula2Rotation(
 # #     LinearModel, 2, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding()),
 # #     LinearModel, 2, @formula(y ~ 1 + GameHalf + Condition), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding())
 # # )
 
-# # rotation = Formula2Rotation(
-# #     LinearModel, 2, @formula(y ~ 1 + RND + GameHalf), Dict(:GameHalf => EffectsCoding()),
-# #     LinearModel, 2, @formula(y ~ 1 + GameHalf + RND), Dict(:GameHalf => EffectsCoding())
-# # )
+
 
 # # rotation = Formula2Rotation(
 # #     LinearModel, 2, @formula(y ~ 1 + CONFIDENCE_Pre + GameHalf), Dict(:GameHalf => EffectsCoding()),
 # #     LinearModel, 2, @formula(y ~ 1 + GameHalf + CONFIDENCE_Pre), Dict(:GameHalf => EffectsCoding())
 # # )
 
+# RSdata = ena_dataset("RS.data")
+# RSdata[!, :RND] = rand(nrow(RSdata))
+# codes = [:Data,
+#     :Technical_Constraints,
+#     :Performance_Parameters,
+#     :Client_and_Consultant_Requests,
+#     :Design_Reasoning,
+#     :Collaboration]
+
+# conversations = [:Condition, :GameHalf, :GroupName]
+# units = [:Condition, :GameHalf, :UserName]
+
+# rotation = Formula2Rotation(
+#     LinearModel, 2, @formula(y ~ 1 + RND + GameHalf), Dict(:GameHalf => EffectsCoding()),
+#     LinearModel, 2, @formula(y ~ 1 + GameHalf + RND), Dict(:GameHalf => EffectsCoding())
+# )
+
 # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 # display(myENA)
-# p = plot(myENA, title="test", xlabel="RND", ylabel="GameHalf")#, display_filter=unitRow->unitRow[:Condition]=="FirstGame")#, groupVar=:Condition)
+
+# p = plot(myENA, title="test", xlabel="RND", ylabel="GameHalf")
 # display(p)
 
 

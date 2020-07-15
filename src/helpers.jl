@@ -71,3 +71,10 @@ function help_plot_ci(p, xs, ys, color, shape, label)
             linecolor=color)
     end
 end
+
+function help_nonlinear_gradient(lo, mid, hi, grains=100)
+    return vcat(
+        [weighted_color_mean((100-i)^2/grains^2, lo, mid) for i in 1:grains],
+        [weighted_color_mean(1-i^2/grains^2, mid, hi) for i in 1:grains]
+    )
+end
