@@ -74,6 +74,8 @@ include("./RSData.jl")
 # # )
 
 # RSdata = ena_dataset("RS.data")
+# using Random
+# Random.seed!(4321)
 # RSdata[!, :RND] = rand(nrow(RSdata))
 # codes = [:Data,
 #     :Technical_Constraints,
@@ -93,7 +95,7 @@ include("./RSData.jl")
 # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 # display(myENA)
 
-# p = plot(myENA, title="test", xlabel="Condition", ylabel="SVD", minColor=colorant"blue", maxColor=colorant"red", display_filter=unitRow->unitRow[:Condition]=="SecondGame")
+# p = plot(myENA, title="test", xlabel="Condition", ylabel="SVD", minColor=colorant"blue", maxColor=colorant"red", display_filter=unitRow->unitRow[:Condition]=="FirstGame")
 # display(p)
 
 

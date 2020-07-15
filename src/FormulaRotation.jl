@@ -319,7 +319,7 @@ function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation},
                 end
 
                 ### ...then rescale the bins
-                s = maximum(vcat(negBinSizes, posBinSizes)) / 50
+                s = maximum(vcat(negBinSizes, posBinSizes)) / 100
                 negBinSizes /= s
                 posBinSizes /= s
 
@@ -327,41 +327,43 @@ function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation},
                 for i in 1:bins
                     left = -1 + (i-1)/bins
                     right = -1 + i/bins
-                    # plot!(p, [left, right], [-.9, -.9],
-                    #     label=nothing,
-                    #     seriestype=:line,
-                    #     linewidth=negBinSizes[i],
-                    #     linecolor=negBinColors[i])
-                    
-                    # plot!(p, [-right, -left], [-.9, -.9],
-                    #     label=nothing,
-                    #     seriestype=:line,
-                    #     linewidth=posBinSizes[i],
-                    #     linecolor=posBinColors[i])
-                    
-                    plot!(p, [left, right], [-1, -1],
-                        label=nothing,
-                        seriestype=:line,
-                        linewidth=negBinSizes[i],
-                        linecolor=minColor)
-                    
-                    plot!(p, [-right, -left], [-1, -1],
-                        label=nothing,
-                        seriestype=:line,
-                        linewidth=posBinSizes[i],
-                        linecolor=minColor)
+                    if true
+                        plot!(p, [left, right], [-1, -1],
+                            label=nothing,
+                            seriestype=:line,
+                            linewidth=negBinSizes[i],
+                            linecolor=negBinColors[i])
+                        
+                        plot!(p, [-right, -left], [-1, -1],
+                            label=nothing,
+                            seriestype=:line,
+                            linewidth=posBinSizes[i],
+                            linecolor=posBinColors[i])
+                    else
+                        plot!(p, [left, right], [-1, -1],
+                            label=nothing,
+                            seriestype=:line,
+                            linewidth=negBinSizes[i],
+                            linecolor=minColor)
+                        
+                        plot!(p, [-right, -left], [-1, -1],
+                            label=nothing,
+                            seriestype=:line,
+                            linewidth=posBinSizes[i],
+                            linecolor=minColor)
 
-                    plot!(p, [left, right], [-1, -1],
-                        label=nothing,
-                        seriestype=:line,
-                        linewidth=negBinSizes[i] * negBinScalars[i],
-                        linecolor=maxColor)
-                    
-                    plot!(p, [-right, -left], [-1, -1],
-                        label=nothing,
-                        seriestype=:line,
-                        linewidth=posBinSizes[i] * posBinScalars[i],
-                        linecolor=maxColor)
+                        plot!(p, [left, right], [-1, -1],
+                            label=nothing,
+                            seriestype=:line,
+                            linewidth=negBinSizes[i] * negBinScalars[i],
+                            linecolor=maxColor)
+                        
+                        plot!(p, [-right, -left], [-1, -1],
+                            label=nothing,
+                            seriestype=:line,
+                            linewidth=posBinSizes[i] * posBinScalars[i],
+                            linecolor=maxColor)
+                    end
                 end
             end
         end
