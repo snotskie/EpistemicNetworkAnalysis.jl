@@ -31,13 +31,7 @@ include("./MeansRotation.jl")
 include("./ENAModel.jl")
 include("./RSData.jl")
 
-# # Includes
-# include("./helpers.jl")
-# include("./ENARotations.jl")
-# include("./ENAArtists.jl")
-# include("./ENAModel.jl")
-# include("./ENADisplay.jl")
-# include("./RSData.jl")
+include("./CarlsFormula2Rotation.jl") # TEMP
 
 # # Exports
 # export ENAModel
@@ -59,11 +53,16 @@ include("./RSData.jl")
 # #     LinearModel, 2, @formula(y ~ 1 + RND), nothing
 # # )
 
-# rotation = MeansRotation(
-#     :Condition, "FirstGame", "SecondGame"
+# # rotation = MeansRotation(
+# #     :Condition, "FirstGame", "SecondGame"
+# # )
+
+# rotation = Formula2Rotation(
+#     LinearModel, 2, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding()),
+#     LinearModel, 2, @formula(y ~ 1 + GameHalf + Condition), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding())
 # )
 
-# # rotation = Formula2Rotation(
+# # rotation = CarlsFormula2Rotation(
 # #     LinearModel, 2, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding()),
 # #     LinearModel, 2, @formula(y ~ 1 + GameHalf + Condition), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding())
 # # )
@@ -86,6 +85,23 @@ include("./RSData.jl")
 
 # conversations = [:Condition, :GameHalf, :GroupName]
 # units = [:Condition, :GameHalf, :UserName]
+# for t in 1:3
+#     RScopy = copy(RSdata)
+#     rnd = rand()
+#     for copyRow in eachrow(RScopy)
+#         for col in [:GroupName, :UserName]
+#             copyRow[col] = string(copyRow[col], rnd)
+#         end
+
+#         for col in codes
+#             if rand() < 0.05
+#                 copyRow[col] = 1 - copyRow[col]
+#             end
+#         end
+#     end
+
+#     global RSdata = vcat(RSdata, RScopy)
+# end
 
 # # rotation = Formula2Rotation(
 # #     LinearModel, 2, @formula(y ~ 1 + RND + GameHalf), Dict(:GameHalf => EffectsCoding()),
@@ -95,7 +111,7 @@ include("./RSData.jl")
 # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 # display(myENA)
 
-# p = plot(myENA, title="test", xlabel="Condition", ylabel="SVD", minColor=colorant"blue", maxColor=colorant"red", display_filter=unitRow->unitRow[:Condition]=="FirstGame")
+# p = plot(myENA, title="Bryans", xlabel="Condition", ylabel="GameHalf", minColor=colorant"blue", maxColor=colorant"red")#, display_filter=unitRow->unitRow[:Condition]=="FirstGame")
 # display(p)
 
 
