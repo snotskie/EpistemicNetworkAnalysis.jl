@@ -188,17 +188,20 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     # Layout step
     ## Project the pos_x and pos_y for the original units onto the plane, now that we have the rotation
     ## This is really only for testing the goodness of fit
-    for unitRow in eachrow(accumModel)
-        unitRow[:pos_x] = sum(
-            networkRow[:weight_x] * unitRow[networkRow[:relationship]]
-            for networkRow in eachrow(networkModel)
-        )
+    # for unitRow in eachrow(accumModel)
+    #     unitRow[:pos_x] = sum(
+    #         networkRow[:weight_x] * unitRow[networkRow[:relationship]]
+    #         for networkRow in eachrow(networkModel)
+    #     )
 
-        unitRow[:pos_y] = sum(
-            networkRow[:weight_y] * unitRow[networkRow[:relationship]]
-            for networkRow in eachrow(networkModel)
-        )
-    end
+    #     # unitRow[:pos_y] = sum(
+    #     #     networkRow[:weight_y] * unitRow[networkRow[:relationship]]
+    #     #     for networkRow in eachrow(networkModel)
+    #     # )
+    # end
+
+    accumModel[!, :pos_x] = Matrix{Float64}(accumModel[!, networkModel[!, :relationship]]) * Vector{Float64}(networkModel[!, :weight_x])
+    accumModel[!, :pos_y] = Matrix{Float64}(accumModel[!, networkModel[!, :relationship]]) * Vector{Float64}(networkModel[!, :weight_y])
 
     ## Same for the refit units
     ## These are what are really drawn

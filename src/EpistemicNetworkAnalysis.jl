@@ -57,14 +57,9 @@ include("./CarlsFormula2Rotation.jl") # TEMP
 # #     :Condition, "FirstGame", "SecondGame"
 # # )
 
-# rotation = Formula2Rotation(
-#     LinearModel, 2, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding()),
-#     LinearModel, 2, @formula(y ~ 1 + GameHalf + Condition), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding())
-# )
-
-# # rotation = CarlsFormula2Rotation(
-# #     LinearModel, 2, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding()),
-# #     LinearModel, 2, @formula(y ~ 1 + GameHalf + Condition), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding())
+# # rotation = Formula2Rotation(
+# #     LinearModel, 2, @formula(y ~ 1 + RND + GameHalf), Dict(:GameHalf => EffectsCoding()),
+# #     LinearModel, 2, @formula(y ~ 1 + GameHalf + RND), Dict(:GameHalf => EffectsCoding())
 # # )
 
 # # rotation = Formula2Rotation(
@@ -103,16 +98,29 @@ include("./CarlsFormula2Rotation.jl") # TEMP
 #     global RSdata = vcat(RSdata, RScopy)
 # end
 
-# # rotation = Formula2Rotation(
-# #     LinearModel, 2, @formula(y ~ 1 + RND + GameHalf), Dict(:GameHalf => EffectsCoding()),
-# #     LinearModel, 2, @formula(y ~ 1 + GameHalf + RND), Dict(:GameHalf => EffectsCoding())
-# # )
+# ## Bryan's
+# rotation = Formula2Rotation(
+#     LinearModel, 2, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding()),
+#     LinearModel, 2, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding())
+# )
 
 # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 # display(myENA)
 
 # p = plot(myENA, title="Bryans", xlabel="Condition", ylabel="GameHalf", minColor=colorant"blue", maxColor=colorant"red")#, display_filter=unitRow->unitRow[:Condition]=="FirstGame")
 # display(p)
+
+# ## Carl's
+# # rotation = CarlsFormula2Rotation(
+# #     LinearModel, 2, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding()),
+# #     LinearModel, 3, @formula(y ~ 1 + GameHalf + Condition), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding())
+# # )
+
+# # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
+# # display(myENA)
+
+# # p = plot(myENA, title="Carls", xlabel="Condition", ylabel="GameHalf", minColor=colorant"blue", maxColor=colorant"red")#, display_filter=unitRow->unitRow[:Condition]=="FirstGame")
+# # display(p)
 
 
 

@@ -71,6 +71,12 @@ function rotate!(rotation::AbstractCarlsFormula2Rotation, networkModel::DataFram
         end
     end
 
+    ## Normalize the weights for the x-axes
+    s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
+    if s != 0
+        networkModel[!, :weight_x] /= s
+    end
+
     ## Compute the x-axis so we can deflate it out of the data
     xAxis = map(eachrow(unitModel)) do unitRow
         return sum(
@@ -80,24 +86,30 @@ function rotate!(rotation::AbstractCarlsFormula2Rotation, networkModel::DataFram
     end
 
     ## Create a deflated copy of the data
-    deflatedData = copy(regressionData)
-    denom = sum(xAxis .* xAxis)
-    for r in networkModel[!, :relationship]
-        scalar = sum(deflatedData[!, r] .* xAxis) / denom
-        deflatedData[!, r] -= scalar * xAxis
-    end
+    A = Matrix{Float64}(regressionData[!, networkModel[!, :relationship]])
+    x = Vector{Float64}(networkModel[!, :weight_x])
+    deflatedData = copy(regressionData) # A tilde
+    deflatedData[!, networkModel[!, :relationship]] = A - A*x*transpose(x)
+        
+    ## Factorize the columns
+    S = Matrix{Float64}(deflatedData[!, networkModel[!, :relationship]])
+    F = svd(S)
+    V = F.V
 
-    ## Again, but for the y-axis and using the second formula
+    ## Rotate the regression data
+    regressionData[!, networkModel[!, :relationship]] = A * V
+
+    ## Again, but for the y-axis and using the second formula and using the deflated data
     for networkRow in eachrow(networkModel)
         r = networkRow[:relationship]
         f2 = FormulaTerm(term(r), rotation.f2.rhs)
         try
             if rotation.contrasts2 isa Nothing
-                m2 = fit(rotation.regression_model2, f2, deflatedData)
+                m2 = fit(rotation.regression_model2, f2, regressionData)
                 slope = coef(m2)[rotation.coefindex2]
                 networkRow[:weight_y] = slope
             else
-                m2 = fit(rotation.regression_model2, f2, deflatedData, contrasts=rotation.contrasts2)
+                m2 = fit(rotation.regression_model2, f2, regressionData, contrasts=rotation.contrasts2)
                 slope = coef(m2)[rotation.coefindex2]
                 networkRow[:weight_y] = slope
             end
@@ -110,16 +122,14 @@ function rotate!(rotation::AbstractCarlsFormula2Rotation, networkModel::DataFram
         end
     end
 
-    ## Normalize the weights for both axes
-    s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
-    if s != 0
-        networkModel[!, :weight_x] /= s
-    end
-
+    ## Normalize the weights for the y-axis
     s = sqrt(sum(networkModel[!, :weight_y] .^ 2))
     if s != 0
         networkModel[!, :weight_y] /= s
     end
+
+    ## Update the rotation matrix for the y-axis
+    networkModel[!, :weight_y] = Matrix{Float64}(V) * Vector{Float64}(networkModel[!, :weight_y])
 end
 
 # Override tests

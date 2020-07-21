@@ -91,7 +91,7 @@ function rotate!(rotation::AbstractFormula2Rotation, networkModel::DataFrame, un
     ## Orthogonalization: replace y weights with their rejection from the x weights
     before = copy(networkModel[!, :weight_y])
     scalar = dot(networkModel[!, :weight_y], networkModel[!, :weight_x]) / dot(networkModel[!, :weight_x], networkModel[!, :weight_x])
-    networkModel[!, :weight_y] -= scalar * networkModel[!, :weight_x]    
+    networkModel[!, :weight_y] -= scalar * networkModel[!, :weight_x]
     after = copy(networkModel[!, :weight_y])
 
     ## Raise a warning about interpreting the y-axis when before and after have a large angle between them
