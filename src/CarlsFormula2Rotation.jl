@@ -94,12 +94,30 @@ function rotate!(rotation::AbstractCarlsFormula2Rotation, networkModel::DataFram
     ## Factorize the columns
     S = Matrix{Float64}(deflatedData[!, networkModel[!, :relationship]])
     F = svd(S)
-    V = F.V
+    V = F.V # V [15, 5]
+    V = V[:, 1:5]
 
-    ## Rotate the regression data
-    regressionData[!, networkModel[!, :relationship]] = A * V
+    display(x)
+    display(V)
+    display(transpose(V) * x) # Vt [5, 15] * x [15, 1]
+    display(S * x) # S [766, 15] * x [15, 1]
+    display(F.S)
+    # error("stop here")
+
+    # x = X A
+    # y = V Y A V
+    # ~A = A - A x xt
+    # ~A = U D Vt
+    # 0 == xt y
+    # 0 == xt V Y A V
+
+    ## Rotate and segment the regression data
+    regressionData[!, networkModel[1:5, :relationship]] = A * V # A [766, 15] * V [15, 5] -> [766, 5]
+    # y [5, 1]
+    # V y [15, 1]
 
     ## Again, but for the y-axis and using the second formula and using the deflated data
+    visitedDimensions = 0
     for networkRow in eachrow(networkModel)
         r = networkRow[:relationship]
         f2 = FormulaTerm(term(r), rotation.f2.rhs)
@@ -120,16 +138,21 @@ function rotate!(rotation::AbstractCarlsFormula2Rotation, networkModel::DataFram
             Usually, this occurs because the data, the regression model, and regression formula are not in agreement.
             """)
         end
+
+        visitedDimensions += 1
+        if visitedDimensions >= 5
+            break
+        end
     end
+
+    ## Un-rotate the rotation matrix for the y-axis
+    networkModel[!, :weight_y] = Matrix{Float64}(V) * Vector{Float64}(networkModel[1:5, :weight_y])
 
     ## Normalize the weights for the y-axis
     s = sqrt(sum(networkModel[!, :weight_y] .^ 2))
     if s != 0
         networkModel[!, :weight_y] /= s
     end
-
-    ## Update the rotation matrix for the y-axis
-    networkModel[!, :weight_y] = Matrix{Float64}(V) * Vector{Float64}(networkModel[!, :weight_y])
 end
 
 # Override tests

@@ -205,17 +205,20 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
 
     ## Same for the refit units
     ## These are what are really drawn
-    for unitRow in eachrow(centroidModel)
-        unitRow[:pos_x] = sum(
-            networkRow[:weight_x] * unitRow[networkRow[:relationship]]
-            for networkRow in eachrow(networkModel)
-        )
+    # for unitRow in eachrow(centroidModel)
+    #     unitRow[:pos_x] = sum(
+    #         networkRow[:weight_x] * unitRow[networkRow[:relationship]]
+    #         for networkRow in eachrow(networkModel)
+    #     )
 
-        unitRow[:pos_y] = sum(
-            networkRow[:weight_y] * unitRow[networkRow[:relationship]]
-            for networkRow in eachrow(networkModel)
-        )
-    end
+    #     unitRow[:pos_y] = sum(
+    #         networkRow[:weight_y] * unitRow[networkRow[:relationship]]
+    #         for networkRow in eachrow(networkModel)
+    #     )
+    # end
+
+    centroidModel[!, :pos_x] = Matrix{Float64}(centroidModel[!, networkModel[!, :relationship]]) * Vector{Float64}(networkModel[!, :weight_x])
+    centroidModel[!, :pos_y] = Matrix{Float64}(centroidModel[!, networkModel[!, :relationship]]) * Vector{Float64}(networkModel[!, :weight_y])
 
     ## Same for the codes
     ## These aren't used to compute what's really drawn, they are labels floating around
@@ -223,17 +226,20 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     ## center of mass. If we *were* to use these to compute what's really drawn,
     ## it should actually give us the same result as the projection we used for centroidRow's above,
     ## since that's the property we defined the refit space to have. (ignoring the intercept)
-    for codeRow in eachrow(codeModel)
-        codeRow[:pos_x] = sum(
-            networkRow[:weight_x] * codeRow[networkRow[:relationship]]
-            for networkRow in eachrow(networkModel)
-        )
+    # for codeRow in eachrow(codeModel)
+    #     codeRow[:pos_x] = sum(
+    #         networkRow[:weight_x] * codeRow[networkRow[:relationship]]
+    #         for networkRow in eachrow(networkModel)
+    #     )
 
-        codeRow[:pos_y] = sum(
-            networkRow[:weight_y] * codeRow[networkRow[:relationship]]
-            for networkRow in eachrow(networkModel)
-        )
-    end
+    #     codeRow[:pos_y] = sum(
+    #         networkRow[:weight_y] * codeRow[networkRow[:relationship]]
+    #         for networkRow in eachrow(networkModel)
+    #     )
+    # end
+
+    codeModel[!, :pos_x] = Matrix{Float64}(codeModel[!, networkModel[!, :relationship]]) * Vector{Float64}(networkModel[!, :weight_x])
+    codeModel[!, :pos_y] = Matrix{Float64}(codeModel[!, networkModel[!, :relationship]]) * Vector{Float64}(networkModel[!, :weight_y])
 
     ## Translate everything so overall mean lies at the origin
     centroidModel[!, :pos_x] = centroidModel[!, :pos_x] .- mean(centroidModel[!, :pos_x])
