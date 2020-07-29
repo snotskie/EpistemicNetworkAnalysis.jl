@@ -88,35 +88,20 @@ function rotate!(rotation::AbstractCarlsFormula2Rotation, networkModel::DataFram
     ## Create a deflated copy of the data
     A = Matrix{Float64}(regressionData[!, networkModel[!, :relationship]])
     x = Vector{Float64}(networkModel[!, :weight_x])
-    deflatedData = copy(regressionData) # A tilde
+    deflatedData = copy(regressionData)
     deflatedData[!, networkModel[!, :relationship]] = A - A*x*transpose(x)
         
-    ## Factorize the columns
+    ## Factorize the deflated data
     S = Matrix{Float64}(deflatedData[!, networkModel[!, :relationship]])
     F = svd(S)
-    V = F.V # V [15, 5]
-    V = V[:, 1:5]
+    V = F.V
 
-    display(x)
-    display(V)
-    display(transpose(V) * x) # Vt [5, 15] * x [15, 1]
-    display(S * x) # S [766, 15] * x [15, 1]
-    display(F.S)
-    # error("stop here")
+    ## Keep factors with >1 eigenvalue, short circuit if there are none, else rotate that part of the regression data and continue
+    nDims = count(s > 1 for s in F.S)
+    V = V[:, 1:nDims]
+    regressionData[!, networkModel[1:nDims, :relationship]] = A * V
 
-    # x = X A
-    # y = V Y A V
-    # ~A = A - A x xt
-    # ~A = U D Vt
-    # 0 == xt y
-    # 0 == xt V Y A V
-
-    ## Rotate and segment the regression data
-    regressionData[!, networkModel[1:5, :relationship]] = A * V # A [766, 15] * V [15, 5] -> [766, 5]
-    # y [5, 1]
-    # V y [15, 1]
-
-    ## Again, but for the y-axis and using the second formula and using the deflated data
+    ## Run regressions again, but for the y-axis and using the second formula and using the factored data
     visitedDimensions = 0
     for networkRow in eachrow(networkModel)
         r = networkRow[:relationship]
@@ -140,13 +125,13 @@ function rotate!(rotation::AbstractCarlsFormula2Rotation, networkModel::DataFram
         end
 
         visitedDimensions += 1
-        if visitedDimensions >= 5
+        if visitedDimensions >= nDims
             break
         end
     end
 
-    ## Un-rotate the rotation matrix for the y-axis
-    networkModel[!, :weight_y] = Matrix{Float64}(V) * Vector{Float64}(networkModel[1:5, :weight_y])
+    ## Un-rotate the rotation matrix to use for the y-axis
+    networkModel[!, :weight_y] = Matrix{Float64}(V) * Vector{Float64}(networkModel[1:nDims, :weight_y])
 
     ## Normalize the weights for the y-axis
     s = sqrt(sum(networkModel[!, :weight_y] .^ 2))

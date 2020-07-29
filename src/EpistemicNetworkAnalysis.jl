@@ -53,7 +53,7 @@ include("./CarlsFormula2Rotation.jl") # TEMP
 
 # conversations = [:Condition, :GameHalf, :GroupName]
 # units = [:Condition, :GameHalf, :UserName]
-# for t in 1:3
+# for t in 1:4
 #     RScopy = copy(RSdata)
 #     rnd = rand()
 #     for copyRow in eachrow(RScopy)
@@ -73,26 +73,26 @@ include("./CarlsFormula2Rotation.jl") # TEMP
 
 # ## Bryan's
 # rotation = Formula2Rotation(
-#     LinearModel, 2, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding()),
+#     LinearModel, 3, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding()),
 #     LinearModel, 3, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding())
 # )
 
 # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 # display(myENA)
 
-# p = plot(myENA, title="Bryans", xlabel="Condition", ylabel="GameHalf", minColor=colorant"blue", maxColor=colorant"red")#, display_filter=unitRow->unitRow[:Condition]=="FirstGame")
+# p = plot(myENA, title="Bryans", ylabel="GameHalf", xlabel="GameHalf", minColor=colorant"blue", maxColor=colorant"red")#, display_filter=unitRow->unitRow[:Condition]=="FirstGame")
 # display(p)
 
 # ## Carl's
 # rotation = CarlsFormula2Rotation(
-#     LinearModel, 2, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding()),
+#     LinearModel, 3, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding()),
 #     LinearModel, 3, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding())
 # )
 
 # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 # display(myENA)
 
-# p = plot(myENA, title="Carls", xlabel="Condition", ylabel="GameHalf", minColor=colorant"blue", maxColor=colorant"red")#, display_filter=unitRow->unitRow[:Condition]=="FirstGame")
+# p = plot(myENA, title="Carls", ylabel="GameHalf", xlabel="GameHalf", minColor=colorant"blue", maxColor=colorant"red")#, display_filter=unitRow->unitRow[:Condition]=="FirstGame")
 # display(p)
 
 
