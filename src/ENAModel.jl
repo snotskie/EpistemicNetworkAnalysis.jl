@@ -66,6 +66,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
 
     prev_convo = data[1, conversations]
     howrecents = [Inf for c in codes]
+    mostrecents = [0.0 for c in codes]
     for line in eachrow(data)
         if prev_convo != line[conversations]
             prev_convo = line[conversations]
@@ -75,6 +76,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         for (i, code) in enumerate(codes)
             if line[code] > 0
                 howrecents[i] = 0
+                mostrecents[i] = line[code]
             else
                 howrecents[i] += 1
             end
@@ -84,9 +86,9 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         for r in keys(relationshipMap)
             i, j = relationshipMap[r]
             if howrecents[i] == 0 && howrecents[j] < windowSize
-                counts[unit][i][j] += 1
+                counts[unit][i][j] += mostrecents[i] * mostrecents[j]
             elseif howrecents[j] == 0 && howrecents[i] < windowSize
-                counts[unit][i][j] += 1
+                counts[unit][i][j] += mostrecents[i] * mostrecents[j]
             end
         end
     end

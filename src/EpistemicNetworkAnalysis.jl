@@ -33,9 +33,12 @@ include("./RSData.jl")
 
 include("./CarlsFormula2Rotation.jl") # TEMP
 
-# # Exports
-# TODO
-
+# Exports
+export ENAModel
+export plot
+export MeansRotation
+export SVDRotation
+export ena_dataset
 
 
 # @warn "Running EpistemicNetworkAnalysis.jl as main. Performing kitchen sink operation."
