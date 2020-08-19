@@ -51,3 +51,7 @@ display(ena)
 p = plot(ena, title="Example", ylabel="SVD", xlabel="Condition", minColor=colorant"blue", maxColor=colorant"red")
 display(p)
 ```
+
+Result:
+
+![](https://raw.githubusercontent.com/snotskie/EpistemicNetworkAnalysis.jl/master/examples/example1.png)
