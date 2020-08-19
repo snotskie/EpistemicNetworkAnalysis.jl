@@ -38,6 +38,8 @@ export ENAModel
 export plot
 export MeansRotation
 export SVDRotation
+export FormulaRotation
+export Formula2Rotation
 export ena_dataset
 
 

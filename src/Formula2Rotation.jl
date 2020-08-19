@@ -157,7 +157,7 @@ function test(ena::AbstractENAModel{<:AbstractFormula2Rotation})
 end
 
 # Override plotting pieces
-## Labels - we should also report the p-value and effect size
+## Labels - showing as a POC that we can report the p-value and effect size
 function plot_labels!(p::Plot, ena::AbstractENAModel{<:AbstractFormula2Rotation};
     xlabel="X", ylabel="Y",
     kwargs...)

@@ -112,7 +112,7 @@ function test(ena::AbstractENAModel{<:AbstractFormulaRotation})
 end
 
 # Override plotting pieces
-## Labels - we should also report the p-value and effect size
+## Labels - showing as a POC that we can report the p-value and effect size
 function plot_labels!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation};
     xlabel="X", ylabel="Y",
     kwargs...)
@@ -232,13 +232,13 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
             label="Units",
             seriestype=:scatter,
             markershape=:circle,
-            markersize=2,
+            markersize=1.5,
             markercolor=unitColors,
             markerstrokecolor=unitColors)
     end
 end
 
-# ## Extras - we can add a "litmus" strip to illustrate the strength of the continuous effect
+## Extras - we can add a "litmus" strip to illustrate the strength of the continuous effect
 function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, displayRows::Array{Bool,1};
     flipX::Bool=false, flipY::Bool=false, minColor::Colorant=colorant"purple", maxColor::Colorant=colorant"orange",
     kwargs...)
@@ -327,7 +327,7 @@ function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation},
                 for i in 1:bins
                     left = -1 + (i-1)/bins
                     right = -1 + i/bins
-                    if true
+                    if true # TEMP
                         plot!(p, [left, right], [-1, -1],
                             label=nothing,
                             seriestype=:line,

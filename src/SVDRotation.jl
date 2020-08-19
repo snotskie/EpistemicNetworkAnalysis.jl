@@ -51,11 +51,11 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractSVDRotation}, disp
             ### ...and add that color to the legend
             lastLabel = nothing
             for g in keys(colorMap)
-                plot!(p, x, y,
+                plot!(p, [-999], [-999],
                     label="$(g) Units",
                     seriestype=:scatter,
                     markershape=:circle,
-                    markersize=2,
+                    markersize=1.5,
                     markercolor=colorMap[g],
                     markerstrokecolor=colorMap[g])
             end
@@ -69,7 +69,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractSVDRotation}, disp
         label=lastLabel,
         seriestype=:scatter,
         markershape=:circle,
-        markersize=2,
+        markersize=1.5,
         markercolor=unitColors,
         markerstrokecolor=unitColors)
 end

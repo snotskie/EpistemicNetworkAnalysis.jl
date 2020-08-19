@@ -136,11 +136,11 @@ end
 ### Mutating wrapper - Do not override
 function plot!(p::Plot, ena::AbstractENAModel;
     showUnits::Bool=true, showNetwork::Bool=true, showIntervals::Bool=true, showExtras::Bool=true,
-    display_filter=x->true,
+    unitFilter=x->true,
     kwargs...)
 
     #### Run the filter just this once, pass to helpers
-    displayRows = map(display_filter, eachrow(ena.metadata))
+    displayRows = map(unitFilter, eachrow(ena.metadata))
 
     #### Call each helper, unless the user asked us not to
     if showUnits
