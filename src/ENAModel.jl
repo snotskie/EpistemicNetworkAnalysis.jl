@@ -22,7 +22,7 @@ end
 
 function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
     windowSize::Int=4, rotateBy::T=SVDRotation(), sphereNormalize::Bool=true, dropEmpty::Bool=true,
-    subsetFilter::Function=x->true) where {T<:AbstractENARotation}
+    subsetFilter::Function=x->true, accumulationMask::Function=x->1, blockingContext::Function=x->true) where {T<:AbstractENARotation}
 
     # Preparing model structures
     ## Relationships between codes
@@ -66,7 +66,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
 
     prev_convo = data[1, conversations]
     howrecents = [Inf for c in codes]
-    mostrecents = [0.0 for c in codes]
+    # mostrecents = [0.0 for c in codes]
     for line in eachrow(data)
         if prev_convo != line[conversations]
             prev_convo = line[conversations]
@@ -76,36 +76,52 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         for (i, code) in enumerate(codes)
             if line[code] > 0
                 howrecents[i] = 0
-                mostrecents[i] = line[code]
+                # mostrecents[i] = line[code]
             else
                 howrecents[i] += 1
             end
         end
 
-        unit = line[:ENA_UNIT]
-        for r in keys(relationshipMap)
-            i, j = relationshipMap[r]
-            if howrecents[i] == 0 && howrecents[j] < windowSize
-                counts[unit][i][j] += mostrecents[i] * mostrecents[j]
-            elseif howrecents[j] == 0 && howrecents[i] < windowSize
-                counts[unit][i][j] += mostrecents[i] * mostrecents[j]
+        if blockingContext(howrecents)
+            unit = line[:ENA_UNIT]
+            for r in keys(relationshipMap)
+                i, j = relationshipMap[r]
+                if howrecents[i] == 0 && howrecents[j] < windowSize
+                    counts[unit][i][j] += 1 # mostrecents[i] * mostrecents[j]
+                elseif howrecents[j] == 0 && howrecents[i] < windowSize
+                    counts[unit][i][j] += 1 # mostrecents[i] * mostrecents[j]
+                end
             end
         end
     end
 
     ## Normalize and overwrite the unit model's placeholders
-    if sphereNormalize
-        for unitRow in eachrow(accumModel)
-            unit = unitRow[:ENA_UNIT]
-            vector = [counts[unit][i][j] for (i,j) in values(relationshipMap)]
+    # if sphereNormalize
+    #     for unitRow in eachrow(accumModel)
+    #         unit = unitRow[:ENA_UNIT]
+    #         vector = [counts[unit][i][j] for (i,j) in values(relationshipMap)]
+    #         s = sqrt(sum(vector .^ 2))
+    #         if s != 0
+    #             vector /= s
+    #         end
+
+    #         for (k, r) in enumerate(keys(relationshipMap))
+    #             unitRow[r] = vector[k]
+    #         end
+    #     end
+    # end
+    for unitRow in eachrow(accumModel)
+        unit = unitRow[:ENA_UNIT]
+        vector = [counts[unit][i][j] for (i,j) in values(relationshipMap)]
+        if sphereNormalize
             s = sqrt(sum(vector .^ 2))
             if s != 0
                 vector /= s
             end
+        end
 
-            for (k, r) in enumerate(keys(relationshipMap))
-                unitRow[r] = vector[k]
-            end
+        for (k, r) in enumerate(keys(relationshipMap))
+            unitRow[r] = vector[k] * accumulationMask(r)
         end
     end
 

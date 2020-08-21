@@ -31,8 +31,6 @@ include("./MeansRotation.jl")
 include("./ENAModel.jl")
 include("./RSData.jl")
 
-# include("./CarlsFormula2Rotation.jl") # TEMP
-
 # Exports
 export ENAModel
 export plot
@@ -44,6 +42,7 @@ export ena_dataset
 
 
 # @warn "Running EpistemicNetworkAnalysis.jl as main. Performing kitchen sink operation."
+# include("./CarlsFormula2Rotation.jl")
 
 # RSdata = ena_dataset("RS.data")
 # using Random
@@ -78,26 +77,26 @@ export ena_dataset
 
 # ## Bryan's
 # rotation = Formula2Rotation(
-#     LinearModel, 3, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding()),
+#     LinearModel, 2, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding()),
 #     LinearModel, 3, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding())
 # )
 
 # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 # display(myENA)
 
-# p = plot(myENA, title="Bryans", ylabel="GameHalf", xlabel="GameHalf", minColor=colorant"blue", maxColor=colorant"red")#, display_filter=unitRow->unitRow[:Condition]=="FirstGame")
+# p = plot(myENA, title="Bryans", ylabel="GameHalf", xlabel="Condition", minColor=colorant"blue", maxColor=colorant"red")#, display_filter=unitRow->unitRow[:Condition]=="FirstGame")
 # display(p)
 
 # ## Carl's
 # rotation = CarlsFormula2Rotation(
-#     LinearModel, 3, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding()),
+#     LinearModel, 2, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding()),
 #     LinearModel, 3, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding())
 # )
 
 # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 # display(myENA)
 
-# p = plot(myENA, title="Carls", ylabel="GameHalf", xlabel="GameHalf", minColor=colorant"blue", maxColor=colorant"red")#, display_filter=unitRow->unitRow[:Condition]=="FirstGame")
+# p = plot(myENA, title="Carls", ylabel="GameHalf", xlabel="Condition", minColor=colorant"blue", maxColor=colorant"red")#, display_filter=unitRow->unitRow[:Condition]=="FirstGame")
 # display(p)
 
 
