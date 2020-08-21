@@ -66,7 +66,6 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
 
     prev_convo = data[1, conversations]
     howrecents = [Inf for c in codes]
-    # mostrecents = [0.0 for c in codes]
     for line in eachrow(data)
         if prev_convo != line[conversations]
             prev_convo = line[conversations]
@@ -76,7 +75,6 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         for (i, code) in enumerate(codes)
             if line[code] > 0
                 howrecents[i] = 0
-                # mostrecents[i] = line[code]
             else
                 howrecents[i] += 1
             end
@@ -87,29 +85,15 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
             for r in keys(relationshipMap)
                 i, j = relationshipMap[r]
                 if howrecents[i] == 0 && howrecents[j] < windowSize
-                    counts[unit][i][j] += 1 # mostrecents[i] * mostrecents[j]
+                    counts[unit][i][j] += 1
                 elseif howrecents[j] == 0 && howrecents[i] < windowSize
-                    counts[unit][i][j] += 1 # mostrecents[i] * mostrecents[j]
+                    counts[unit][i][j] += 1
                 end
             end
         end
     end
 
     ## Normalize and overwrite the unit model's placeholders
-    # if sphereNormalize
-    #     for unitRow in eachrow(accumModel)
-    #         unit = unitRow[:ENA_UNIT]
-    #         vector = [counts[unit][i][j] for (i,j) in values(relationshipMap)]
-    #         s = sqrt(sum(vector .^ 2))
-    #         if s != 0
-    #             vector /= s
-    #         end
-
-    #         for (k, r) in enumerate(keys(relationshipMap))
-    #             unitRow[r] = vector[k]
-    #         end
-    #     end
-    # end
     for unitRow in eachrow(accumModel)
         unit = unitRow[:ENA_UNIT]
         vector = [counts[unit][i][j] for (i,j) in values(relationshipMap)]
@@ -165,13 +149,16 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     codeModel[!, :density] /= s
 
     ## Regression model for placing the code dots into the approximated high-dimensional space
-    X = Matrix{Float64}(zeros(nrow(accumModel), 1 + nrow(codeModel)))
-    X[:, 1] .= 1 # Intercept term
+    # X = Matrix{Float64}(zeros(nrow(accumModel), 1 + nrow(codeModel))) # +1 because of intercept
+    X = Matrix{Float64}(zeros(nrow(accumModel), nrow(codeModel)))
+    #X[:, 1] .= 1 # Intercept term
     for (i, unitRow) in enumerate(eachrow(accumModel))
         for r in keys(relationshipMap)
             a, b = relationshipMap[r]
-            X[i, a+1] += unitRow[r] / 2 # +1 because of intercept
-            X[i, b+1] += unitRow[r] / 2 # +1 because of intercept
+            # X[i, a+1] += unitRow[r] / 2 # +1 because of intercept
+            # X[i, b+1] += unitRow[r] / 2 # +1 because of intercept
+            X[i, a] += unitRow[r] / 2
+            X[i, b] += unitRow[r] / 2
         end
     end
 
@@ -182,7 +169,8 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         r = networkRow[:relationship]
         y = Vector{Float64}(accumModel[:, r])
         r_coefs = X * y
-        codeModel[:, r] = r_coefs[2:end] # 2:end because of intercept
+        # codeModel[:, r] = r_coefs[2:end] # 2:end because of intercept
+        codeModel[:, r] = r_coefs[1:end]
     end
 
     ## Refit the units: in high-d space, the refit units are as close as possible to their center of mass wrt the network
@@ -200,7 +188,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     end
 
     # Rotation step
-    ## Use the given lambda, probably one of the out-of-the-box ENARotations, but could be anything user defined
+    ## Use the given rotation method, probably one of the out-of-the-box ENARotations, but could be anything user defined
     rotate!(rotateBy, networkModel, centroidModel, metadata)
 
     # Layout step
