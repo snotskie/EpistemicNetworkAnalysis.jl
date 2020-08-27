@@ -160,24 +160,16 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
 
                 ### ...and color-code the units based on a gradient, using black for those with missing values
                 colorMap = help_nonlinear_gradient(minColor, colorant"white", maxColor)
-                ringMap = help_nonlinear_gradient(minColor, RGB(.85, .85, .85), maxColor)
                 unitColors = map(eachrow(displayMetadata)) do unitRow
                     if !ismissing(unitRow[col])
-                        index = round(Int, (length(colorMap) - 1) * (unitRow[col] - lo) / (hi - lo) + 1)
+                        index = 1 + round(Int, (length(colorMap) - 1) * (unitRow[col] - lo) / (hi - lo))
                         return colorMap[index]
                     else
                         return :black
                     end
                 end
 
-                unitRings = map(eachrow(displayMetadata)) do unitRow
-                    if !ismissing(unitRow[col])
-                        index = round(Int, (length(ringMap) - 1) * (unitRow[col] - lo) / (hi - lo) + 1)
-                        return ringMap[index]
-                    else
-                        return :black
-                    end
-                end
+                unitRings = [weighted_color_mean(0.8, col, RGB(.85, .85, .85)) for col in unitColors]
             end
         end
     end
@@ -203,7 +195,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
             label=minLabel,
             seriestype=:scatter,
             markershape=:circle,
-            markersize=1.5,
+            markersize=2,
             markerstrokewidth=1,
             markercolor=minColor,
             markerstrokecolor=minColor)
@@ -212,7 +204,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
             label=maxLabel,
             seriestype=:scatter,
             markershape=:circle,
-            markersize=1.5,
+            markersize=2,
             markerstrokewidth=1,
             markercolor=maxColor,
             markerstrokecolor=maxColor)
@@ -222,7 +214,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
             label=nothing,
             seriestype=:scatter,
             markershape=:circle,
-            markersize=1.5,
+            markersize=2,
             markerstrokewidth=1,
             markercolor=unitColors,
             markerstrokecolor=unitRings)
@@ -232,7 +224,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
             label="Units",
             seriestype=:scatter,
             markershape=:circle,
-            markersize=1.5,
+            markersize=2,
             markercolor=unitColors,
             markerstrokecolor=unitColors)
     end

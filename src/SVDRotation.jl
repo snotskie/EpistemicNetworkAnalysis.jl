@@ -55,7 +55,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractSVDRotation}, disp
                     label="$(g) Units",
                     seriestype=:scatter,
                     markershape=:circle,
-                    markersize=1.5,
+                    markersize=2,
                     markercolor=colorMap[g],
                     markerstrokecolor=colorMap[g])
             end
@@ -69,7 +69,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractSVDRotation}, disp
         label=lastLabel,
         seriestype=:scatter,
         markershape=:circle,
-        markersize=1.5,
+        markersize=2,
         markercolor=unitColors,
         markerstrokecolor=unitColors)
 end

@@ -178,7 +178,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
         label="Units",
         seriestype=:scatter,
         markershape=:circle,
-        markersize=1.5,
+        markersize=2,
         markercolor=:black,
         markerstrokecolor=:black)
 end
