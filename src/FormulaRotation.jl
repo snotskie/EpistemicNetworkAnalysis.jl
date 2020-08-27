@@ -169,7 +169,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
                     end
                 end
 
-                unitRings = [weighted_color_mean(0.8, col, RGB(.85, .85, .85)) for col in unitColors]
+                unitRings = [weighted_color_mean(0.75, col, RGB(0.1, 0.1, 0.1)) for col in unitColors]
             end
         end
     end
