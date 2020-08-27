@@ -134,8 +134,8 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
     displayMetadata = ena.metadata[displayRows, :]
 
     ### Default, when we don't have a good column to use for a numeric variable, use all black
-    unitColors = [:black for unitRow in eachrow(displayCentroids)]
-    unitRings = [:black for unitRow in eachrow(displayCentroids)]
+    unitColors = [colorant"black" for unitRow in eachrow(displayCentroids)]
+    unitRings = [colorant"black" for unitRow in eachrow(displayCentroids)]
 
     ### Grab the name of the potential column as a Symbol
     col = Symbol(ena.rotation.f1.rhs[ena.rotation.coefindex])
@@ -165,7 +165,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
                         index = 1 + round(Int, (length(colorMap) - 1) * (unitRow[col] - lo) / (hi - lo))
                         return colorMap[index]
                     else
-                        return :black
+                        return colorant"black"
                     end
                 end
 
