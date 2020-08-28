@@ -57,23 +57,23 @@ export ena_dataset
 
 # conversations = [:Condition, :GameHalf, :GroupName]
 # units = [:Condition, :GameHalf, :UserName]
-# for t in 1:4
-#     RScopy = copy(RSdata)
-#     rnd = rand()
-#     for copyRow in eachrow(RScopy)
-#         for col in [:GroupName, :UserName]
-#             copyRow[col] = string(copyRow[col], rnd)
-#         end
+# # for t in 1:4
+# #     RScopy = copy(RSdata)
+# #     rnd = rand()
+# #     for copyRow in eachrow(RScopy)
+# #         for col in [:GroupName, :UserName]
+# #             copyRow[col] = string(copyRow[col], rnd)
+# #         end
 
-#         for col in codes
-#             if rand() < 0.05
-#                 copyRow[col] = 1 - copyRow[col]
-#             end
-#         end
-#     end
+# #         for col in codes
+# #             if rand() < 0.05
+# #                 copyRow[col] = 1 - copyRow[col]
+# #             end
+# #         end
+# #     end
 
-#     global RSdata = vcat(RSdata, RScopy)
-# end
+# #     global RSdata = vcat(RSdata, RScopy)
+# # end
 
 # ## Bryan's
 # rotation = Formula2Rotation(
@@ -81,10 +81,12 @@ export ena_dataset
 #     LinearModel, 3, @formula(y ~ 1 + RND + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding())
 # )
 
+# # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
+
 # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 # display(myENA)
 
-# p = plot(myENA, title="Bryans", ylabel="Condition", xlabel="RND", minColor=colorant"blue", maxColor=colorant"red")#, display_filter=unitRow->unitRow[:Condition]=="FirstGame")
+# p = plot(myENA, title="Bryans", ylabel="Condition", xlabel="RND", minColor=colorant"blue", maxColor=colorant"red", showUnits=false)#, display_filter=unitRow->unitRow[:Condition]=="FirstGame")
 # display(p)
 
 # # ## Carl's

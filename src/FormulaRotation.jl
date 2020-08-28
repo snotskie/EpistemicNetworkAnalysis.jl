@@ -230,6 +230,61 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
     end
 end
 
+## CIs - we can color them into two groups
+function plot_intervals!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, displayRows::Array{Bool,1};
+    flipX::Bool=false, flipY::Bool=false, minColor::Colorant=colorant"purple", maxColor::Colorant=colorant"orange",
+    minLabel::Union{Nothing,String}=nothing, maxLabel::Union{Nothing,String}=nothing,
+    kwargs...)
+
+    ### Grab the name of the potential column as a Symbol
+    col = Symbol(ena.rotation.f1.rhs[ena.rotation.coefindex])
+
+    ### If the column exists in the metadata...
+    if col in Symbol.(names(ena.metadata))
+
+        ### ...and the first non-missing value overall is a number...
+        vals = filter(x->!ismissing(x), ena.metadata[!, col])
+        if first(vals) isa Number
+
+            ### ...and there is a non-zero range of values
+            lo = minimum(vals)
+            hi = maximum(vals)
+            if hi != lo
+
+                ### ...then grab the quantile cutoffs
+                Q0, Q1, Q2, Q3, Q4 = quantile(vals)
+
+                ### Grab filtered data
+                displayCentroids = ena.centroidModel[displayRows, :]
+                displayMetadata = ena.metadata[displayRows, :]
+                Q1Rows = map(x->Q0 <= x[col] <= Q1, eachrow(displayMetadata))
+                Q4Rows = map(x->Q3 <= x[col] <= Q4, eachrow(displayMetadata))
+                Q1Units = displayCentroids[Q1Rows, :]
+                Q4Units = displayCentroids[Q4Rows, :]
+
+                ### ...use meaningful legend labels
+                if isnothing(minLabel)
+                    minLabel = "$(col) Q1 Mean"
+                end
+
+                if isnothing(maxLabel)
+                    maxLabel = "$(col) Q4 Mean"
+                end
+
+                ### Plot control CI
+                xs = Q1Units[!, :pos_x] * (flipX ? -1 : 1)
+                ys = Q1Units[!, :pos_y] * (flipY ? -1 : 1)
+                help_plot_ci(p, xs, ys, minColor, :square, minLabel)
+
+                ### Plot treatment CI
+                xs = Q4Units[!, :pos_x] * (flipX ? -1 : 1)
+                ys = Q4Units[!, :pos_y] * (flipY ? -1 : 1)
+                help_plot_ci(p, xs, ys, maxColor, :square, maxLabel)
+            end
+        end
+    end
+end
+
 ## Extras - we can add a "litmus" strip to illustrate the strength of the continuous effect
 function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, displayRows::Array{Bool,1};
     flipX::Bool=false, flipY::Bool=false, minColor::Colorant=colorant"purple", maxColor::Colorant=colorant"orange",

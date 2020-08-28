@@ -59,28 +59,43 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractMeansRotation}, di
         p, ena, displayRows; flipX=flipX, flipY=flipY, minLabel=minLabel, maxLabel=maxLabel, kwargs...)
 end
 
-## CIs - we can color them into two groups
+## CIs - different default labels
 function plot_intervals!(p::Plot, ena::AbstractENAModel{<:AbstractMeansRotation}, displayRows::Array{Bool,1};
     flipX::Bool=false, flipY::Bool=false, minColor::Colorant=colorant"purple", maxColor::Colorant=colorant"orange",
+    minLabel::Union{Nothing,String}=nothing, maxLabel::Union{Nothing,String}=nothing,
     kwargs...)
 
-    ### Grab filtered data
-    displayCentroids = ena.centroidModel[displayRows, :]
-    displayMetadata = ena.metadata[displayRows, :]
-    controlRows = map(x->x[ena.rotation.groupVar] == ena.rotation.controlGroup, eachrow(displayMetadata))
-    treatmentRows = map(x->x[ena.rotation.groupVar] == ena.rotation.treatmentGroup, eachrow(displayMetadata))
-    controlUnits = displayCentroids[controlRows, :]
-    treatmentUnits = displayCentroids[treatmentRows, :]
+    ### Use meaningful legend labels for the units
+    if isnothing(minLabel)
+        minLabel = "$(ena.rotation.controlGroup) Mean"
+    end
 
-    ### Plot control CI
-    xs = controlUnits[!, :pos_x] * (flipX ? -1 : 1)
-    ys = controlUnits[!, :pos_y] * (flipY ? -1 : 1)
-    help_plot_ci(p, xs, ys, minColor, :square, "$(ena.rotation.controlGroup) Mean")
+    if isnothing(maxLabel)
+        maxLabel = "$(ena.rotation.treatmentGroup) Mean"
+    end
 
-    ### Plot treatment CI
-    xs = treatmentUnits[!, :pos_x] * (flipX ? -1 : 1)
-    ys = treatmentUnits[!, :pos_y] * (flipY ? -1 : 1)
-    help_plot_ci(p, xs, ys, maxColor, :square, "$(ena.rotation.treatmentGroup) Mean")
+    ### Let formula rotation do the rest of the work
+    invoke(plot_intervals!, Tuple{Plot, AbstractENAModel{<:AbstractFormulaRotation}, Array{Bool,1}},
+        p, ena, displayRows; flipX=flipX, flipY=flipY, minLabel=minLabel, maxLabel=maxLabel,
+        minColor=minColor, maxColor=maxColor, kwargs...)
+
+    # ### Grab filtered data
+    # displayCentroids = ena.centroidModel[displayRows, :]
+    # displayMetadata = ena.metadata[displayRows, :]
+    # controlRows = map(x->x[ena.rotation.groupVar] == ena.rotation.controlGroup, eachrow(displayMetadata))
+    # treatmentRows = map(x->x[ena.rotation.groupVar] == ena.rotation.treatmentGroup, eachrow(displayMetadata))
+    # controlUnits = displayCentroids[controlRows, :]
+    # treatmentUnits = displayCentroids[treatmentRows, :]
+
+    # ### Plot control CI
+    # xs = controlUnits[!, :pos_x] * (flipX ? -1 : 1)
+    # ys = controlUnits[!, :pos_y] * (flipY ? -1 : 1)
+    # help_plot_ci(p, xs, ys, minColor, :square, "$(ena.rotation.controlGroup) Mean")
+
+    # ### Plot treatment CI
+    # xs = treatmentUnits[!, :pos_x] * (flipX ? -1 : 1)
+    # ys = treatmentUnits[!, :pos_y] * (flipY ? -1 : 1)
+    # help_plot_ci(p, xs, ys, maxColor, :square, "$(ena.rotation.treatmentGroup) Mean")
 end
 
 ## Network - we can do a subtraction plot
