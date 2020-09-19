@@ -112,21 +112,21 @@ function test(ena::AbstractENAModel{<:AbstractFormulaRotation})
 end
 
 # Override plotting pieces
-## Labels - showing as a POC that we can report the p-value and effect size
-function plot_labels!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation};
-    xlabel="X", ylabel="Y",
-    kwargs...)
+# ## Labels - showing as a POC that we can report the p-value and effect size
+# function plot_labels!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation};
+#     xlabel="X", ylabel="Y",
+#     kwargs...)
 
-    ### Run tests, then put the values into the axis labels
-    results = test(ena)
-    xlabel!(p, "$xlabel ($(round(Int, results[:variance_x]*100))%, p<$(ceil(results[:pvalue_x], digits=4)), f²=$(round(results[:f2_x], digits=4)))")
-    ylabel!(p, "$ylabel ($(round(Int, results[:variance_y]*100))%)")
-end
+#     ### Run tests, then put the values into the axis labels
+#     results = test(ena)
+#     xlabel!(p, "$xlabel ($(round(Int, results[:variance_x]*100))%, p<$(ceil(results[:pvalue_x], digits=4)), f²=$(round(results[:f2_x], digits=4)))")
+#     ylabel!(p, "$ylabel ($(round(Int, results[:variance_y]*100))%)")
+# end
 
 ## Units - we can color them by the coef variable, if a simple term
 function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, displayRows::Array{Bool,1};
     flipX::Bool=false, flipY::Bool=false, minLabel::Union{Nothing,String}=nothing, maxLabel::Union{Nothing,String}=nothing,
-    minColor::Colorant=colorant"purple", maxColor::Colorant=colorant"orange",
+    negColor::Colorant=colorant"red", posColor::Colorant=colorant"blue",
     kwargs...)
 
     ### Grab filtered values
@@ -159,7 +159,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
                 legend_col = col
 
                 ### ...and color-code the units based on a gradient, using black for those with missing values
-                colorMap = help_nonlinear_gradient(minColor, colorant"white", maxColor)
+                colorMap = help_nonlinear_gradient(negColor, colorant"white", posColor)
                 unitColors = map(eachrow(displayMetadata)) do unitRow
                     if !ismissing(unitRow[col])
                         index = 1 + round(Int, (length(colorMap) - 1) * (unitRow[col] - lo) / (hi - lo))
@@ -197,8 +197,8 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
             markershape=:circle,
             markersize=2,
             markerstrokewidth=1,
-            markercolor=minColor,
-            markerstrokecolor=minColor)
+            markercolor=negColor,
+            markerstrokecolor=negColor)
         
         plot!(p, [-999], [-999],
             label=maxLabel,
@@ -206,8 +206,8 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
             markershape=:circle,
             markersize=2,
             markerstrokewidth=1,
-            markercolor=maxColor,
-            markerstrokecolor=maxColor)
+            markercolor=posColor,
+            markerstrokecolor=posColor)
         
         ### ...and plot the points with the correct gradient colors
         plot!(p, x, y,
@@ -230,64 +230,65 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
     end
 end
 
-## CIs - we can color them into two groups
-function plot_intervals!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, displayRows::Array{Bool,1};
-    flipX::Bool=false, flipY::Bool=false, minColor::Colorant=colorant"purple", maxColor::Colorant=colorant"orange",
-    minLabel::Union{Nothing,String}=nothing, maxLabel::Union{Nothing,String}=nothing,
-    kwargs...)
+# ## CIs - we can color them into two groups
+# function plot_intervals!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, displayRows::Array{Bool,1};
+#     flipX::Bool=false, flipY::Bool=false, minColor::Colorant=colorant"purple", maxColor::Colorant=colorant"orange",
+#     minLabel::Union{Nothing,String}=nothing, maxLabel::Union{Nothing,String}=nothing,
+#     kwargs...)
 
-    ### Grab the name of the potential column as a Symbol
-    col = Symbol(ena.rotation.f1.rhs[ena.rotation.coefindex])
+#     ### Grab the name of the potential column as a Symbol
+#     col = Symbol(ena.rotation.f1.rhs[ena.rotation.coefindex])
 
-    ### If the column exists in the metadata...
-    if col in Symbol.(names(ena.metadata))
+#     ### If the column exists in the metadata...
+#     if col in Symbol.(names(ena.metadata))
 
-        ### ...and the first non-missing value overall is a number...
-        vals = filter(x->!ismissing(x), ena.metadata[!, col])
-        if first(vals) isa Number
+#         ### ...and the first non-missing value overall is a number...
+#         vals = filter(x->!ismissing(x), ena.metadata[!, col])
+#         if first(vals) isa Number
 
-            ### ...and there is a non-zero range of values
-            lo = minimum(vals)
-            hi = maximum(vals)
-            if hi != lo
+#             ### ...and there is a non-zero range of values
+#             lo = minimum(vals)
+#             hi = maximum(vals)
+#             if hi != lo
 
-                ### ...then grab the quantile cutoffs
-                Q0, Q1, Q2, Q3, Q4 = quantile(vals)
+#                 ### ...then grab the quantile cutoffs
+#                 Q0, Q1, Q2, Q3, Q4 = quantile(vals)
 
-                ### Grab filtered data
-                displayCentroids = ena.centroidModel[displayRows, :]
-                displayMetadata = ena.metadata[displayRows, :]
-                Q1Rows = map(x->Q0 <= x[col] <= Q1, eachrow(displayMetadata))
-                Q4Rows = map(x->Q3 <= x[col] <= Q4, eachrow(displayMetadata))
-                Q1Units = displayCentroids[Q1Rows, :]
-                Q4Units = displayCentroids[Q4Rows, :]
+#                 ### Grab filtered data
+#                 displayCentroids = ena.centroidModel[displayRows, :]
+#                 displayMetadata = ena.metadata[displayRows, :]
+#                 Q1Rows = map(x->Q0 <= x[col] <= Q1, eachrow(displayMetadata))
+#                 Q4Rows = map(x->Q3 <= x[col] <= Q4, eachrow(displayMetadata))
+#                 Q1Units = displayCentroids[Q1Rows, :]
+#                 Q4Units = displayCentroids[Q4Rows, :]
 
-                ### ...use meaningful legend labels
-                if isnothing(minLabel)
-                    minLabel = "$(col) Q1 Mean"
-                end
+#                 ### ...use meaningful legend labels
+#                 if isnothing(minLabel)
+#                     minLabel = "$(col) Q1 Mean"
+#                 end
 
-                if isnothing(maxLabel)
-                    maxLabel = "$(col) Q4 Mean"
-                end
+#                 if isnothing(maxLabel)
+#                     maxLabel = "$(col) Q4 Mean"
+#                 end
 
-                ### Plot control CI
-                xs = Q1Units[!, :pos_x] * (flipX ? -1 : 1)
-                ys = Q1Units[!, :pos_y] * (flipY ? -1 : 1)
-                help_plot_ci(p, xs, ys, minColor, :square, minLabel)
+#                 ### Plot control CI
+#                 xs = Q1Units[!, :pos_x] * (flipX ? -1 : 1)
+#                 ys = Q1Units[!, :pos_y] * (flipY ? -1 : 1)
+#                 help_plot_ci(p, xs, ys, minColor, :square, minLabel)
 
-                ### Plot treatment CI
-                xs = Q4Units[!, :pos_x] * (flipX ? -1 : 1)
-                ys = Q4Units[!, :pos_y] * (flipY ? -1 : 1)
-                help_plot_ci(p, xs, ys, maxColor, :square, maxLabel)
-            end
-        end
-    end
-end
+#                 ### Plot treatment CI
+#                 xs = Q4Units[!, :pos_x] * (flipX ? -1 : 1)
+#                 ys = Q4Units[!, :pos_y] * (flipY ? -1 : 1)
+#                 help_plot_ci(p, xs, ys, maxColor, :square, maxLabel)
+#             end
+#         end
+#     end
+# end
 
 ## Extras - we can add a "litmus" strip to illustrate the strength of the continuous effect
 function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, displayRows::Array{Bool,1};
-    flipX::Bool=false, flipY::Bool=false, minColor::Colorant=colorant"purple", maxColor::Colorant=colorant"orange",
+    flipX::Bool=false, flipY::Bool=false, lims::Real=1,
+    negColor::Colorant=colorant"red", posColor::Colorant=colorant"blue",
     kwargs...)
     
     ### Grab filtered values
@@ -313,7 +314,7 @@ function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation},
             if hi != lo
 
                 ### ...then let's prepare our gradient (same gradient used on the rings in plot_units)
-                binMap = help_nonlinear_gradient(minColor, RGB(.85, .85, .85), maxColor)
+                binMap = help_nonlinear_gradient(negColor, RGB(.85, .85, .85), posColor)
 
                 ### ...and prepare our placeholders
                 negBinColors = [colorant"black" for i in 1:bins] # average color in that bin
@@ -375,41 +376,41 @@ function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation},
                     left = -1 + (i-1)/bins
                     right = -1 + i/bins
                     if true # TEMP
-                        plot!(p, [left, right], [-1, -1],
+                        plot!(p, [left, right], [-lims, -lims],
                             label=nothing,
                             seriestype=:line,
                             linewidth=negBinSizes[i],
                             linecolor=negBinColors[i])
                         
-                        plot!(p, [-right, -left], [-1, -1],
+                        plot!(p, [-right, -left], [-lims, -lims],
                             label=nothing,
                             seriestype=:line,
                             linewidth=posBinSizes[i],
                             linecolor=posBinColors[i])
                     else
-                        plot!(p, [left, right], [-1, -1],
+                        plot!(p, [left, right], [-lims, -lims],
                             label=nothing,
                             seriestype=:line,
                             linewidth=negBinSizes[i],
-                            linecolor=minColor)
+                            linecolor=negColor)
                         
-                        plot!(p, [-right, -left], [-1, -1],
+                        plot!(p, [-right, -left], [-lims, -lims],
                             label=nothing,
                             seriestype=:line,
                             linewidth=posBinSizes[i],
-                            linecolor=minColor)
+                            linecolor=negColor)
 
-                        plot!(p, [left, right], [-1, -1],
+                        plot!(p, [left, right], [-lims, -lims],
                             label=nothing,
                             seriestype=:line,
                             linewidth=negBinSizes[i] * negBinScalars[i],
-                            linecolor=maxColor)
+                            linecolor=posColor)
                         
-                        plot!(p, [-right, -left], [-1, -1],
+                        plot!(p, [-right, -left], [-lims, -lims],
                             label=nothing,
                             seriestype=:line,
                             linewidth=posBinSizes[i] * posBinScalars[i],
-                            linecolor=maxColor)
+                            linecolor=posColor)
                     end
                 end
             end

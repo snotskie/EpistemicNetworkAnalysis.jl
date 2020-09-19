@@ -24,6 +24,7 @@ using GLM
 # Includes
 include("./helpers.jl")
 include("./typetree.jl")
+include("./plotbase.jl")
 include("./SVDRotation.jl")
 include("./FormulaRotation.jl")
 include("./Formula2Rotation.jl")
@@ -42,12 +43,11 @@ export ena_dataset
 
 
 # @warn "Running EpistemicNetworkAnalysis.jl as main. Performing kitchen sink operation."
-# # include("./CarlsFormula2Rotation.jl")
-
 # RSdata = ena_dataset("RS.data")
 # using Random
 # Random.seed!(4321)
 # RSdata[!, :RND] = rand(nrow(RSdata))
+# display(names(RSdata))
 # codes = [:Data,
 #     :Technical_Constraints,
 #     :Performance_Parameters,
@@ -57,59 +57,23 @@ export ena_dataset
 
 # conversations = [:Condition, :GameHalf, :GroupName]
 # units = [:Condition, :GameHalf, :UserName]
-# # for t in 1:4
-# #     RScopy = copy(RSdata)
-# #     rnd = rand()
-# #     for copyRow in eachrow(RScopy)
-# #         for col in [:GroupName, :UserName]
-# #             copyRow[col] = string(copyRow[col], rnd)
-# #         end
 
-# #         for col in codes
-# #             if rand() < 0.05
-# #                 copyRow[col] = 1 - copyRow[col]
-# #             end
-# #         end
-# #     end
-
-# #     global RSdata = vcat(RSdata, RScopy)
-# # end
-
-# ## Bryan's
-# rotation = Formula2Rotation(
-#     LinearModel, 2, @formula(y ~ 1 + RND + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding()),
-#     LinearModel, 3, @formula(y ~ 1 + RND + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding())
-# )
+# # myENA = ENAModel(RSdata, codes, conversations, units)
 
 # # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
-
-# myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
-# display(myENA)
-
-# p = plot(myENA, title="Bryans", ylabel="Condition", xlabel="RND", minColor=colorant"blue", maxColor=colorant"red", showUnits=false)#, display_filter=unitRow->unitRow[:Condition]=="FirstGame")
-# display(p)
-
-# # ## Carl's
-# # rotation = CarlsFormula2Rotation(
-# #     LinearModel, 2, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding()),
-# #     LinearModel, 3, @formula(y ~ 1 + Condition + GameHalf), Dict(:Condition => EffectsCoding(), :GameHalf => EffectsCoding())
-# # )
-
 # # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
-# # display(myENA)
 
-# # p = plot(myENA, title="Carls", ylabel="GameHalf", xlabel="Condition", minColor=colorant"blue", maxColor=colorant"red")#, display_filter=unitRow->unitRow[:Condition]=="FirstGame")
-# # display(p)
+# rotation = FormulaRotation(
+#     LinearModel, 2, @formula(y ~ 1 + CONFIDENCE_Pre), nothing
+# )
+# myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 
-# # ## MR1
-# # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
-
-# # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation, windowSize=4)
-# # display(myENA)
-
-# # p = plot(myENA, title="MR1", ylabel="SVD", xlabel="Condition", minColor=colorant"blue", maxColor=colorant"red")#, display_filter=unitRow->unitRow[:Condition]=="FirstGame")
-# # display(p)
-
+# display(myENA)
+# # p = plot(myENA, title="Bryans", ylabel="SVD", xlabel="Condition", groupBy=:Condition)
+# p = plot(myENA, title="Bryans", ylabel="SVD", xlabel="Condition", groupBy=:UserName)
+# # p = plot(myENA, title="Bryans", ylabel="SVD", xlabel="Condition", groupBy=:GroupName)
+# # p = plot(myENA, title="Bryans", ylabel="SVD", xlabel="Condition")
+# display(p)
 
 
 end # module

@@ -110,150 +110,151 @@ function Base.display(ena::AbstractENAModel) # TODO should this be print, displa
     end
 end
 
-## Plotting
-### Top-level wrapper - Do not override
-function plot(ena::AbstractENAModel;
-    margin=10mm, size=500, lims=1, ticks=[-1, 0, 1], title="", leg=:bottomleft,
-    kwargs...)
 
-    #### Create and empty plot
-    p = plot(leg=leg, margin=margin, size=(size, size))
+# ## Plotting
+# ### Top-level wrapper - Do not override
+# function plot(ena::AbstractENAModel;
+#     margin=10mm, size=500, lims=1, ticks=[-1, 0, 1], title="", leg=:bottomleft,
+#     kwargs...)
 
-    #### Call mutating wrapper
-    plot!(p, ena; kwargs...)
+#     #### Create and empty plot
+#     p = plot(leg=leg, margin=margin, size=(size, size))
 
-    #### Set ticks, limits, and title
-    xticks!(p, ticks)
-    yticks!(p, ticks)
-    xlims!(p, -lims, lims)
-    ylims!(p, -lims, lims)
-    title!(p, title)
+#     #### Call mutating wrapper
+#     plot!(p, ena; kwargs...)
 
-    #### Done, return so user can modify from there
-    return p
-end
+#     #### Set ticks, limits, and title
+#     xticks!(p, ticks)
+#     yticks!(p, ticks)
+#     xlims!(p, -lims, lims)
+#     ylims!(p, -lims, lims)
+#     title!(p, title)
 
-### Mutating wrapper - Do not override
-function plot!(p::Plot, ena::AbstractENAModel;
-    showUnits::Bool=true, showNetwork::Bool=true, showIntervals::Bool=true, showExtras::Bool=true,
-    unitFilter=x->true,
-    kwargs...)
+#     #### Done, return so user can modify from there
+#     return p
+# end
 
-    #### Run the filter just this once, pass to helpers
-    displayRows = map(unitFilter, eachrow(ena.metadata))
+# ### Mutating wrapper - Do not override
+# function plot!(p::Plot, ena::AbstractENAModel;
+#     showUnits::Bool=true, showNetwork::Bool=true, showIntervals::Bool=true, showExtras::Bool=true,
+#     unitFilter=x->true,
+#     kwargs...)
 
-    #### Call each helper, unless the user asked us not to
-    if showUnits
-        plot_units!(p, ena, displayRows; kwargs...)
-    end
+#     #### Run the filter just this once, pass to helpers
+#     displayRows = map(unitFilter, eachrow(ena.metadata))
 
-    if showNetwork
-        plot_network!(p, ena, displayRows; kwargs...)
-    end
+#     #### Call each helper, unless the user asked us not to
+#     if showUnits
+#         plot_units!(p, ena, displayRows; kwargs...)
+#     end
 
-    if showIntervals
-        plot_intervals!(p, ena, displayRows; kwargs...)
-    end
+#     if showNetwork
+#         plot_network!(p, ena, displayRows; kwargs...)
+#     end
 
-    if showExtras
-        plot_extras!(p, ena, displayRows; kwargs...)
-    end
+#     if showIntervals
+#         plot_intervals!(p, ena, displayRows; kwargs...)
+#     end
 
-    #### Always call the helper to label the axes
-    plot_labels!(p, ena; kwargs...)
-end
+#     if showExtras
+#         plot_extras!(p, ena, displayRows; kwargs...)
+#     end
 
-### Unit-level helper
-function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
-    flipX::Bool=false, flipY::Bool=false,
-    kwargs...)
+#     #### Always call the helper to label the axes
+#     plot_labels!(p, ena; kwargs...)
+# end
 
-    #### Get the x/y positions
-    displayCentroids = ena.centroidModel[displayRows, :]
-    x = displayCentroids[!, :pos_x] * (flipX ? -1 : 1)
-    y = displayCentroids[!, :pos_y] * (flipY ? -1 : 1)
+# ### Unit-level helper
+# function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
+#     flipX::Bool=false, flipY::Bool=false,
+#     kwargs...)
 
-    #### Draw them in black
-    plot!(p, x, y,
-        label="Units",
-        seriestype=:scatter,
-        markershape=:circle,
-        markersize=2,
-        markercolor=:black,
-        markerstrokecolor=:black)
-end
+#     #### Get the x/y positions
+#     displayCentroids = ena.centroidModel[displayRows, :]
+#     x = displayCentroids[!, :pos_x] * (flipX ? -1 : 1)
+#     y = displayCentroids[!, :pos_y] * (flipY ? -1 : 1)
 
-### Network-level helper
-function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
-    flipX::Bool=false, flipY::Bool=false,
-    kwargs...)
+#     #### Draw them in black
+#     plot!(p, x, y,
+#         label="Units",
+#         seriestype=:scatter,
+#         markershape=:circle,
+#         markersize=2,
+#         markercolor=:black,
+#         markerstrokecolor=:black)
+# end
 
-    #### Find the true weight on each line
-    displayAccums = ena.accumModel[displayRows, :]
-    lineWidths = map(eachrow(ena.networkModel)) do networkRow
-        return sum(displayAccums[!, networkRow[:relationship]])
-    end
+# ### Network-level helper
+# function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
+#     flipX::Bool=false, flipY::Bool=false,
+#     kwargs...)
 
-    #### Rescale the lines
-    lineWidths *= 2 / maximum(lineWidths)
+#     #### Find the true weight on each line
+#     displayAccums = ena.accumModel[displayRows, :]
+#     lineWidths = map(eachrow(ena.networkModel)) do networkRow
+#         return sum(displayAccums[!, networkRow[:relationship]])
+#     end
 
-    #### Initialize code widths, compute while we visit each line
-    codeWidths = zeros(nrow(ena.codeModel))
+#     #### Rescale the lines
+#     lineWidths *= 2 / maximum(lineWidths)
 
-    #### For each line...
-    for (i, networkRow) in enumerate(eachrow(ena.networkModel))
-        j, k = ena.relationshipMap[networkRow[:relationship]]
+#     #### Initialize code widths, compute while we visit each line
+#     codeWidths = zeros(nrow(ena.codeModel))
 
-        #### ...add to its code weights
-        codeWidths[j] += lineWidths[i]
-        codeWidths[k] += lineWidths[i]
+#     #### For each line...
+#     for (i, networkRow) in enumerate(eachrow(ena.networkModel))
+#         j, k = ena.relationshipMap[networkRow[:relationship]]
 
-        #### and plot that line
-        x = ena.codeModel[[j, k], :pos_x] * (flipX ? -1 : 1)
-        y = ena.codeModel[[j, k], :pos_y] * (flipY ? -1 : 1)
-        plot!(p, x, y,
-            label=nothing,
-            seriestype=:line,
-            linewidth=lineWidths[i],
-            linecolor=:black)
-    end
+#         #### ...add to its code weights
+#         codeWidths[j] += lineWidths[i]
+#         codeWidths[k] += lineWidths[i]
 
-    #### Rescale and draw the codes
-    codeWidths *= 8 / maximum(codeWidths)
-    x = ena.codeModel[!, :pos_x] * (flipX ? -1 : 1)
-    y = ena.codeModel[!, :pos_y] * (flipY ? -1 : 1)
-    labels = map(label->text(label, :top, 8), ena.codeModel[!, :code])
-    plot!(p, x, y,
-        label=nothing,
-        seriestype=:scatter,
-        series_annotations=labels,
-        markershape=:circle,
-        markersize=codeWidths,
-        markercolor=:black,
-        markerstrokecolor=:black)
-end
+#         #### and plot that line
+#         x = ena.codeModel[[j, k], :pos_x] * (flipX ? -1 : 1)
+#         y = ena.codeModel[[j, k], :pos_y] * (flipY ? -1 : 1)
+#         plot!(p, x, y,
+#             label=nothing,
+#             seriestype=:line,
+#             linewidth=lineWidths[i],
+#             linecolor=:black)
+#     end
 
-### CI-level helper
-function plot_intervals!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
-    flipX::Bool=false, flipY::Bool=false,
-    kwargs...)
-    #### do nothing
-end
+#     #### Rescale and draw the codes
+#     codeWidths *= 8 / maximum(codeWidths)
+#     x = ena.codeModel[!, :pos_x] * (flipX ? -1 : 1)
+#     y = ena.codeModel[!, :pos_y] * (flipY ? -1 : 1)
+#     labels = map(label->text(label, :top, 8), ena.codeModel[!, :code])
+#     plot!(p, x, y,
+#         label=nothing,
+#         seriestype=:scatter,
+#         series_annotations=labels,
+#         markershape=:circle,
+#         markersize=codeWidths,
+#         markercolor=:black,
+#         markerstrokecolor=:black)
+# end
 
-### Extras helper
-function plot_extras!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
-    flipX::Bool=false, flipY::Bool=false,
-    kwargs...)
-    #### do nothing
-end
+# ### CI-level helper
+# function plot_intervals!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
+#     flipX::Bool=false, flipY::Bool=false,
+#     kwargs...)
+#     #### do nothing
+# end
 
-### Labels helper
-function plot_labels!(p::Plot, ena::AbstractENAModel;
-    xlabel="X", ylabel="Y",
-    kwargs...)
+# ### Extras helper
+# function plot_extras!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
+#     flipX::Bool=false, flipY::Bool=false,
+#     kwargs...)
+#     #### do nothing
+# end
 
-    #### Run tests and report the variances explained in the axis labels
-    results = test(ena)
-    xlabel!(p, "$xlabel ($(round(Int, results[:variance_x]*100))%)")
-    ylabel!(p, "$ylabel ($(round(Int, results[:variance_y]*100))%)")
-end
+# ### Labels helper
+# function plot_labels!(p::Plot, ena::AbstractENAModel;
+#     xlabel="X", ylabel="Y",
+#     kwargs...)
+
+#     #### Run tests and report the variances explained in the axis labels
+#     results = test(ena)
+#     xlabel!(p, "$xlabel ($(round(Int, results[:variance_x]*100))%)")
+#     ylabel!(p, "$ylabel ($(round(Int, results[:variance_y]*100))%)")
+# end
