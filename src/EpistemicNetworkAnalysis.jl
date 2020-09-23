@@ -60,19 +60,24 @@ export ena_dataset
 
 # # myENA = ENAModel(RSdata, codes, conversations, units)
 
-# # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
+# rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
+# myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
+
+# # rotation = FormulaRotation(
+# #     LinearModel, 2, @formula(y ~ 1 + CONFIDENCE_Pre), nothing
+# # )
 # # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 
-# rotation = FormulaRotation(
-#     LinearModel, 2, @formula(y ~ 1 + CONFIDENCE_Pre), nothing
-# )
-# myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
+# # rotation = FormulaRotation(
+# #     LinearModel, 2, @formula(y ~ 1 + RND), nothing
+# # )
+# # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 
 # display(myENA)
 # # p = plot(myENA, title="Bryans", ylabel="SVD", xlabel="Condition", groupBy=:Condition)
-# p = plot(myENA, title="Bryans", ylabel="SVD", xlabel="Condition", groupBy=:UserName)
+# # p = plot(myENA, title="Bryans", ylabel="SVD", xlabel="Condition", groupBy=:UserName)
 # # p = plot(myENA, title="Bryans", ylabel="SVD", xlabel="Condition", groupBy=:GroupName)
-# # p = plot(myENA, title="Bryans", ylabel="SVD", xlabel="Condition")
+# p = plot(myENA, title="Bryans", ylabel="SVD", xlabel="Condition")
 # display(p)
 
 

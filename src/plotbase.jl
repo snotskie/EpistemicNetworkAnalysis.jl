@@ -173,20 +173,24 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel;
     ### Compute line widths as the strength (slope) between the xpos and the accum network weights
     f1 = @formula(y ~ pos_x)
     lineWidths = map(eachrow(ena.networkModel)) do networkRow
-        f1 = FormulaTerm(term(networkRow[:relationship]), f1.rhs)
-        try
-            ## The function call is different when we have contrasts
-            m1 = fit(LinearModel, f1, regressionData)
-            slope = coef(m1)[2]
-            return slope
-        catch e
-            println(e)
-            error("""
-            An error occured running a regression during the rotation step of this ENA model.
-            Usually, this occurs because the data, the regression model, and regression formula are not in agreement.
-            If you are using a MeansRotation, then this usually means that your accidentally grouped your
-            units on a different variable than the variable you passed to your MeansRotation.
-            """)
+        if true
+            f1 = FormulaTerm(term(networkRow[:relationship]), f1.rhs)
+            try
+                ## The function call is different when we have contrasts
+                m1 = fit(LinearModel, f1, regressionData)
+                slope = coef(m1)[2]
+                return slope
+            catch e
+                println(e)
+                error("""
+                An error occured running a regression during the rotation step of this ENA model.
+                Usually, this occurs because the data, the regression model, and regression formula are not in agreement.
+                If you are using a MeansRotation, then this usually means that your accidentally grouped your
+                units on a different variable than the variable you passed to your MeansRotation.
+                """)
+            end
+        else
+            return networkRow[:weight_x]
         end
     end
 
