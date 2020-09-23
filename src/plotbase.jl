@@ -157,7 +157,7 @@ end
 ### Helper - Draw the predictive lines
 function plot_predictive!(p::Plot, ena::AbstractENAModel;
     negColor::Colorant=colorant"red", posColor::Colorant=colorant"blue",
-    flipX::Bool=false, flipY::Bool=false,
+    flipX::Bool=false, flipY::Bool=false, VOIMode::Bool=false,
     kwargs...)
 
     ### Grab the data we need as one data frame
@@ -170,10 +170,19 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel;
         regressionData[!, networkRow[:relationship]] = map(Float64, regressionData[!, networkRow[:relationship]])
     end
 
+    ### TEMP: Testing two different options
+    altNetworkModel = ena.networkModel
+    if VOIMode
+        altNetworkModel = copy(ena.networkModel)
+        rotate!(ena.rotation, altNetworkModel, ena.accumModel, ena.metadata)
+    end
+
     ### Compute line widths as the strength (slope) between the xpos and the accum network weights
     f1 = @formula(y ~ pos_x)
-    lineWidths = map(eachrow(ena.networkModel)) do networkRow
-        if true
+    lineWidths = map(eachrow(altNetworkModel)) do networkRow
+        if VOIMode
+            return networkRow[:weight_x]
+        else
             f1 = FormulaTerm(term(networkRow[:relationship]), f1.rhs)
             try
                 ## The function call is different when we have contrasts
@@ -189,8 +198,6 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel;
                 units on a different variable than the variable you passed to your MeansRotation.
                 """)
             end
-        else
-            return networkRow[:weight_x]
         end
     end
 
