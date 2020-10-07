@@ -60,25 +60,25 @@ export ena_dataset
 
 # # myENA = ENAModel(RSdata, codes, conversations, units)
 
-# # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
-# # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
+# rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
+# myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 
 # # rotation = FormulaRotation(
 # #     LinearModel, 2, @formula(y ~ 1 + CONFIDENCE_Pre), nothing
 # # )
 # # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 
-# rotation = FormulaRotation(
-#     LinearModel, 2, @formula(y ~ 1 + RND), nothing
-# )
-# myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
+# # rotation = FormulaRotation(
+# #     LinearModel, 2, @formula(y ~ 1 + RND), nothing
+# # )
+# # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 
 # display(myENA)
-# # p = plot(myENA, title="Bryans", ylabel="SVD", xlabel="Confidence", groupBy=:Condition)
+# p = plot(myENA, title="Bryans", ylabel="SVD", xlabel="Condition", groupBy=:Condition)
 # # p = plot(myENA, title="Bryans", ylabel="SVD", xlabel="Confidence", groupBy=:UserName)
 # # p = plot(myENA, title="Bryans", ylabel="SVD", xlabel="Confidence", groupBy=:GroupName)
 # # p = plot(myENA, title="Bryans", ylabel="SVD", xlabel="RND")
-# p = plot(myENA, title="Bryans", ylabel="SVD", xlabel="RND", VOIMode=true)
+# # p = plot(myENA, title="Bryans", ylabel="SVD", xlabel="RND", VOIMode=true)
 # display(p)
 
 

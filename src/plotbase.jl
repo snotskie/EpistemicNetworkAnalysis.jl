@@ -24,7 +24,8 @@ function plot(ena::AbstractENAModel;
     #### Initialize usual subplots
     ps = [
         plot(leg=leg, margin=margin, size=(size, size)), # omnibus
-        plot(leg=leg, margin=margin, size=(size, size))  # predictive
+        plot(leg=leg, margin=margin, size=(size, size)),  # predictive
+        plot(leg=leg, margin=margin, size=(size, size))  # errors
     ]
 
     #### Draw usual subplots
@@ -40,13 +41,16 @@ function plot(ena::AbstractENAModel;
     title!(ps[2], "(b) " * get(titles, 2, "Predictive"))
     plot_predictive!(ps[2], ena; kwargs...)
 
+    title!(ps[3], "(c) " * get(titles, 3, "Errors"))
+    plot_errors!(ps[3], ena, allRows; kwargs...)
+
     #### Initialize group-wise subplots
     if !isnothing(groupBy)
         groups = sort(unique(ena.metadata[!, groupBy]))
         for (g, group) in enumerate(groups)
 
             #### Draw group-wise subplots
-            letters = "cdefghijklmnopqrstuvwxyz"
+            letters = "defghijklmnopqrstuvwxyz"
             if g <= length(extraColors) && g <= length(letters)
                 p = plot(leg=leg, margin=margin, size=(size, size))
                 groupRows = [row[groupBy] == group for row in eachrow(ena.metadata)]
@@ -249,6 +253,38 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel;
         markersize=codeWidths,
         markercolor=:black,
         markerstrokecolor=:black)
+end
+
+### Helper - plot the errors between centroid and accum model
+function plot_errors!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
+    flipX::Bool=false, flipY::Bool=false,
+    kwargs...)
+    
+    for i in 1:nrow(ena.accumModel)
+      accumPos = ena.accumModel[i, :pos_x] > 0
+      centroidPos = ena.centroidModel[i, :pos_x] > 0
+      if accumPos != centroidPos
+        x = [ena.accumModel[i, :pos_x], ena.centroidModel[i, :pos_x]] * (flipX ? -1 : 1)
+        y = [ena.accumModel[i, :pos_y], ena.centroidModel[i, :pos_y]] * (flipY ? -1 : 1)
+        plot!(p, x, y,
+            label=nothing,
+            seriestype=:line,
+            linewidth=1,
+            linecolor=:black)
+        
+        x = [ena.centroidModel[i, :pos_x]] * (flipX ? -1 : 1)
+        y = [ena.centroidModel[i, :pos_y]] * (flipY ? -1 : 1)
+        labels = [text(ena.centroidModel[i, :ENA_UNIT], :top, 4)]
+        plot!(p, x, y,
+            label=nothing,
+            seriestype=:scatter,
+            series_annotations=labels,
+            markershape=:circle,
+            markersize=2,
+            markercolor=:black,
+            markerstrokecolor=:black)
+      end
+    end
 end
 
 ### Helper Placeholder - extras to add to the omnibus subplot
