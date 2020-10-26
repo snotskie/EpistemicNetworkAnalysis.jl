@@ -71,47 +71,47 @@ function rotate!(rotation::AbstractFormulaRotation, networkModel::DataFrame, uni
     networkModel[!, :weight_y] = pcaModel[:, 1]
 end
 
-# Override tests
-function test(ena::AbstractENAModel{<:AbstractFormulaRotation})
+# # Override tests
+# function test(ena::AbstractENAModel{<:AbstractFormulaRotation})
 
-    ## Get results from parent
-    results = invoke(test, Tuple{AbstractENAModel{<:AbstractENARotation}}, ena)
+#     ## Get results from parent
+#     results = invoke(test, Tuple{AbstractENAModel{<:AbstractENARotation}}, ena)
 
-    ## Grab data we need as a single data frame
-    regressionData = hcat(ena.centroidModel, ena.metadata, makeunique=true)
+#     ## Grab data we need as a single data frame
+#     regressionData = hcat(ena.centroidModel, ena.metadata, makeunique=true)
 
-    ## Construct regression formulas
-    # fxab = FormulaTerm(term(:pos_x), ena.rotation.f1.rhs)
-    # fxa = FormulaTerm(term(:pos_x), ena.rotation.f1.rhs[1:end .!= ena.rotation.coefindex])
-    fxab = FormulaTerm(term(:pos_x), term(1) +  ena.rotation.f1.rhs[ena.rotation.coefindex])
-    fxa = FormulaTerm(term(:pos_x), term(1))
+#     ## Construct regression formulas
+#     # fxab = FormulaTerm(term(:pos_x), ena.rotation.f1.rhs)
+#     # fxa = FormulaTerm(term(:pos_x), ena.rotation.f1.rhs[1:end .!= ena.rotation.coefindex])
+#     fxab = FormulaTerm(term(:pos_x), term(1) +  ena.rotation.f1.rhs[ena.rotation.coefindex])
+#     fxa = FormulaTerm(term(:pos_x), term(1))
 
-    ## Placeholders
-    variance_xab = 0
-    variance_xa = 0
-    pvalue_x = 1
+#     ## Placeholders
+#     variance_xab = 0
+#     variance_xa = 0
+#     pvalue_x = 1
 
-    ## Run regression models; the function call is different when we have constrasts
-    if isnothing(ena.rotation.contrasts)
-        mxab = fit(ena.rotation.regression_model, fxab, regressionData)
-        mxa = fit(ena.rotation.regression_model, fxa, regressionData)
-        variance_xab = var(predict(mxab)) / var(regressionData[!, :pos_x])
-        variance_xa = var(predict(mxa)) / var(regressionData[!, :pos_x])
-        pvalue_x = coeftable(mxab).cols[4][ena.rotation.coefindex]
-    else
-        mxab = fit(ena.rotation.regression_model, fxab, regressionData, contrasts=ena.rotation.contrasts)
-        mxa = fit(ena.rotation.regression_model, fxa, regressionData, contrasts=ena.rotation.contrasts)
-        variance_xab = var(predict(mxab)) / var(regressionData[!, :pos_x])
-        variance_xa = var(predict(mxa)) / var(regressionData[!, :pos_x])
-        pvalue_x = coeftable(mxab).cols[4][ena.rotation.coefindex]
-    end
+#     ## Run regression models; the function call is different when we have constrasts
+#     if isnothing(ena.rotation.contrasts)
+#         mxab = fit(ena.rotation.regression_model, fxab, regressionData)
+#         mxa = fit(ena.rotation.regression_model, fxa, regressionData)
+#         variance_xab = var(predict(mxab)) / var(regressionData[!, :pos_x])
+#         variance_xa = var(predict(mxa)) / var(regressionData[!, :pos_x])
+#         pvalue_x = coeftable(mxab).cols[4][ena.rotation.coefindex]
+#     else
+#         mxab = fit(ena.rotation.regression_model, fxab, regressionData, contrasts=ena.rotation.contrasts)
+#         mxa = fit(ena.rotation.regression_model, fxa, regressionData, contrasts=ena.rotation.contrasts)
+#         variance_xab = var(predict(mxab)) / var(regressionData[!, :pos_x])
+#         variance_xa = var(predict(mxa)) / var(regressionData[!, :pos_x])
+#         pvalue_x = coeftable(mxab).cols[4][ena.rotation.coefindex]
+#     end
 
-    ## Compute f^2 and add our values to the results and return
-    f2_x = (variance_xab - variance_xa) / (1 - variance_xab)
-    results[:f2_x] = f2_x
-    results[:pvalue_x] = pvalue_x
-    return results
-end
+#     ## Compute f^2 and add our values to the results and return
+#     f2_x = (variance_xab - variance_xa) / (1 - variance_xab)
+#     results[:f2_x] = f2_x
+#     results[:pvalue_x] = pvalue_x
+#     return results
+# end
 
 # Override plotting pieces
 # ## Labels - showing as a POC that we can report the p-value and effect size
