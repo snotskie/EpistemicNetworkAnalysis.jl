@@ -126,8 +126,10 @@ function test(ena::AbstractENAModel{<:AbstractFormula2Rotation})
     regressionData = hcat(ena.centroidModel, ena.metadata, makeunique=true)
 
     ## Construct formulas
-    fyab = FormulaTerm(term(:pos_y), ena.rotation.f2.rhs)
-    fya = FormulaTerm(term(:pos_y), ena.rotation.f2.rhs[1:end .!= ena.rotation.coefindex2])
+    # fyab = FormulaTerm(term(:pos_y), ena.rotation.f2.rhs)
+    # fya = FormulaTerm(term(:pos_y), ena.rotation.f2.rhs[1:end .!= ena.rotation.coefindex2])
+    fyab = FormulaTerm(term(:pos_y), term(1) +  ena.rotation.f2.rhs[ena.rotation.coefindex2])
+    fya = FormulaTerm(term(:pos_y), term(1))
 
     ## Placeholders
     variance_yab = 0

@@ -58,21 +58,24 @@ function test(ena::AbstractENAModel)
     # pvalue(SignedRankTest(x, y))
 
     ### Find difference between each pair of points, in accum and centroid
-    centroidDiffs = Real[]
-    accumDiffs = Real[]
+    centroidDiffsX = Real[]
+    centroidDiffsY = Real[]
+    accumDiffsX = Real[]
+    accumDiffsY = Real[]
     for (i, unitRowA) in enumerate(eachrow(ena.accumModel))
         for (j, unitRowB) in enumerate(eachrow(ena.accumModel))
             if i < j
-                push!(centroidDiffs, ena.centroidModel[i, :pos_x] - ena.centroidModel[j, :pos_x])
-                push!(centroidDiffs, ena.centroidModel[i, :pos_y] - ena.centroidModel[j, :pos_y])
-                push!(accumDiffs, unitRowA[:pos_x] - unitRowB[:pos_x])
-                push!(accumDiffs, unitRowA[:pos_y] - unitRowB[:pos_y])
+                push!(centroidDiffsX, ena.centroidModel[i, :pos_x] - ena.centroidModel[j, :pos_x])
+                push!(centroidDiffsY, ena.centroidModel[i, :pos_y] - ena.centroidModel[j, :pos_y])
+                push!(accumDiffsX, unitRowA[:pos_x] - unitRowB[:pos_x])
+                push!(accumDiffsY, unitRowA[:pos_y] - unitRowB[:pos_y])
             end
         end
     end
 
     ### Do those differences correlate?
-    pearson = cor(centroidDiffs, accumDiffs)
+    pearson_x = cor(centroidDiffsX, accumDiffsX)
+    pearson_y = cor(centroidDiffsY, accumDiffsY)
 
     ### Find the percent variance explained by the x and y axis of the entire high dimensional space
     total_variance = sum(var.(eachcol(ena.centroidModel[!, ena.networkModel[!, :relationship]])))
@@ -80,7 +83,7 @@ function test(ena::AbstractENAModel)
     variance_y = var(ena.centroidModel[!, :pos_y]) / total_variance
 
     ### Package and return
-    return Dict(:coregistration => pearson, :variance_x => variance_x, :variance_y => variance_y)
+    return Dict(:coregistration_x => pearson_x, :coregistration_y => pearson_y, :variance_x => variance_x, :variance_y => variance_y)
 end
 
 ## Text display
