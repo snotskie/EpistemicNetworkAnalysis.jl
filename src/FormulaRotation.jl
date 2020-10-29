@@ -161,7 +161,9 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
                 legend_col = col
 
                 ### ...and color-code the units based on a gradient, using black for those with missing values
-                colorMap = help_nonlinear_gradient(negColor, colorant"white", posColor)
+                midColor = weighted_color_mean(0.5, RGB(negColor), RGB(posColor))
+                midColor = weighted_color_mean(0.1, RGB(midColor), colorant"white")
+                colorMap = help_nonlinear_gradient(negColor, midColor, posColor)
                 unitColors = map(eachrow(displayMetadata)) do unitRow
                     if !ismissing(unitRow[col])
                         index = 1 + round(Int, (length(colorMap) - 1) * (unitRow[col] - lo) / (hi - lo))
@@ -171,7 +173,20 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
                     end
                 end
 
-                unitRings = [weighted_color_mean(0.75, col, RGB(0.1, 0.1, 0.1)) for col in unitColors]
+                ### ...and same for a ring around them, but a tad darker in the mid range
+                midColor = weighted_color_mean(0.5, RGB(negColor), RGB(posColor))
+                midColor = weighted_color_mean(0.3, RGB(midColor), colorant"white")
+                colorMap = help_nonlinear_gradient(weighted_color_mean(0.95, negColor, colorant"black"),
+                                                   midColor,
+                                                   weighted_color_mean(0.95, posColor, colorant"black"))
+                unitRings = map(eachrow(displayMetadata)) do unitRow
+                    if !ismissing(unitRow[col])
+                        index = 1 + round(Int, (length(colorMap) - 1) * (unitRow[col] - lo) / (hi - lo))
+                        return colorMap[index]
+                    else
+                        return colorant"black"
+                    end
+                end
             end
         end
     end
@@ -290,7 +305,7 @@ end
 ## Extras - we can add a "litmus" strip to illustrate the strength of the continuous effect
 function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, displayRows::Array{Bool,1};
     flipX::Bool=false, flipY::Bool=false, lims::Real=1,
-    negColor::Colorant=colorant"red", posColor::Colorant=colorant"blue",
+    negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
     kwargs...)
     
     ### Grab filtered values
@@ -316,7 +331,11 @@ function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation},
             if hi != lo
 
                 ### ...then let's prepare our gradient (same gradient used on the rings in plot_units)
-                binMap = help_nonlinear_gradient(negColor, RGB(.85, .85, .85), posColor)
+                midColor = weighted_color_mean(0.5, RGB(negColor), RGB(posColor))
+                midColor = weighted_color_mean(0.3, RGB(midColor), colorant"white")
+                binMap = help_nonlinear_gradient(weighted_color_mean(0.95, negColor, colorant"black"),
+                                                 midColor,
+                                                 weighted_color_mean(0.95, posColor, colorant"black"))
 
                 ### ...and prepare our placeholders
                 negBinColors = [colorant"black" for i in 1:bins] # average color in that bin

@@ -74,11 +74,7 @@ export ena_dataset
 # # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 
 # display(myENA)
-# p = plot(myENA, title="Bryans", ylabel="SVD", xlabel="Condition", groupBy=:Condition)
-# # p = plot(myENA, title="Bryans", ylabel="SVD", xlabel="Confidence", groupBy=:UserName)
-# # p = plot(myENA, title="Bryans", ylabel="SVD", xlabel="Confidence", groupBy=:GroupName)
-# # p = plot(myENA, title="Bryans", ylabel="SVD", xlabel="RND")
-# # p = plot(myENA, title="Bryans", ylabel="SVD", xlabel="RND", VOIMode=true)
+# p = plot(myENA, groupBy=:Condition)
 # display(p)
 
 

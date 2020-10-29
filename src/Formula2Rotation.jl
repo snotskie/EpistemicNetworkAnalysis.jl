@@ -158,14 +158,14 @@ end
 #     return results
 # end
 
-# Override plotting pieces
-## Labels - showing as a POC that we can report the p-value and effect size
-function plot_labels!(p::Plot, ena::AbstractENAModel{<:AbstractFormula2Rotation};
-    xlabel="X", ylabel="Y",
-    kwargs...)
+# # Override plotting pieces
+# ## Labels - showing as a POC that we can report the p-value and effect size
+# function plot_labels!(p::Plot, ena::AbstractENAModel{<:AbstractFormula2Rotation};
+#     xlabel="X", ylabel="Y",
+#     kwargs...)
     
-    ### Run tests, then put the values into the axis labels
-    results = test(ena)
-    xlabel!(p, "$xlabel ($(round(Int, results[:variance_x]*100))%, p<$(ceil(results[:pvalue_x], digits=4)), f²=$(round(results[:f2_x], digits=4)))")
-    ylabel!(p, "$ylabel ($(round(Int, results[:variance_y]*100))%, p<$(ceil(results[:pvalue_y], digits=4)), f²=$(round(results[:f2_y], digits=4)))")
-end
+#     ### Run tests, then put the values into the axis labels
+#     results = test(ena)
+#     xlabel!(p, "$xlabel ($(round(Int, results[:variance_x]*100))%, p<$(ceil(results[:pvalue_x], digits=4)), f²=$(round(results[:f2_x], digits=4)))")
+#     ylabel!(p, "$ylabel ($(round(Int, results[:variance_y]*100))%, p<$(ceil(results[:pvalue_y], digits=4)), f²=$(round(results[:f2_y], digits=4)))")
+# end

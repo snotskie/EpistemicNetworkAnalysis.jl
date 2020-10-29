@@ -1,18 +1,26 @@
 ## Plotting
+### Common defaults
+const DEFAULT_NEG_COLOR = colorant"#cc423a"
+const DEFAULT_POS_COLOR = colorant"#218ebf"
+const DEFAULT_EXTRA_COLORS = [
+    colorant"#56BD7C", colorant"#EF691B", colorant"#9d5dbb",
+    colorant"#FBC848", colorant"#56bd7c", colorant"#D0386C",
+    colorant"#f18e9f", colorant"#9A9EAB", colorant"#ff8c39",
+    colorant"#346B88"
+]
+
 ### Top-level wrapper
 function plot(ena::AbstractENAModel;
     margin=10mm, size=500, lims=1, ticks=[-1, 0, 1],
-    titles=[], xlabel="", ylabel="", leg=:bottomleft,
-    negColor::Colorant=colorant"red", posColor::Colorant=colorant"blue",
-    extraColors=[colorant"purple", colorant"orange", colorant"green",
-                 colorant"pink", colorant"cyan", colorant"tan",
-                 colorant"brown", colorant"orchid", colorant"navy",
-                 colorant"olive", colorant"magenta"],
+    titles=[], xlabel="X", ylabel="Y", leg=:topleft,
+    negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
+    extraColors::Array{<:Colorant,1}=DEFAULT_EXTRA_COLORS,
     flipX=false, flipY=false,
     singleUnit=nothing, groupBy=nothing,
     kwargs...)
 
-    #### Combine the kwargs
+    #### Combine the kwargs to make them easier to pass without needing
+    #### knowledge of what my child functions need
     kwargs = (
         margin=margin, size=size, lims=lims, ticks=ticks,
         titles=titles, xlabel=xlabel, ylabel=ylabel, leg=leg,
@@ -25,31 +33,30 @@ function plot(ena::AbstractENAModel;
     ps = [
         plot(leg=leg, margin=margin, size=(size, size)), # omnibus
         plot(leg=leg, margin=margin, size=(size, size))  # predictive
-        # plot(leg=leg, margin=margin, size=(size, size))  # errors
     ]
 
-    #### Draw usual subplots
+    #### Draw usual subplots: Distribution
     allRows = [true for row in eachrow(ena.metadata)]
-    plot_units!(ps[1], ena, allRows; color=colorant"black", kwargs...)
-    plot_network!(ps[1], ena, allRows; color=colorant"black", kwargs...)
+    plot_units!(ps[1], ena, allRows; kwargs...)
+    plot_network!(ps[1], ena, allRows; kwargs...)
     plot_extras!(ps[1], ena, allRows; kwargs...)
-    title!(ps[1], "(a) " * get(titles, 1, "Omnibus"))
+    title!(ps[1], "(a) " * get(titles, 1, "Distribution"))
     results = test(ena)
     xlabel!(ps[1], "$xlabel ($(round(Int, results[:variance_x]*100))%)")
     ylabel!(ps[1], "$ylabel ($(round(Int, results[:variance_y]*100))%)")
 
-    title!(ps[2], "(b) " * get(titles, 2, "Predictive"))
+    #### Draw usual subplots: Dynamics
+    title!(ps[2], "(b) " * get(titles, 2, "Rate of Change by $xlabel"))
     plot_predictive!(ps[2], ena; kwargs...)
 
-    # title!(ps[3], "(c) " * get(titles, 3, "Errors"))
-    # plot_errors!(ps[3], ena, allRows; kwargs...)
-
-    #### Initialize group-wise subplots
+    #### If we need group-wise subplots...
     if !isnothing(groupBy)
+
+        #### ...then for each...
         groups = sort(unique(ena.metadata[!, groupBy]))
         for (g, group) in enumerate(groups)
 
-            #### Draw group-wise subplots
+            #### Initialize and draw them, until we run out of letters
             letters = "abcdefghijklmnopqrstuvwxyz"[(1+length(ps)):end]
             if g <= length(extraColors) && g <= length(letters)
                 p = plot(leg=leg, margin=margin, size=(size, size))
@@ -82,7 +89,8 @@ function plot(ena::AbstractENAModel;
     end
 
     p = plot(ps..., size=(size*M, size*N), layout=layout)
-    # title!(p, title)
+
+    #### And done
     return p
 end
 
@@ -97,7 +105,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
     x = displayCentroids[!, :pos_x] * (flipX ? -1 : 1)
     y = displayCentroids[!, :pos_y] * (flipY ? -1 : 1)
 
-    #### Draw them in black
+    #### Draw them in black by default
     plot!(p, x, y,
         label="Units",
         seriestype=:scatter,
@@ -109,7 +117,7 @@ end
 
 ### Helper - Draw the lines
 function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
-    color::Colorant=colorant"black",
+    color::Colorant=colorant"#ccc",
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)
 
@@ -160,8 +168,8 @@ end
 
 ### Helper - Draw the predictive lines
 function plot_predictive!(p::Plot, ena::AbstractENAModel;
-    negColor::Colorant=colorant"red", posColor::Colorant=colorant"blue",
-    flipX::Bool=false, flipY::Bool=false, VOIMode::Bool=false,
+    negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
+    flipX::Bool=false, flipY::Bool=false,
     kwargs...)
 
     ### Grab the data we need as one data frame
@@ -174,48 +182,48 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel;
         regressionData[!, networkRow[:relationship]] = map(Float64, regressionData[!, networkRow[:relationship]])
     end
 
-    ### TEMP: Testing two different options
-    altNetworkModel = ena.networkModel
-    if VOIMode
-        altNetworkModel = copy(ena.networkModel)
-        rotate!(ena.rotation, altNetworkModel, ena.accumModel, ena.metadata)
-    end
-
     ### Compute line widths as the strength (slope) between the xpos and the accum network weights
     f1 = @formula(y ~ pos_x)
-    lineWidths = map(eachrow(altNetworkModel)) do networkRow
-        if VOIMode
-            return networkRow[:weight_x]
-        else
-            f1 = FormulaTerm(term(networkRow[:relationship]), f1.rhs)
-            try
-                ## The function call is different when we have contrasts
-                m1 = fit(LinearModel, f1, regressionData)
-                slope = coef(m1)[2]
-                return slope
-            catch e
-                println(e)
-                error("""
-                An error occured running a regression during the rotation step of this ENA model.
-                Usually, this occurs because the data, the regression model, and regression formula are not in agreement.
-                If you are using a MeansRotation, then this usually means that your accidentally grouped your
-                units on a different variable than the variable you passed to your MeansRotation.
-                """)
-            end
+    lineData = map(eachrow(ena.networkModel)) do networkRow
+        r = networkRow[:relationship]
+        f1 = FormulaTerm(term(r), f1.rhs)
+        try
+            m1 = fit(LinearModel, f1, regressionData)
+            slope = coef(m1)[2]
+            pearson = cor(regressionData[!, :pos_x], regressionData[!, r])
+            return (slope, pearson)
+        catch e
+            println(e)
+            error("""
+            An error occured running a regression during the rotation step of this ENA model.
+            Usually, this occurs because the data, the regression model, and regression formula are not in agreement.
+            If you are using a MeansRotation, then this usually means that your accidentally grouped your
+            units on a different variable than the variable you passed to your MeansRotation.
+            """)
         end
     end
 
-    ### Use purple for negative widths and orange for positive
-    lineColors = map(lineWidths) do width
-        if width < 0
-            return negColor
-        else
-            return posColor
+    ### Color the lines based on their correlation with the x position
+    midColor = weighted_color_mean(0.5, RGB(negColor), RGB(posColor))
+    midColor = weighted_color_mean(0.3, RGB(midColor), colorant"white")
+    lineColorMap = help_nonlinear_gradient(weighted_color_mean(0.95, negColor, colorant"black"),
+                                           midColor,
+                                           weighted_color_mean(0.95, posColor, colorant"black"))
+    lineColors = map(lineData) do (slope, pearson)
+        if flipX
+            pearson *= -1
         end
+
+        index = 1 + round(Int, (length(lineColorMap) - 1) * (pearson + 1) / 2)
+        return lineColorMap[index]
     end
 
-    ### Convert negatives back to positive, then rescale
-    lineWidths = abs.(lineWidths)
+    ### Size the lines based on their slope with the x position
+    lineWidths = map(lineData) do (slope, pearson)
+        return abs(slope)
+    end
+
+    ### Normalize
     lineWidths *= 2 / maximum(lineWidths)
 
     ### Placeholder, let's compute code weights as we visit each line
@@ -240,8 +248,10 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel;
             linecolor=lineColors[i])
     end
 
-    ### Rescale then plot the codes
+    ### Rescale the code widths
     codeWidths *= 8 / maximum(codeWidths)
+
+    ### And plot the codes and we're done
     x = ena.codeModel[!, :pos_x] * (flipX ? -1 : 1)
     y = ena.codeModel[!, :pos_y] * (flipY ? -1 : 1)
     labels = map(label->text(label, :top, 8), ena.codeModel[!, :code])
@@ -255,39 +265,7 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel;
         markerstrokecolor=:black)
 end
 
-# ### Helper - plot the errors between centroid and accum model
-# function plot_errors!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
-#     flipX::Bool=false, flipY::Bool=false,
-#     kwargs...)
-    
-#     for i in 1:nrow(ena.accumModel)
-#       accumPos = ena.accumModel[i, :pos_x] > 0
-#       centroidPos = ena.centroidModel[i, :pos_x] > 0
-#       if accumPos != centroidPos
-#         x = [ena.accumModel[i, :pos_x], ena.centroidModel[i, :pos_x]] * (flipX ? -1 : 1)
-#         y = [ena.accumModel[i, :pos_y], ena.centroidModel[i, :pos_y]] * (flipY ? -1 : 1)
-#         plot!(p, x, y,
-#             label=nothing,
-#             seriestype=:line,
-#             linewidth=1,
-#             linecolor=:black)
-        
-#         x = [ena.centroidModel[i, :pos_x]] * (flipX ? -1 : 1)
-#         y = [ena.centroidModel[i, :pos_y]] * (flipY ? -1 : 1)
-#         labels = [text(ena.centroidModel[i, :ENA_UNIT], :top, 4)]
-#         plot!(p, x, y,
-#             label=nothing,
-#             seriestype=:scatter,
-#             series_annotations=labels,
-#             markershape=:circle,
-#             markersize=2,
-#             markercolor=:black,
-#             markerstrokecolor=:black)
-#       end
-#     end
-# end
-
-### Helper Placeholder - extras to add to the omnibus subplot
+### Helper Placeholder - extras to add to the distribution subplot
 function plot_extras!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
     kwargs...)
 
