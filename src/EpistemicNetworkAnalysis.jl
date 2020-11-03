@@ -47,7 +47,7 @@ export ena_dataset
 # using Random
 # Random.seed!(4321)
 # RSdata[!, :RND] = rand(nrow(RSdata))
-# display(names(RSdata))
+# println(names(RSdata))
 # codes = [:Data,
 #     :Technical_Constraints,
 #     :Performance_Parameters,
@@ -60,21 +60,23 @@ export ena_dataset
 
 # # myENA = ENAModel(RSdata, codes, conversations, units)
 
-# rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
-# myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
+# # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
+# # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 
 # # rotation = FormulaRotation(
 # #     LinearModel, 2, @formula(y ~ 1 + CONFIDENCE_Pre), nothing
 # # )
 # # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 
-# # rotation = FormulaRotation(
-# #     LinearModel, 2, @formula(y ~ 1 + RND), nothing
-# # )
-# # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
+# rotation = FormulaRotation(
+#     LinearModel, 2, @formula(y ~ 1 + RND), nothing
+# )
+# myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 
 # display(myENA)
 # p = plot(myENA, groupBy=:Condition)
+# # p = plot(myENA, groupBy=:GroupName)
+# # p = plot(myENA)
 # display(p)
 
 

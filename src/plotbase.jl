@@ -1,5 +1,5 @@
 ## Plotting
-### Common defaults
+### Common defaults and globals
 const DEFAULT_NEG_COLOR = colorant"#cc423a"
 const DEFAULT_POS_COLOR = colorant"#218ebf"
 const DEFAULT_EXTRA_COLORS = [
@@ -8,6 +8,10 @@ const DEFAULT_EXTRA_COLORS = [
     colorant"#f18e9f", colorant"#9A9EAB", colorant"#ff8c39",
     colorant"#346B88"
 ]
+
+const GLOBAL_MAX_LINE_SIZE = 8
+const GLOBAL_MAX_CODE_SIZE = 8
+const GLOBAL_UNIT_SIZE = 2
 
 ### Top-level wrapper
 function plot(ena::AbstractENAModel;
@@ -37,8 +41,8 @@ function plot(ena::AbstractENAModel;
 
     #### Draw usual subplots: Distribution
     allRows = [true for row in eachrow(ena.metadata)]
-    plot_units!(ps[1], ena, allRows; kwargs...)
     plot_network!(ps[1], ena, allRows; kwargs...)
+    plot_units!(ps[1], ena, allRows; kwargs...)
     plot_extras!(ps[1], ena, allRows; kwargs...)
     title!(ps[1], "(a) " * get(titles, 1, "Distribution"))
     results = test(ena)
@@ -54,15 +58,16 @@ function plot(ena::AbstractENAModel;
 
         #### ...then for each...
         groups = sort(unique(ena.metadata[!, groupBy]))
+        letters = "abcdefghijklmnopqrstuvwxyz"[(1+length(ps)):end]
         for (g, group) in enumerate(groups)
 
             #### Initialize and draw them, until we run out of letters
-            letters = "abcdefghijklmnopqrstuvwxyz"[(1+length(ps)):end]
             if g <= length(extraColors) && g <= length(letters)
-                p = plot(leg=leg, margin=margin, size=(size, size))
+                p = plot(leg=false, margin=margin, size=(size, size))
                 groupRows = [row[groupBy] == group for row in eachrow(ena.metadata)]
-                plot_units!(p, ena, groupRows; color=extraColors[g], kwargs...)
                 plot_network!(p, ena, groupRows; color=extraColors[g], kwargs...)
+                plot_units!(p, ena, groupRows; color=extraColors[g], kwargs...)
+                plot_extras!(p, ena, groupRows; color=extraColors[g], kwargs...)
                 xs = ena.centroidModel[groupRows, :pos_x] * (flipX ? -1 : 1)
                 ys = ena.centroidModel[groupRows, :pos_y] * (flipY ? -1 : 1)
                 help_plot_ci(p, xs, ys, extraColors[g], :square, "$(group) Mean")
@@ -110,7 +115,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
         label="Units",
         seriestype=:scatter,
         markershape=:circle,
-        markersize=2,
+        markersize=GLOBAL_UNIT_SIZE,
         markercolor=color,
         markerstrokecolor=color)
 end
@@ -128,7 +133,7 @@ function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1
     end
 
     #### Rescale the lines
-    lineWidths *= 2 / maximum(lineWidths)
+    lineWidths *= GLOBAL_MAX_LINE_SIZE / maximum(lineWidths)
 
     #### Initialize code widths, compute while we visit each line
     codeWidths = zeros(nrow(ena.codeModel))
@@ -152,7 +157,7 @@ function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1
     end
 
     #### Rescale and draw the codes
-    codeWidths *= 8 / maximum(codeWidths)
+    codeWidths *= GLOBAL_MAX_CODE_SIZE / maximum(codeWidths)
     x = ena.codeModel[!, :pos_x] * (flipX ? -1 : 1)
     y = ena.codeModel[!, :pos_y] * (flipY ? -1 : 1)
     labels = map(label->text(label, :top, 8), ena.codeModel[!, :code])
@@ -224,7 +229,7 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel;
     end
 
     ### Normalize
-    lineWidths *= 2 / maximum(lineWidths)
+    lineWidths *= GLOBAL_MAX_LINE_SIZE / maximum(lineWidths)
 
     ### Placeholder, let's compute code weights as we visit each line
     codeWidths = zeros(nrow(ena.codeModel))
@@ -243,13 +248,13 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel;
         plot!(p, x, y,
             label=nothing,
             seriestype=:line,
-            linestyle=:dash,
+            # linestyle=:dash,
             linewidth=lineWidths[i],
             linecolor=lineColors[i])
     end
 
     ### Rescale the code widths
-    codeWidths *= 8 / maximum(codeWidths)
+    codeWidths *= GLOBAL_MAX_CODE_SIZE / maximum(codeWidths)
 
     ### And plot the codes and we're done
     x = ena.codeModel[!, :pos_x] * (flipX ? -1 : 1)

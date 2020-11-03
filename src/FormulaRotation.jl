@@ -169,7 +169,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
                         index = 1 + round(Int, (length(colorMap) - 1) * (unitRow[col] - lo) / (hi - lo))
                         return colorMap[index]
                     else
-                        return colorant"black"
+                        return colorant"#111"
                     end
                 end
 
@@ -212,7 +212,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
             label=minLabel,
             seriestype=:scatter,
             markershape=:circle,
-            markersize=2,
+            markersize=GLOBAL_UNIT_SIZE,
             markerstrokewidth=1,
             markercolor=negColor,
             markerstrokecolor=negColor)
@@ -221,7 +221,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
             label=maxLabel,
             seriestype=:scatter,
             markershape=:circle,
-            markersize=2,
+            markersize=GLOBAL_UNIT_SIZE,
             markerstrokewidth=1,
             markercolor=posColor,
             markerstrokecolor=posColor)
@@ -231,7 +231,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
             label=nothing,
             seriestype=:scatter,
             markershape=:circle,
-            markersize=2,
+            markersize=GLOBAL_UNIT_SIZE,
             markerstrokewidth=1,
             markercolor=unitColors,
             markerstrokecolor=unitRings)
@@ -241,7 +241,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
             label="Units",
             seriestype=:scatter,
             markershape=:circle,
-            markersize=2,
+            markersize=GLOBAL_UNIT_SIZE,
             markercolor=unitColors,
             markerstrokecolor=unitColors)
     end
