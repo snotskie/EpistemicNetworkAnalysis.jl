@@ -213,7 +213,8 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel;
     midColor = weighted_color_mean(0.3, RGB(midColor), colorant"white")
     lineColorMap = help_nonlinear_gradient(weighted_color_mean(0.95, negColor, colorant"black"),
                                            midColor,
-                                           weighted_color_mean(0.95, posColor, colorant"black"))
+                                           weighted_color_mean(0.95, posColor, colorant"black"),
+                                           curve=2.5)
     lineColors = map(lineData) do (slope, pearson)
         if flipX
             pearson *= -1
