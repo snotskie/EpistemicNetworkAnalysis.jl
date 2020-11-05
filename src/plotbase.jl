@@ -42,6 +42,9 @@ function plot(ena::AbstractENAModel;
     #### Figure out the "average" color
     midColor = weighted_color_mean(0.5, RGB(negColor), RGB(posColor))
     midColor = weighted_color_mean(0.3, RGB(midColor), colorant"white")
+    # midColor = weighted_color_mean(0.5, RGB(negColor), RGB(posColor))
+    # midColor = HSV((midColor.h+180)%360, midColor.s, midColor.v)
+    # midColor = weighted_color_mean(0.3, RGB(midColor), colorant"#ccc")
 
     #### Draw usual subplots: Distribution
     allRows = [true for row in eachrow(ena.metadata)]
@@ -219,6 +222,9 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel;
     ### Color the lines based on their correlation with the x position
     midColor = weighted_color_mean(0.5, RGB(negColor), RGB(posColor))
     midColor = weighted_color_mean(0.3, RGB(midColor), colorant"white")
+    # midColor = weighted_color_mean(0.5, HSV(negColor), HSV(posColor))
+    # # midColor = HSV((midColor.h+180)%360, midColor.s, midColor.v)
+    # midColor = weighted_color_mean(0.1, RGB(midColor), colorant"#ccc")
     lineColorMap = help_nonlinear_gradient(weighted_color_mean(0.95, negColor, colorant"black"),
                                            midColor,
                                            weighted_color_mean(0.95, posColor, colorant"black"),

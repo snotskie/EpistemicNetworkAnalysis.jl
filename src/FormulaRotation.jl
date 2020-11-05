@@ -163,6 +163,9 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
                 ### ...and color-code the units based on a gradient, using black for those with missing values
                 midColor = weighted_color_mean(0.5, RGB(negColor), RGB(posColor))
                 midColor = weighted_color_mean(0.1, RGB(midColor), colorant"white")
+                # midColor = weighted_color_mean(0.5, HSV(negColor), HSV(posColor))
+                # # midColor = HSV((midColor.h+180)%360, midColor.s, midColor.v)
+                # midColor = weighted_color_mean(0.1, RGB(midColor), colorant"#ccc")
                 colorMap = help_nonlinear_gradient(negColor, midColor, posColor)
                 unitColors = map(eachrow(displayMetadata)) do unitRow
                     if !ismissing(unitRow[col])
@@ -176,6 +179,9 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
                 ### ...and same for a ring around them, but a tad darker in the mid range
                 midColor = weighted_color_mean(0.5, RGB(negColor), RGB(posColor))
                 midColor = weighted_color_mean(0.3, RGB(midColor), colorant"white")
+                # midColor = weighted_color_mean(0.5, HSV(negColor), HSV(posColor))
+                # # midColor = HSV((midColor.h+180)%360, midColor.s, midColor.v)
+                # midColor = weighted_color_mean(0.3, RGB(midColor), colorant"#ccc")
                 colorMap = help_nonlinear_gradient(weighted_color_mean(0.95, negColor, colorant"black"),
                                                    midColor,
                                                    weighted_color_mean(0.95, posColor, colorant"black"))
@@ -333,6 +339,9 @@ function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation},
                 ### ...then let's prepare our gradient (same gradient used on the rings in plot_units)
                 midColor = weighted_color_mean(0.5, RGB(negColor), RGB(posColor))
                 midColor = weighted_color_mean(0.3, RGB(midColor), colorant"white")
+                # midColor = weighted_color_mean(0.5, HSV(negColor), HSV(posColor))
+                # # midColor = HSV((midColor.h+180)%360, midColor.s, midColor.v)
+                # midColor = weighted_color_mean(0.3, RGB(midColor), colorant"#ccc")
                 binMap = help_nonlinear_gradient(weighted_color_mean(0.95, negColor, colorant"black"),
                                                  midColor,
                                                  weighted_color_mean(0.95, posColor, colorant"black"))
