@@ -21,7 +21,7 @@ struct ENAModel{T} <: AbstractENAModel{T}
 end
 
 function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
-    windowSize::Int=4, rotateBy::T=SVDRotation(), sphereNormalize::Bool=true, dropEmpty::Bool=false,
+    windowSize::Int=4, rotateBy::T=SVDRotation(), sphereNormalize::Bool=true, dropEmpty::Bool=false, rejectEmpty::Bool=true,
     subsetFilter::Function=x->true, accumulationMask::Function=x->1, blockingContext::Function=x->true) where {T<:AbstractENARotation}
 
     # Preparing model structures
@@ -113,10 +113,16 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     ## User-defined unit subsetting - we kept all the data in the count model up to this point so the user can define filters as they please
     filter!(subsetFilter, accumModel)
 
-    ## Drop empty values
+    ## Identify, and maybe drop, rows with empty values
+    nonZeroRows = map(eachrow(accumModel)) do unitRow
+        return !all(iszero.(values(unitRow[networkModel[!, :relationship]])))
+    end
+
+    nonZeroAccumModel = accumModel[nonZeroRows, :]
     if dropEmpty
-        filter!(accumModel) do unitRow
-            return !all(iszero.(values(unitRow[networkModel[!, :relationship]])))
+        accumModel = nonZeroAccumModel
+        nonZeroRows = map(eachrow(accumModel)) do unitRow
+            return true
         end
     end
 
@@ -148,15 +154,17 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     s = maximum(codeModel[!, :density])
     codeModel[!, :density] /= s
 
+    ## We use the non-zero model to optize on when rejectEmpty is true
+    modelForOptimization = accumModel
+    if rejectEmpty
+        modelForOptimization = nonZeroAccumModel
+    end
+
     ## Regression model for placing the code dots into the approximated high-dimensional space
-    # X = Matrix{Float64}(zeros(nrow(accumModel), 1 + nrow(codeModel))) # +1 because of intercept
-    X = Matrix{Float64}(zeros(nrow(accumModel), nrow(codeModel)))
-    #X[:, 1] .= 1 # Intercept term
-    for (i, unitRow) in enumerate(eachrow(accumModel))
+    X = Matrix{Float64}(zeros(nrow(modelForOptimization), nrow(codeModel)))
+    for (i, unitRow) in enumerate(eachrow(modelForOptimization))
         for r in keys(relationshipMap)
             a, b = relationshipMap[r]
-            # X[i, a+1] += unitRow[r] / 2 # +1 because of intercept
-            # X[i, b+1] += unitRow[r] / 2 # +1 because of intercept
             X[i, a] += unitRow[r] / 2
             X[i, b] += unitRow[r] / 2
         end
@@ -167,9 +175,8 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     ## Fit each dimension of the original high-dimensional space
     for networkRow in eachrow(networkModel)
         r = networkRow[:relationship]
-        y = Vector{Float64}(accumModel[:, r])
+        y = Vector{Float64}(modelForOptimization[:, r])
         r_coefs = X * y
-        # codeModel[:, r] = r_coefs[2:end] # 2:end because of intercept
         codeModel[:, r] = r_coefs[1:end]
     end
 
@@ -191,6 +198,39 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     ## Use the given rotation method, probably one of the out-of-the-box ENARotations, but could be anything user defined
     rotate!(rotateBy, networkModel, centroidModel, metadata)
 
+    ## Maybe make the axes orthogonal to the zero-to-nonzero-mean axis, then ortho from each other
+    if rejectEmpty
+        nonZeroCentroidModel = centroidModel[nonZeroRows, :]
+        zAxis = map(eachrow(networkModel)) do networkRow
+            r = networkRow[:relationship]
+            return sum(nonZeroCentroidModel[!, r])
+        end
+
+        s = sqrt(sum(zAxis .^ 2))
+        if s != 0
+            zAxis /= s
+        end
+
+        scalar = dot(networkModel[!, :weight_x], zAxis) / dot(zAxis, zAxis)
+        networkModel[!, :weight_x] -= scalar * zAxis
+
+        scalar = dot(networkModel[!, :weight_y], zAxis) / dot(zAxis, zAxis)
+        networkModel[!, :weight_y] -= scalar * zAxis
+
+        scalar = dot(networkModel[!, :weight_y], networkModel[!, :weight_x]) / dot(networkModel[!, :weight_x], networkModel[!, :weight_x])
+        networkModel[!, :weight_y] -= scalar * networkModel[!, :weight_x]
+
+        s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
+        if s != 0
+            networkModel[!, :weight_x] /= s
+        end
+
+        s = sqrt(sum(networkModel[!, :weight_y] .^ 2))
+        if s != 0
+            networkModel[!, :weight_y] /= s
+        end
+    end
+
     # Layout step
     ## Project the pos_x and pos_y for the original units onto the plane, now that we have the rotation
     ## This is really only for testing the goodness of fit
@@ -211,13 +251,15 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     codeModel[!, :pos_x] = Matrix{Float64}(codeModel[!, networkModel[!, :relationship]]) * Vector{Float64}(networkModel[!, :weight_x])
     codeModel[!, :pos_y] = Matrix{Float64}(codeModel[!, networkModel[!, :relationship]]) * Vector{Float64}(networkModel[!, :weight_y])
 
-    ## Translate everything so overall mean lies at the origin
-    centroidModel[!, :pos_x] = centroidModel[!, :pos_x] .- mean(centroidModel[!, :pos_x])
-    centroidModel[!, :pos_y] = centroidModel[!, :pos_y] .- mean(centroidModel[!, :pos_y])
-    codeModel[!, :pos_x] = codeModel[!, :pos_x] .- mean(centroidModel[!, :pos_x])
-    codeModel[!, :pos_y] = codeModel[!, :pos_y] .- mean(centroidModel[!, :pos_y])
-    accumModel[!, :pos_x] = accumModel[!, :pos_x] .- mean(accumModel[!, :pos_x])
-    accumModel[!, :pos_y] = accumModel[!, :pos_y] .- mean(accumModel[!, :pos_y])
+    ## Maybe translate everything so overall mean lies at the origin
+    if !rejectEmpty
+        centroidModel[!, :pos_x] = centroidModel[!, :pos_x] .- mean(centroidModel[!, :pos_x])
+        centroidModel[!, :pos_y] = centroidModel[!, :pos_y] .- mean(centroidModel[!, :pos_y])
+        codeModel[!, :pos_x] = codeModel[!, :pos_x] .- mean(centroidModel[!, :pos_x])
+        codeModel[!, :pos_y] = codeModel[!, :pos_y] .- mean(centroidModel[!, :pos_y])
+        accumModel[!, :pos_x] = accumModel[!, :pos_x] .- mean(accumModel[!, :pos_x])
+        accumModel[!, :pos_y] = accumModel[!, :pos_y] .- mean(accumModel[!, :pos_y])
+    end
 
     # Testing step
     ## Test that the angle between the dimensions is 90 degrees

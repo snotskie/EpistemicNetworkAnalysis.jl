@@ -39,9 +39,13 @@ function plot(ena::AbstractENAModel;
         plot(leg=leg, margin=margin, size=(size, size))  # predictive
     ]
 
+    #### Figure out the "average" color
+    midColor = weighted_color_mean(0.5, RGB(negColor), RGB(posColor))
+    midColor = weighted_color_mean(0.3, RGB(midColor), colorant"white")
+
     #### Draw usual subplots: Distribution
     allRows = [true for row in eachrow(ena.metadata)]
-    plot_network!(ps[1], ena, allRows; kwargs...)
+    plot_network!(ps[1], ena, allRows; color=midColor, kwargs...)
     plot_units!(ps[1], ena, allRows; kwargs...)
     plot_extras!(ps[1], ena, allRows; kwargs...)
     title!(ps[1], "(a) " * get(titles, 1, "Distribution"))
@@ -127,13 +131,17 @@ function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1
     kwargs...)
 
     #### Find the true weight on each line
+    allLineWidths = map(eachrow(ena.networkModel)) do networkRow
+        return sum(ena.accumModel[!, networkRow[:relationship]])
+    end
+
     displayAccums = ena.accumModel[displayRows, :]
     lineWidths = map(eachrow(ena.networkModel)) do networkRow
         return sum(displayAccums[!, networkRow[:relationship]])
     end
 
     #### Rescale the lines
-    lineWidths *= GLOBAL_MAX_LINE_SIZE / maximum(lineWidths)
+    lineWidths *= GLOBAL_MAX_LINE_SIZE / maximum(allLineWidths)
 
     #### Initialize code widths, compute while we visit each line
     codeWidths = zeros(nrow(ena.codeModel))
