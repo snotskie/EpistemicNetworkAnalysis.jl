@@ -15,12 +15,13 @@ const GLOBAL_UNIT_SIZE = 2
 
 ### Top-level wrapper
 function plot(ena::AbstractENAModel;
-    margin=10mm, size=500, lims=1, ticks=[-1, 0, 1],
+    margin=10mm, size=600, lims=1, ticks=[-1, 0, 1],
     titles=[], xlabel="X", ylabel="Y", leg=:topleft,
     negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
     extraColors::Array{<:Colorant,1}=DEFAULT_EXTRA_COLORS,
     flipX=false, flipY=false,
     singleUnit=nothing, groupBy=nothing,
+    showExtras::Bool=true, showNetworks::Bool=true, showUnits::Bool=true, showCIs::Bool=true,
     kwargs...)
 
     #### Combine the kwargs to make them easier to pass without needing
@@ -36,21 +37,23 @@ function plot(ena::AbstractENAModel;
     #### Initialize usual subplots
     ps = [
         plot(leg=leg, margin=margin, size=(size, size)), # omnibus
-        plot(leg=leg, margin=margin, size=(size, size))  # predictive
+        plot(leg=false, margin=margin, size=(size, size))  # predictive
     ]
-
-    #### Figure out the "average" color
-    midColor = weighted_color_mean(0.5, RGB(negColor), RGB(posColor))
-    midColor = weighted_color_mean(0.3, RGB(midColor), colorant"white")
-    # midColor = weighted_color_mean(0.5, RGB(negColor), RGB(posColor))
-    # midColor = HSV((midColor.h+180)%360, midColor.s, midColor.v)
-    # midColor = weighted_color_mean(0.3, RGB(midColor), colorant"#ccc")
 
     #### Draw usual subplots: Distribution
     allRows = [true for row in eachrow(ena.metadata)]
-    plot_network!(ps[1], ena, allRows; color=midColor, kwargs...)
-    plot_units!(ps[1], ena, allRows; kwargs...)
-    plot_extras!(ps[1], ena, allRows; kwargs...)
+    if showNetworks
+        plot_network!(ps[1], ena, allRows; kwargs...)
+    end
+
+    if showUnits
+        plot_units!(ps[1], ena, allRows; kwargs...)
+    end
+
+    if showExtras
+        plot_extras!(ps[1], ena, allRows; kwargs...)
+    end
+
     title!(ps[1], "(a) " * get(titles, 1, "Distribution"))
     results = test(ena)
     xlabel!(ps[1], "$xlabel ($(round(Int, results[:variance_x]*100))%)")
@@ -72,13 +75,24 @@ function plot(ena::AbstractENAModel;
             if g <= length(extraColors) && g <= length(letters)
                 p = plot(leg=false, margin=margin, size=(size, size))
                 groupRows = [row[groupBy] == group for row in eachrow(ena.metadata)]
-                plot_network!(p, ena, groupRows; color=extraColors[g], kwargs...)
-                plot_units!(p, ena, groupRows; color=extraColors[g], kwargs...)
-                plot_extras!(p, ena, groupRows; color=extraColors[g], kwargs...)
+                if showNetworks
+                    plot_network!(p, ena, groupRows; color=extraColors[g], kwargs...)
+                end
+
+                if showUnits
+                    plot_units!(p, ena, groupRows; color=extraColors[g], kwargs...)
+                end
+
+                if showExtras
+                    plot_extras!(p, ena, groupRows; color=extraColors[g], kwargs...)
+                end
                 xs = ena.centroidModel[groupRows, :pos_x] * (flipX ? -1 : 1)
                 ys = ena.centroidModel[groupRows, :pos_y] * (flipY ? -1 : 1)
-                help_plot_ci(p, xs, ys, extraColors[g], :square, "$(group) Mean")
-                help_plot_ci(ps[1], xs, ys, extraColors[g], :square, "$(group) Mean")
+                if showCIs
+                    help_plot_ci(p, xs, ys, extraColors[g], :square, "$(group) Mean")
+                    help_plot_ci(ps[1], xs, ys, extraColors[g], :square, "$(group) Mean")
+                end
+
                 title!(p, "($(letters[g])) " * string(get(titles, 2+g, group)))
                 push!(ps, p)
             end
@@ -129,7 +143,7 @@ end
 
 ### Helper - Draw the lines
 function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
-    color::Colorant=colorant"#ccc",
+    color::Colorant=colorant"#aaa",
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)
 

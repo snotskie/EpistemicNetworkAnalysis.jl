@@ -211,6 +211,11 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         scalar = dot(networkModel[!, :weight_y], zAxis) / dot(zAxis, zAxis)
         networkModel[!, :weight_y] -= scalar * zAxis
 
+        ## NOTE fix for rounding problems above when we lose orthogonality
+        scalar = dot(networkModel[!, :weight_y], networkModel[!, :weight_x]) / dot(networkModel[!, :weight_x], networkModel[!, :weight_x])
+        networkModel[!, :weight_y] -= scalar * networkModel[!, :weight_x]
+
+        ## Re-normalize
         s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
         println(s)
         if s < 0.05
