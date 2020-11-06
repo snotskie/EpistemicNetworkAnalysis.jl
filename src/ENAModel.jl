@@ -200,15 +200,9 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
 
     ## Maybe make the axes orthogonal to the zero-to-nonzero-mean axis, then ortho from each other
     if rejectEmpty
-        nonZeroCentroidModel = centroidModel[nonZeroRows, :]
         zAxis = map(eachrow(networkModel)) do networkRow
             r = networkRow[:relationship]
-            return sum(nonZeroCentroidModel[!, r])
-        end
-
-        s = sqrt(sum(zAxis .^ 2))
-        if s != 0
-            zAxis /= s
+            return sum(centroidModel[!, r])
         end
 
         scalar = dot(networkModel[!, :weight_x], zAxis) / dot(zAxis, zAxis)
@@ -217,16 +211,20 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         scalar = dot(networkModel[!, :weight_y], zAxis) / dot(zAxis, zAxis)
         networkModel[!, :weight_y] -= scalar * zAxis
 
-        scalar = dot(networkModel[!, :weight_y], networkModel[!, :weight_x]) / dot(networkModel[!, :weight_x], networkModel[!, :weight_x])
-        networkModel[!, :weight_y] -= scalar * networkModel[!, :weight_x]
-
         s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
-        if s != 0
+        println(s)
+        if s < 0.05
+            networkModel[!, :weight_x] .= 0
+            @warn "During the rotation step, the x axis was deflated to zero due to close correlation with the intercept axis."
+        elseif s != 0
             networkModel[!, :weight_x] /= s
         end
 
         s = sqrt(sum(networkModel[!, :weight_y] .^ 2))
-        if s != 0
+        if s < 0.05
+            networkModel[!, :weight_y] .= 0
+            @warn "During the rotation step, the y axis was deflated to zero due to close correlation with the intercept axis."
+        elseif s != 0
             networkModel[!, :weight_y] /= s
         end
     end

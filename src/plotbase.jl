@@ -209,13 +209,7 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel;
             pearson = cor(regressionData[!, :pos_x], regressionData[!, r])
             return (slope, pearson)
         catch e
-            println(e)
-            error("""
-            An error occured running a regression during the rotation step of this ENA model.
-            Usually, this occurs because the data, the regression model, and regression formula are not in agreement.
-            If you are using a MeansRotation, then this usually means that your accidentally grouped your
-            units on a different variable than the variable you passed to your MeansRotation.
-            """)
+            return (0, 0)
         end
     end
 

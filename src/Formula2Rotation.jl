@@ -111,7 +111,10 @@ This can undermine interpreting the y-axis in terms of the requested effect."""
     end
 
     s = sqrt(sum(networkModel[!, :weight_y] .^ 2))
-    if s != 0
+    if s < 0.05
+        networkModel[!, :weight_y] /= s
+        @warn "During the rotation step, the y axis was deflated to zero due to close correlation with the x axis."
+    elseif s != 0
         networkModel[!, :weight_y] /= s
     end
 end
