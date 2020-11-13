@@ -88,6 +88,17 @@ function rotate!(rotation::AbstractFormula2Rotation, networkModel::DataFrame, un
         end
     end
 
+    ## Normalize the weights for both axes
+    s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
+    if s != 0
+        networkModel[!, :weight_x] /= s
+    end
+
+    s = sqrt(sum(networkModel[!, :weight_y] .^ 2))
+    if s != 0
+        networkModel[!, :weight_y] /= s
+    end
+
     ## Orthogonalization: replace y weights with their rejection from the x weights
     before = copy(networkModel[!, :weight_y])
     scalar = dot(networkModel[!, :weight_y], networkModel[!, :weight_x]) / dot(networkModel[!, :weight_x], networkModel[!, :weight_x])
@@ -104,15 +115,10 @@ function rotate!(rotation::AbstractFormula2Rotation, networkModel::DataFrame, un
 This can undermine interpreting the y-axis in terms of the requested effect."""
     end
 
-    ## Normalize the weights for both axes
-    s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
-    if s != 0
-        networkModel[!, :weight_x] /= s
-    end
-
+    ## Re-normalize the weights for the y-axis
     s = sqrt(sum(networkModel[!, :weight_y] .^ 2))
     if s < 0.05
-        networkModel[!, :weight_y] /= s
+        networkModel[!, :weight_y] .= 0
         @warn "During the rotation step, the y axis was deflated to zero due to close correlation with the x axis."
     elseif s != 0
         networkModel[!, :weight_y] /= s

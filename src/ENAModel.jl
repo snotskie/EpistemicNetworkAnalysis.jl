@@ -21,7 +21,8 @@ struct ENAModel{T} <: AbstractENAModel{T}
 end
 
 function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
-    windowSize::Int=4, rotateBy::T=SVDRotation(), sphereNormalize::Bool=true, dropEmpty::Bool=false, rejectEmpty::Bool=true,
+    windowSize::Int=4, rotateBy::T=SVDRotation(),
+    sphereNormalize::Bool=true, dropEmpty::Bool=false, rejectEmpty::Bool=false, deflateEmpty::Bool=true,
     subsetFilter::Function=x->true, accumulationMask::Function=x->1, blockingContext::Function=x->true) where {T<:AbstractENARotation}
 
     # Preparing model structures
@@ -196,7 +197,37 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
 
     # Rotation step
     ## Use the given rotation method, probably one of the out-of-the-box ENARotations, but could be anything user defined
-    rotate!(rotateBy, networkModel, centroidModel, metadata)
+    ## But first, maybe deflate the model we rotate on to reject the zero-to-nonzero-mean axis
+    if deflateEmpty
+        deflatedModel = copy(centroidModel)
+        zAxis = map(eachrow(networkModel)) do networkRow
+            r = networkRow[:relationship]
+            return sum(centroidModel[!, r])
+        end
+
+        s = sqrt(sum(zAxis .^ 2))
+        if s != 0
+            zAxis /= s
+        end
+
+        deflatedModel[!, :pos_z] = Matrix{Float64}(deflatedModel[!, networkModel[!, :relationship]]) * Vector{Float64}(zAxis)
+        for r in networkModel[!, :relationship]
+            rAxis = map(networkModel[!, :relationship]) do rp
+                if r == rp
+                    return 1
+                else
+                    return 0
+                end
+            end
+
+            scalar = dot(rAxis, zAxis) / dot(zAxis, zAxis)
+            deflatedModel[!, r] = centroidModel[!, r] .- (scalar * deflatedModel[!, :pos_z])
+        end
+
+        rotate!(rotateBy, networkModel, deflatedModel, metadata)
+    else
+        rotate!(rotateBy, networkModel, centroidModel, metadata)
+    end
 
     ## Maybe make the axes orthogonal to the zero-to-nonzero-mean axis, then ortho from each other
     if rejectEmpty
@@ -217,7 +248,6 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
 
         ## Re-normalize
         s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
-        println(s)
         if s < 0.05
             networkModel[!, :weight_x] .= 0
             @warn "During the rotation step, the x axis was deflated to zero due to close correlation with the intercept axis."
@@ -255,7 +285,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     codeModel[!, :pos_y] = Matrix{Float64}(codeModel[!, networkModel[!, :relationship]]) * Vector{Float64}(networkModel[!, :weight_y])
 
     ## Maybe translate everything so overall mean lies at the origin
-    if !rejectEmpty
+    if !rejectEmpty && !deflateEmpty
         centroidModel[!, :pos_x] = centroidModel[!, :pos_x] .- mean(centroidModel[!, :pos_x])
         centroidModel[!, :pos_y] = centroidModel[!, :pos_y] .- mean(centroidModel[!, :pos_y])
         codeModel[!, :pos_x] = codeModel[!, :pos_x] .- mean(centroidModel[!, :pos_x])

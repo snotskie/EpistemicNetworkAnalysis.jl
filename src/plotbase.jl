@@ -56,8 +56,13 @@ function plot(ena::AbstractENAModel;
 
     title!(ps[1], "(a) " * get(titles, 1, "Distribution"))
     results = test(ena)
-    xlabel!(ps[1], "$xlabel ($(round(Int, results[:variance_x]*100))%)")
-    ylabel!(ps[1], "$ylabel ($(round(Int, results[:variance_y]*100))%)")
+    if !isnan(results[:variance_x])
+        xlabel!(ps[1], "$xlabel ($(round(Int, results[:variance_x]*100))%)")
+    end
+
+    if !isnan(results[:variance_y])
+        ylabel!(ps[1], "$ylabel ($(round(Int, results[:variance_y]*100))%)")
+    end
 
     #### Draw usual subplots: Dynamics
     title!(ps[2], "(b) " * get(titles, 2, "Rate of Change by $xlabel"))
