@@ -60,7 +60,7 @@ export ena_dataset
 
 # # myENA = ENAModel(RSdata, codes, conversations, units)
 
-# rotation = SVDRotation()
+# # rotation = SVDRotation()
 
 # # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
 
@@ -73,14 +73,14 @@ export ena_dataset
 # #     LinearModel, 2, @formula(y ~ 1 + RND), nothing
 # # )
 
-# # rotation = Formula2Rotation(
-# #     LinearModel, 2, @formula(y ~ 1 + CONFIDENCE_Pre), nothing,
-# #     LinearModel, 1, @formula(y ~ 1 + 0), nothing
-# #     # LinearModel, 1, @formula(y ~ 1 + 0), nothing,
-# #     # LinearModel, 2, @formula(y ~ 1 + CONFIDENCE_Pre), nothing
-# # )
+# rotation = Formula2Rotation(
+#     LinearModel, 2, @formula(y ~ 1 + CONFIDENCE_Pre), nothing,
+#     LinearModel, 1, @formula(y ~ 1 + 0), nothing
+#     # LinearModel, 1, @formula(y ~ 1 + 0), nothing,
+#     # LinearModel, 2, @formula(y ~ 1 + CONFIDENCE_Pre), nothing
+# )
 
-# myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation, dropEmpty=false, rejectEmpty=false, deflateEmpty=true)
+# myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation, dropEmpty=false, rejectEmpty=false, deflateEmpty=false)
 # display(myENA)
 # p = plot(myENA, groupBy=:Condition, showExtras=false, showUnits=true, showNetworks=true, showCIs=false)
 # # p = plot(myENA, groupBy=:GroupName)
