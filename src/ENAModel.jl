@@ -284,15 +284,19 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     codeModel[!, :pos_x] = Matrix{Float64}(codeModel[!, networkModel[!, :relationship]]) * Vector{Float64}(networkModel[!, :weight_x])
     codeModel[!, :pos_y] = Matrix{Float64}(codeModel[!, networkModel[!, :relationship]]) * Vector{Float64}(networkModel[!, :weight_y])
 
-    ## Maybe translate everything so overall mean lies at the origin
-    if !rejectEmpty && !deflateEmpty
-        centroidModel[!, :pos_x] = centroidModel[!, :pos_x] .- mean(centroidModel[!, :pos_x])
-        centroidModel[!, :pos_y] = centroidModel[!, :pos_y] .- mean(centroidModel[!, :pos_y])
-        codeModel[!, :pos_x] = codeModel[!, :pos_x] .- mean(centroidModel[!, :pos_x])
-        codeModel[!, :pos_y] = codeModel[!, :pos_y] .- mean(centroidModel[!, :pos_y])
-        accumModel[!, :pos_x] = accumModel[!, :pos_x] .- mean(accumModel[!, :pos_x])
-        accumModel[!, :pos_y] = accumModel[!, :pos_y] .- mean(accumModel[!, :pos_y])
-    end
+    # ## Maybe translate everything so overall mean lies at the origin
+    # if !rejectEmpty && !deflateEmpty
+    #     # mu_x = mean(centroidModel[!, :pos_x])
+    #     # mu_y = mean(centroidModel[!, :pos_y])
+    #     # centroidModel[!, :pos_x] = centroidModel[!, :pos_x] .- mu_x
+    #     # centroidModel[!, :pos_y] = centroidModel[!, :pos_y] .- mu_y
+    #     # # codeModel[!, :pos_x] = codeModel[!, :pos_x] .- mu_x
+    #     # # codeModel[!, :pos_y] = codeModel[!, :pos_y] .- mu_y
+    #     # mu_x = mean(accumModel[!, :pos_x])
+    #     # mu_y = mean(accumModel[!, :pos_y])
+    #     # accumModel[!, :pos_x] = accumModel[!, :pos_x] .- mu_x
+    #     # accumModel[!, :pos_y] = accumModel[!, :pos_y] .- mu_y
+    # end
 
     # Testing step
     ## Test that the angle between the dimensions is 90 degrees
