@@ -243,9 +243,13 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel;
                                            weighted_color_mean(0.95, posColor, colorant"black"),
                                            curve=2.5)
     lineColors = map(lineData) do (slope, pearson)
+        if isnan(pearson)
+            pearson = 0
+        end
+
         if flipX
             pearson *= -1
-        end
+        end        
 
         index = 1 + round(Int, (length(lineColorMap) - 1) * (pearson + 1) / 2)
         return lineColorMap[index]
