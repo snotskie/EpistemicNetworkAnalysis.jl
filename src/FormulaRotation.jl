@@ -15,8 +15,14 @@ function rotate!(rotation::AbstractFormulaRotation, networkModel::DataFrame, uni
     ## Grab the data we need as one data frame
     regressionData = hcat(unitModel, metadata, makeunique=true)
 
+    ## Bugfix
+    rhs = rotation.f1.rhs
+    if rhs isa Term
+        rhs = [rhs]
+    end
+
     ## Filter out rows with missing data
-    for t in rotation.f1.rhs
+    for t in rhs
         if isa(t, Term)
             col = Symbol(t)
             goodRows = completecases(regressionData[!, [col]])
