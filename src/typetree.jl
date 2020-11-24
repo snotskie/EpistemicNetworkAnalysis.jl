@@ -73,6 +73,9 @@ function test(ena::AbstractENAModel)
         end
     end
 
+    corr_x = cor(ena.centroidModel[!, :pos_x], ena.accumModel[!, :pos_x])
+    corr_y = cor(ena.centroidModel[!, :pos_y], ena.accumModel[!, :pos_y])
+
     ### Do those differences correlate?
     pearson_x = cor(centroidDiffsX, accumDiffsX)
     pearson_y = cor(centroidDiffsY, accumDiffsY)
@@ -83,7 +86,14 @@ function test(ena::AbstractENAModel)
     variance_y = var(ena.centroidModel[!, :pos_y]) / total_variance
 
     ### Package and return
-    return Dict(:coregistration_x => pearson_x, :coregistration_y => pearson_y, :variance_x => variance_x, :variance_y => variance_y)
+    return Dict(
+        :correlation_x => corr_x,
+        :correlation_y => corr_y,
+        :coregistration_x => pearson_x,
+        :coregistration_y => pearson_y,
+        :variance_x => variance_x,
+        :variance_y => variance_y
+    )
 end
 
 ## Text display
