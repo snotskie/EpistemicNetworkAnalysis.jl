@@ -22,7 +22,7 @@ end
 
 function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
     windowSize::Int=4, rotateBy::T=SVDRotation(),
-    sphereNormalize::Bool=true, dropEmpty::Bool=false, rejectEmpty::Bool=false, deflateEmpty::Bool=true,
+    sphereNormalize::Bool=true, dropEmpty::Bool=false, rejectEmpty::Bool=false, deflateEmpty::Bool=false, optIgnoreEmpty::Bool=true,
     subsetFilter::Function=x->true, accumulationMask::Function=x->1, blockingContext::Function=x->true) where {T<:AbstractENARotation}
 
     # Preparing model structures
@@ -157,7 +157,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
 
     ## We use the non-zero model to optize on when rejectEmpty is true
     modelForOptimization = accumModel
-    if rejectEmpty
+    if optIgnoreEmpty
         modelForOptimization = nonZeroAccumModel
     end
 
