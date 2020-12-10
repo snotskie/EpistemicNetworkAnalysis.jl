@@ -65,7 +65,7 @@ function plot(ena::AbstractENAModel;
     end
 
     #### Draw usual subplots: Dynamics
-    title!(ps[2], "(b) " * get(titles, 2, "Rate of Change by $xlabel"))
+    title!(ps[2], "(b) " * get(titles, 2, "Rate of Change by X"))
     plot_predictive!(ps[2], ena; kwargs...)
 
     #### If we need group-wise subplots...

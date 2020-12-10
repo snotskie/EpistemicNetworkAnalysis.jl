@@ -80,9 +80,9 @@ export ena_dataset
 # #     # LinearModel, 2, @formula(y ~ 1 + CONFIDENCE_Pre), nothing
 # # )
 
-# myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation, dropEmpty=false, rejectEmpty=false, deflateEmpty=false, optIgnoreEmpty=true)
+# myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation, dropEmpty=false, rejectEmpty=false, deflateEmpty=true, optIgnoreEmpty=false)
 # display(myENA)
-# p = plot(myENA, groupBy=:Condition, showExtras=false, showUnits=true, showNetworks=true, showCIs=false)
+# p = plot(myENA, groupBy=:Condition, showExtras=true, showUnits=true, showNetworks=true, showCIs=true, xlabel="RND", ylabel="SVD")
 # # p = plot(myENA, groupBy=:GroupName)
 # # p = plot(myENA)
 # display(p)
