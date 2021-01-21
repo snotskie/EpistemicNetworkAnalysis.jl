@@ -35,6 +35,12 @@ abstract type AbstractDoubleMeansRotation <: AbstractFormula2Rotation
     # test reports: (inherit)
 end
 
+abstract type AbstractPoleRotation <: AbstractENARotation
+    # fields: (inherit), leftCode, rightCode
+    # plot accepts: (inherit)
+    # test reports: (inherit)
+end
+
 # Accumulation Models
 abstract type AbstractENAModel{T<:AbstractENARotation}
     # fields: units, conversations, codes, rotation, accumModel, centroidModel, metadata, codeModel, networkModel, relationshipMap

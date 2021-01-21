@@ -29,6 +29,7 @@ include("./SVDRotation.jl")
 include("./FormulaRotation.jl")
 include("./Formula2Rotation.jl")
 include("./MeansRotation.jl")
+# include("./PoleRotation.jl")
 include("./ENAModel.jl")
 include("./RSData.jl")
 
@@ -69,9 +70,9 @@ export ena_dataset
 # # )
 # # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 
-# rotation = FormulaRotation(
-#     LinearModel, 2, @formula(y ~ 1 + RND), nothing
-# )
+# # rotation = FormulaRotation(
+# #     LinearModel, 2, @formula(y ~ 1 + RND), nothing
+# # )
 
 # # rotation = Formula2Rotation(
 # #     LinearModel, 2, @formula(y ~ 1 + CONFIDENCE_Pre), nothing,
@@ -80,12 +81,21 @@ export ena_dataset
 # #     # LinearModel, 2, @formula(y ~ 1 + CONFIDENCE_Pre), nothing
 # # )
 
+# # :Data,
+# # :Technical_Constraints,
+# # :Performance_Parameters,
+# # :Client_and_Consultant_Requests,
+# # :Design_Reasoning,
+# # :Collaboration
+# rotation = PoleRotation(codes, 1, 5)
+
 # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation, dropEmpty=false, rejectEmpty=false, deflateEmpty=true, optIgnoreEmpty=false)
 # display(myENA)
-# p = plot(myENA, groupBy=:Condition, showExtras=true, showUnits=true, showNetworks=true, showCIs=true, xlabel="RND", ylabel="SVD")
+# p = plot(myENA, groupBy=:Condition, showExtras=true, showUnits=true, showNetworks=true, showCIs=true)
 # # p = plot(myENA, groupBy=:GroupName)
 # # p = plot(myENA)
 # display(p)
+# display(myENA.metadata[!, [:Data, :Collaboration]])
 
 
 end # module

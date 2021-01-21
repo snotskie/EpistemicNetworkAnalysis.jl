@@ -44,6 +44,16 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
 
     accumModel = hcat(accumModel, DataFrame(pos_x=Real[0 for i in 1:nrow(accumModel)], # my position on the x and y axes
                                           pos_y=Real[0 for i in 1:nrow(accumModel)])) 
+    
+    ## Replace codes "first" metadata with sums instead (ie, code and count)
+    sums = combine(
+        groupby(data[!, [codes..., :ENA_UNIT]], :ENA_UNIT),
+        (code => sum for code in codes)...
+    )
+    
+    for code in codes
+        accumModel[!, code] = sums[!, Symbol(string(code, "_sum"))]
+    end
 
     ## Network model placeholders
     networkModel = DataFrame(relationship=collect(keys(relationshipMap)),
