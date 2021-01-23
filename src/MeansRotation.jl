@@ -40,11 +40,12 @@ function rotate!(rotation::AbstractMeansRotation, networkModel::DataFrame, unitM
 end
 
 # Override plotting pieces
-## Base - Inject a groupBy when none is given
+## Base - Inject a groupBy and some labels when none are given
 function plot(ena::AbstractENAModel{<:AbstractMeansRotation};
     negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
     extraColors::Array{<:Colorant,1}=DEFAULT_EXTRA_COLORS,
     groupBy=nothing,
+    xlabel=nothing, ylabel=nothing,
     kwargs...)
 
     if isnothing(groupBy) || groupBy == ena.rotation.groupVar
@@ -52,9 +53,17 @@ function plot(ena::AbstractENAModel{<:AbstractMeansRotation};
         extraColors = [negColor, posColor, extraColors...]
     end
 
+    if isnothing(xlabel)
+        xlabel = ena.rotation.groupVar
+    end
+
+    if isnothing(ylabel)
+        ylabel = "SVD"
+    end
+
     return invoke(plot, Tuple{AbstractENAModel{<:AbstractFormulaRotation}}, ena;
                   negColor=negColor, posColor=posColor, extraColors=extraColors,
-                  groupBy=groupBy, kwargs...)
+                  groupBy=groupBy, xlabel=xlabel, ylabel=ylabel, kwargs...)
 end
 
 ## Units - different default for labels

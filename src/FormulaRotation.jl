@@ -77,60 +77,6 @@ function rotate!(rotation::AbstractFormulaRotation, networkModel::DataFrame, uni
     networkModel[!, :weight_y] = pcaModel[:, 1]
 end
 
-# # Override tests
-# function test(ena::AbstractENAModel{<:AbstractFormulaRotation})
-
-#     ## Get results from parent
-#     results = invoke(test, Tuple{AbstractENAModel{<:AbstractENARotation}}, ena)
-
-#     ## Grab data we need as a single data frame
-#     regressionData = hcat(ena.centroidModel, ena.metadata, makeunique=true)
-
-#     ## Construct regression formulas
-#     # fxab = FormulaTerm(term(:pos_x), ena.rotation.f1.rhs)
-#     # fxa = FormulaTerm(term(:pos_x), ena.rotation.f1.rhs[1:end .!= ena.rotation.coefindex])
-#     fxab = FormulaTerm(term(:pos_x), term(1) +  ena.rotation.f1.rhs[ena.rotation.coefindex])
-#     fxa = FormulaTerm(term(:pos_x), term(1))
-
-#     ## Placeholders
-#     variance_xab = 0
-#     variance_xa = 0
-#     pvalue_x = 1
-
-#     ## Run regression models; the function call is different when we have constrasts
-#     if isnothing(ena.rotation.contrasts)
-#         mxab = fit(ena.rotation.regression_model, fxab, regressionData)
-#         mxa = fit(ena.rotation.regression_model, fxa, regressionData)
-#         variance_xab = var(predict(mxab)) / var(regressionData[!, :pos_x])
-#         variance_xa = var(predict(mxa)) / var(regressionData[!, :pos_x])
-#         pvalue_x = coeftable(mxab).cols[4][ena.rotation.coefindex]
-#     else
-#         mxab = fit(ena.rotation.regression_model, fxab, regressionData, contrasts=ena.rotation.contrasts)
-#         mxa = fit(ena.rotation.regression_model, fxa, regressionData, contrasts=ena.rotation.contrasts)
-#         variance_xab = var(predict(mxab)) / var(regressionData[!, :pos_x])
-#         variance_xa = var(predict(mxa)) / var(regressionData[!, :pos_x])
-#         pvalue_x = coeftable(mxab).cols[4][ena.rotation.coefindex]
-#     end
-
-#     ## Compute f^2 and add our values to the results and return
-#     f2_x = (variance_xab - variance_xa) / (1 - variance_xab)
-#     results[:f2_x] = f2_x
-#     results[:pvalue_x] = pvalue_x
-#     return results
-# end
-
-# Override plotting pieces
-# ## Labels - showing as a POC that we can report the p-value and effect size
-# function plot_labels!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation};
-#     xlabel="X", ylabel="Y",
-#     kwargs...)
-
-#     ### Run tests, then put the values into the axis labels
-#     results = test(ena)
-#     xlabel!(p, "$xlabel ($(round(Int, results[:variance_x]*100))%, p<$(ceil(results[:pvalue_x], digits=4)), f²=$(round(results[:f2_x], digits=4)))")
-#     ylabel!(p, "$ylabel ($(round(Int, results[:variance_y]*100))%)")
-# end
-
 ## Units - we can color them by the coef variable, if a simple term
 function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, displayRows::Array{Bool,1};
     flipX::Bool=false, flipY::Bool=false, minLabel::Union{Nothing,String}=nothing, maxLabel::Union{Nothing,String}=nothing,
@@ -138,12 +84,12 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
     kwargs...)
 
     ### Grab filtered values
-    displayCentroids = ena.centroidModel[displayRows, :]
+    displayUnits = ena.centroidModel[displayRows, :]
     displayMetadata = ena.metadata[displayRows, :]
 
     ### Default, when we don't have a good column to use for a numeric variable, use all black
-    unitColors = [colorant"black" for unitRow in eachrow(displayCentroids)]
-    unitRings = [colorant"black" for unitRow in eachrow(displayCentroids)]
+    unitColors = [colorant"black" for unitRow in eachrow(displayUnits)]
+    unitRings = [colorant"black" for unitRow in eachrow(displayUnits)]
 
     ### Grab the name of the potential column as a Symbol
     col = Symbol(ena.rotation.f1.rhs[ena.rotation.coefindex])
@@ -204,8 +150,8 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
     end
 
     ### Find the x/y positions
-    x = displayCentroids[!, :pos_x] * (flipX ? -1 : 1)
-    y = displayCentroids[!, :pos_y] * (flipY ? -1 : 1)
+    x = displayUnits[!, :pos_x] * (flipX ? -1 : 1)
+    y = displayUnits[!, :pos_y] * (flipY ? -1 : 1)
 
     ### When we used gradient color-coding...
     if !isnothing(legend_col)
@@ -259,61 +205,6 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
     end
 end
 
-# ## CIs - we can color them into two groups
-# function plot_intervals!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, displayRows::Array{Bool,1};
-#     flipX::Bool=false, flipY::Bool=false, minColor::Colorant=colorant"purple", maxColor::Colorant=colorant"orange",
-#     minLabel::Union{Nothing,String}=nothing, maxLabel::Union{Nothing,String}=nothing,
-#     kwargs...)
-
-#     ### Grab the name of the potential column as a Symbol
-#     col = Symbol(ena.rotation.f1.rhs[ena.rotation.coefindex])
-
-#     ### If the column exists in the metadata...
-#     if col in Symbol.(names(ena.metadata))
-
-#         ### ...and the first non-missing value overall is a number...
-#         vals = filter(x->!ismissing(x), ena.metadata[!, col])
-#         if first(vals) isa Number
-
-#             ### ...and there is a non-zero range of values
-#             lo = minimum(vals)
-#             hi = maximum(vals)
-#             if hi != lo
-
-#                 ### ...then grab the quantile cutoffs
-#                 Q0, Q1, Q2, Q3, Q4 = quantile(vals)
-
-#                 ### Grab filtered data
-#                 displayCentroids = ena.centroidModel[displayRows, :]
-#                 displayMetadata = ena.metadata[displayRows, :]
-#                 Q1Rows = map(x->Q0 <= x[col] <= Q1, eachrow(displayMetadata))
-#                 Q4Rows = map(x->Q3 <= x[col] <= Q4, eachrow(displayMetadata))
-#                 Q1Units = displayCentroids[Q1Rows, :]
-#                 Q4Units = displayCentroids[Q4Rows, :]
-
-#                 ### ...use meaningful legend labels
-#                 if isnothing(minLabel)
-#                     minLabel = "$(col) Q1 Mean"
-#                 end
-
-#                 if isnothing(maxLabel)
-#                     maxLabel = "$(col) Q4 Mean"
-#                 end
-
-#                 ### Plot control CI
-#                 xs = Q1Units[!, :pos_x] * (flipX ? -1 : 1)
-#                 ys = Q1Units[!, :pos_y] * (flipY ? -1 : 1)
-#                 help_plot_ci(p, xs, ys, minColor, :square, minLabel)
-
-#                 ### Plot treatment CI
-#                 xs = Q4Units[!, :pos_x] * (flipX ? -1 : 1)
-#                 ys = Q4Units[!, :pos_y] * (flipY ? -1 : 1)
-#                 help_plot_ci(p, xs, ys, maxColor, :square, maxLabel)
-#             end
-#         end
-#     end
-# end
-
 ## Extras - we can add a "litmus" strip to illustrate the strength of the continuous effect
 function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, displayRows::Array{Bool,1};
     flipX::Bool=false, flipY::Bool=false, lims::Real=1,
@@ -321,7 +212,7 @@ function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation},
     kwargs...)
     
     ### Grab filtered values
-    displayCentroids = ena.centroidModel[displayRows, :]
+    displayUnits = ena.centroidModel[displayRows, :]
     displayMetadata = ena.metadata[displayRows, :]
 
     ### Constant: how many bins for the histogram, on each side of the axis
@@ -366,7 +257,7 @@ function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation},
                     ### ...find the rows in that bin, on both sides of the axis
                     left = -1 + (i-1)/bins
                     right = -1 + i/bins
-                    rowsInNegRange = map(eachrow(displayCentroids)) do unitRow
+                    rowsInNegRange = map(eachrow(displayUnits)) do unitRow
                         if left - .5/bins <= unitRow[:pos_x] && unitRow[:pos_x] < right + .5/bins
                             return true
                         else
@@ -374,7 +265,7 @@ function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation},
                         end
                     end
 
-                    rowsInPosRange = map(eachrow(displayCentroids)) do unitRow
+                    rowsInPosRange = map(eachrow(displayUnits)) do unitRow
                         if -right - .5/bins <= unitRow[:pos_x] && unitRow[:pos_x] < -left + .5/bins
                             return true
                         else

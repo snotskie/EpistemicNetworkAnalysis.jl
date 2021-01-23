@@ -22,8 +22,21 @@ end
 
 function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
     windowSize::Int=4, rotateBy::T=SVDRotation(),
-    sphereNormalize::Bool=true, dropEmpty::Bool=false, rejectEmpty::Bool=false, deflateEmpty::Bool=false, optIgnoreEmpty::Bool=true,
-    subsetFilter::Function=x->true, accumulationMask::Function=x->1, blockingContext::Function=x->true) where {T<:AbstractENARotation}
+    sphereNormalize::Bool=true, dropEmpty::Bool=false, deflateEmpty::Bool=false, meanCenter::Bool=true,
+    subsetFilter::Function=x->true) where {T<:AbstractENARotation}
+
+    # Checking that the options are sane
+    if windowSize < 1
+        error("The windowSize must be positive")
+    elseif !sphereNormalize && deflateEmpty
+        error("When sphereNormalize=false, deflateEmpty=true has no interpretive validity")
+    elseif length(codes) < 3
+        error("There must be at least 3 codes in the model")
+    elseif length(conversations) < 1
+        error("Need at least one column to define conversations")
+    elseif length(units) < 1
+        error("Need at least one column to define units")
+    end
 
     # Preparing model structures
     ## Relationships between codes
@@ -91,15 +104,13 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
             end
         end
 
-        if blockingContext(howrecents)
-            unit = line[:ENA_UNIT]
-            for r in keys(relationshipMap)
-                i, j = relationshipMap[r]
-                if howrecents[i] == 0 && howrecents[j] < windowSize
-                    counts[unit][i][j] += 1
-                elseif howrecents[j] == 0 && howrecents[i] < windowSize
-                    counts[unit][i][j] += 1
-                end
+        unit = line[:ENA_UNIT]
+        for r in keys(relationshipMap)
+            i, j = relationshipMap[r]
+            if howrecents[i] == 0 && howrecents[j] < windowSize
+                counts[unit][i][j] += 1
+            elseif howrecents[j] == 0 && howrecents[i] < windowSize
+                counts[unit][i][j] += 1
             end
         end
     end
@@ -116,7 +127,15 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         end
 
         for (k, r) in enumerate(keys(relationshipMap))
-            unitRow[r] = vector[k] * accumulationMask(r)
+            unitRow[r] = vector[k]
+        end
+    end
+
+    ## If we didn't sphere normalize, then still scale it down make plots easier to read
+    if !sphereNormalize
+        s = maximum(maximum(accumModel[!, r]) for r in keys(relationshipMap))
+        for r in keys(relationshipMap)
+            accumModel[!, r] /= s
         end
     end
 
@@ -124,23 +143,21 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     ## User-defined unit subsetting - we kept all the data in the count model up to this point so the user can define filters as they please
     filter!(subsetFilter, accumModel)
 
-    ## Identify, and maybe drop, rows with empty values
-    nonZeroRows = map(eachrow(accumModel)) do unitRow
-        return !all(iszero.(values(unitRow[networkModel[!, :relationship]])))
-    end
-
-    nonZeroAccumModel = accumModel[nonZeroRows, :]
+    ## Maybe drop rows with empty values
     if dropEmpty
-        accumModel = nonZeroAccumModel
         nonZeroRows = map(eachrow(accumModel)) do unitRow
-            return true
+            return !all(iszero.(values(unitRow[networkModel[!, :relationship]])))
         end
+
+        accumModel = accumModel[nonZeroRows, :]
     end
 
     ## Now that we have all the data counted, divvy and copy it between accumModel, centroidModel, and metadata
-    metadata = accumModel[!, setdiff(Symbol.(names(accumModel)), [:pos_x, :pos_y, networkModel[!, :relationship]...])]
-    centroidModel = copy(accumModel[!, [:ENA_UNIT, :pos_x, :pos_y, networkModel[!, :relationship]...]])
-    accumModel = accumModel[!, [:ENA_UNIT, :pos_x, :pos_y, networkModel[!, :relationship]...]]
+    modelColumns = [:pos_x, :pos_y, networkModel[!, :relationship]...]
+    nonModelColumns = setdiff(Symbol.(names(accumModel)), modelColumns)
+    metadata = accumModel[!, nonModelColumns]
+    centroidModel = copy(accumModel[!, [:ENA_UNIT, modelColumns...]])
+    accumModel = accumModel[!, [:ENA_UNIT, modelColumns...]]
 
     # Compute the position of the codes in the approximated high-dimensional space
     ## Compute the density of each network row line
@@ -165,15 +182,9 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     s = maximum(codeModel[!, :density])
     codeModel[!, :density] /= s
 
-    ## We use the non-zero model to optize on when rejectEmpty is true
-    modelForOptimization = accumModel
-    if optIgnoreEmpty
-        modelForOptimization = nonZeroAccumModel
-    end
-
     ## Regression model for placing the code dots into the approximated high-dimensional space
-    X = Matrix{Float64}(zeros(nrow(modelForOptimization), nrow(codeModel)))
-    for (i, unitRow) in enumerate(eachrow(modelForOptimization))
+    X = Matrix{Float64}(zeros(nrow(accumModel), nrow(codeModel)))
+    for (i, unitRow) in enumerate(eachrow(accumModel))
         for r in keys(relationshipMap)
             a, b = relationshipMap[r]
             X[i, a] += unitRow[r] / 2
@@ -186,7 +197,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     ## Fit each dimension of the original high-dimensional space
     for networkRow in eachrow(networkModel)
         r = networkRow[:relationship]
-        y = Vector{Float64}(modelForOptimization[:, r])
+        y = Vector{Float64}(accumModel[:, r])
         r_coefs = X * y
         codeModel[:, r] = r_coefs[1:end]
     end
@@ -239,41 +250,6 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         rotate!(rotateBy, networkModel, centroidModel, metadata)
     end
 
-    ## Maybe make the axes orthogonal to the zero-to-nonzero-mean axis, then ortho from each other
-    if rejectEmpty
-        zAxis = map(eachrow(networkModel)) do networkRow
-            r = networkRow[:relationship]
-            return sum(centroidModel[!, r])
-        end
-
-        scalar = dot(networkModel[!, :weight_x], zAxis) / dot(zAxis, zAxis)
-        networkModel[!, :weight_x] -= scalar * zAxis
-
-        scalar = dot(networkModel[!, :weight_y], zAxis) / dot(zAxis, zAxis)
-        networkModel[!, :weight_y] -= scalar * zAxis
-
-        ## NOTE fix for rounding problems above when we lose orthogonality
-        scalar = dot(networkModel[!, :weight_y], networkModel[!, :weight_x]) / dot(networkModel[!, :weight_x], networkModel[!, :weight_x])
-        networkModel[!, :weight_y] -= scalar * networkModel[!, :weight_x]
-
-        ## Re-normalize
-        s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
-        if s < 0.05
-            networkModel[!, :weight_x] .= 0
-            @warn "During the rotation step, the x axis was deflated to zero due to close correlation with the intercept axis."
-        elseif s != 0
-            networkModel[!, :weight_x] /= s
-        end
-
-        s = sqrt(sum(networkModel[!, :weight_y] .^ 2))
-        if s < 0.05
-            networkModel[!, :weight_y] .= 0
-            @warn "During the rotation step, the y axis was deflated to zero due to close correlation with the intercept axis."
-        elseif s != 0
-            networkModel[!, :weight_y] /= s
-        end
-    end
-
     # Layout step
     ## Project the pos_x and pos_y for the original units onto the plane, now that we have the rotation
     ## This is really only for testing the goodness of fit
@@ -281,7 +257,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     accumModel[!, :pos_y] = Matrix{Float64}(accumModel[!, networkModel[!, :relationship]]) * Vector{Float64}(networkModel[!, :weight_y])
 
     ## Same for the refit units
-    ## These are what are really drawn
+    ## These are what are really drawn (unlike in rENA, where accumModel is what is drawn)
     centroidModel[!, :pos_x] = Matrix{Float64}(centroidModel[!, networkModel[!, :relationship]]) * Vector{Float64}(networkModel[!, :weight_x])
     centroidModel[!, :pos_y] = Matrix{Float64}(centroidModel[!, networkModel[!, :relationship]]) * Vector{Float64}(networkModel[!, :weight_y])
 
@@ -294,19 +270,19 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     codeModel[!, :pos_x] = Matrix{Float64}(codeModel[!, networkModel[!, :relationship]]) * Vector{Float64}(networkModel[!, :weight_x])
     codeModel[!, :pos_y] = Matrix{Float64}(codeModel[!, networkModel[!, :relationship]]) * Vector{Float64}(networkModel[!, :weight_y])
 
-    # ## Maybe translate everything so overall mean lies at the origin
-    # if !rejectEmpty && !deflateEmpty
-    #     # mu_x = mean(centroidModel[!, :pos_x])
-    #     # mu_y = mean(centroidModel[!, :pos_y])
-    #     # centroidModel[!, :pos_x] = centroidModel[!, :pos_x] .- mu_x
-    #     # centroidModel[!, :pos_y] = centroidModel[!, :pos_y] .- mu_y
-    #     # # codeModel[!, :pos_x] = codeModel[!, :pos_x] .- mu_x
-    #     # # codeModel[!, :pos_y] = codeModel[!, :pos_y] .- mu_y
-    #     # mu_x = mean(accumModel[!, :pos_x])
-    #     # mu_y = mean(accumModel[!, :pos_y])
-    #     # accumModel[!, :pos_x] = accumModel[!, :pos_x] .- mu_x
-    #     # accumModel[!, :pos_y] = accumModel[!, :pos_y] .- mu_y
-    # end
+    ## Maybe translate everything so overall mean lies at the origin
+    if meanCenter
+        mu_x = mean(centroidModel[!, :pos_x])
+        mu_y = mean(centroidModel[!, :pos_y])
+        centroidModel[!, :pos_x] = centroidModel[!, :pos_x] .- mu_x
+        centroidModel[!, :pos_y] = centroidModel[!, :pos_y] .- mu_y
+        # codeModel[!, :pos_x] = codeModel[!, :pos_x] .- mu_x
+        # codeModel[!, :pos_y] = codeModel[!, :pos_y] .- mu_y
+        mu_x = mean(accumModel[!, :pos_x])
+        mu_y = mean(accumModel[!, :pos_y])
+        accumModel[!, :pos_x] = accumModel[!, :pos_x] .- mu_x
+        accumModel[!, :pos_y] = accumModel[!, :pos_y] .- mu_y
+    end
 
     # Testing step
     ## Test that the angle between the dimensions is 90 degrees

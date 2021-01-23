@@ -91,11 +91,10 @@ function plot(ena::AbstractENAModel;
                 if showExtras
                     plot_extras!(p, ena, groupRows; color=extraColors[g], kwargs...)
                 end
-                xs = ena.centroidModel[groupRows, :pos_x] * (flipX ? -1 : 1)
-                ys = ena.centroidModel[groupRows, :pos_y] * (flipY ? -1 : 1)
+                
                 if showCIs
-                    help_plot_ci(p, xs, ys, extraColors[g], :square, "$(group) Mean")
-                    help_plot_ci(ps[1], xs, ys, extraColors[g], :square, "$(group) Mean")
+                    plot_cis!(p, ena, groupRows, group; color=extraColors[g], kwargs...)
+                    plot_cis!(ps[1], ena, groupRows, group; color=extraColors[g], kwargs...)
                 end
 
                 title!(p, "($(letters[g])) " * string(get(titles, 2+g, group)))
@@ -132,9 +131,9 @@ function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
     kwargs...)
 
     #### Get the x/y positions
-    displayCentroids = ena.centroidModel[displayRows, :]
-    x = displayCentroids[!, :pos_x] * (flipX ? -1 : 1)
-    y = displayCentroids[!, :pos_y] * (flipY ? -1 : 1)
+    displayUnits = ena.centroidModel[displayRows, :]
+    x = displayUnits[!, :pos_x] * (flipX ? -1 : 1)
+    y = displayUnits[!, :pos_y] * (flipY ? -1 : 1)
 
     #### Draw them in black by default
     plot!(p, x, y,
@@ -307,4 +306,15 @@ function plot_extras!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1}
     kwargs...)
 
     # do nothing
+end
+
+### Helper - draw the confidence intervals
+function plot_cis!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1}, groupName::String;
+    color::Colorant=colorant"black",
+    flipX::Bool=false, flipY::Bool=false,
+    kwargs...)
+
+    xs = ena.centroidModel[displayRows, :pos_x] * (flipX ? -1 : 1)
+    ys = ena.centroidModel[displayRows, :pos_y] * (flipY ? -1 : 1)
+    help_plot_ci(p, xs, ys, color, :square, "$(groupName) Mean")
 end
