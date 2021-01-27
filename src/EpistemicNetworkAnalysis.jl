@@ -65,12 +65,12 @@ export ena_dataset
 # # rotation = SVDRotation()
 
 # # rotation = MeansRotation(:GameHalf, "First", "Second")
-# rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
+# # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
 
-# # rotation = Means2Rotation(
-# #     :Condition, "FirstGame", "SecondGame",
-# #     :GameHalf, "First", "Second"
-# # )
+# rotation = Means2Rotation(
+#     :Condition, "FirstGame", "SecondGame",
+#     :GameHalf, "First", "Second"
+# )
 
 # # rotation = FormulaRotation(
 # #     LinearModel, 2, @formula(y ~ 1 + CONFIDENCE_Pre), nothing
@@ -100,10 +100,12 @@ export ena_dataset
 # # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation, deflateEmpty=true)
 # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
 # display(myENA)
+
+# myExtraColors = [colorant"#CC3A87", colorant"#3ECC3A", colorant"#F18E33", colorant"#333CF1"]
 # # p = plot(myENA, showExtras=false, showUnits=true, showNetworks=true, showCIs=true, flipY=false, leg=true)
 # # p = plot(myENA, groupBy=:GroupName)
-# p = plot(myENA, showUnits=false, showExtras=false, leg=true, groupBy=:ConditionHalf)
-# # p = plot(myENA, showUnits=false, showExtras=false, leg=false)
+# # p = plot(myENA, showUnits=false, showExtras=false, leg=true, groupBy=:ConditionHalf, extraColors=myExtraColors, flipY=false)
+# p = plot(myENA, showUnits=false, showExtras=false, leg=false)
 
 # # graftedENA = ENAModel(
 # #     myENA.codes, myENA.conversations, myENA.units,
@@ -116,6 +118,7 @@ export ena_dataset
 # #     myENA.relationshipMap, myENA.windowSize
 # # )
 # # p = plot(graftedENA, showUnits=false, showExtras=false, flipY=true, ylabel="SVD")
+
 # display(p)
 
 

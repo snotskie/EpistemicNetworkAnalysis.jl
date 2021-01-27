@@ -297,12 +297,13 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel;
     codeWidths = zeros(nrow(ena.codeModel))
 
     ### For each line...
-    for (i, networkRow) in enumerate(eachrow(ena.networkModel))
+    networkData = hcat(ena.networkModel, DataFrame(:width => lineWidths, :color => lineColors))
+    for networkRow in sort(eachrow(networkData), by=row->row[:width])
 
         ### ...contribute to the code weights...
         j, k = ena.relationshipMap[networkRow[:relationship]]
-        codeWidths[j] += lineWidths[i]
-        codeWidths[k] += lineWidths[i]
+        codeWidths[j] += networkRow[:width]
+        codeWidths[k] += networkRow[:width]
 
         ### ...and plot that line, in the right width and color
         x = ena.codeModel[[j, k], :pos_x] * (flipX ? -1 : 1)
@@ -311,9 +312,27 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel;
             label=nothing,
             seriestype=:line,
             # linestyle=:dash,
-            linewidth=lineWidths[i],
-            linecolor=lineColors[i])
+            linewidth=networkRow[:width],
+            linecolor=networkRow[:color])
     end
+
+    # for (i, networkRow) in enumerate(eachrow(ena.networkModel))
+
+    #     ### ...contribute to the code weights...
+    #     j, k = ena.relationshipMap[networkRow[:relationship]]
+    #     codeWidths[j] += lineWidths[i]
+    #     codeWidths[k] += lineWidths[i]
+
+    #     ### ...and plot that line, in the right width and color
+    #     x = ena.codeModel[[j, k], :pos_x] * (flipX ? -1 : 1)
+    #     y = ena.codeModel[[j, k], :pos_y] * (flipY ? -1 : 1)
+    #     plot!(p, x, y,
+    #         label=nothing,
+    #         seriestype=:line,
+    #         # linestyle=:dash,
+    #         linewidth=lineWidths[i],
+    #         linecolor=lineColors[i])
+    # end
 
     ### Rescale the code widths
     codeWidths *= GLOBAL_MAX_CODE_SIZE / maximum(codeWidths)
@@ -413,12 +432,13 @@ function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, neg
     codeWidths = zeros(nrow(ena.codeModel))
 
     ### For each line...
-    for (i, networkRow) in enumerate(eachrow(ena.networkModel))
+    networkData = hcat(ena.networkModel, DataFrame(:width => lineWidths, :color => lineColors))
+    for networkRow in sort(eachrow(networkData), by=row->row[:width])
 
         ### ...contribute to the code weights...
         j, k = ena.relationshipMap[networkRow[:relationship]]
-        codeWidths[j] += lineWidths[i]
-        codeWidths[k] += lineWidths[i]
+        codeWidths[j] += networkRow[:width]
+        codeWidths[k] += networkRow[:width]
 
         ### ...and plot that line, in the right width and color
         x = ena.codeModel[[j, k], :pos_x] * (flipX ? -1 : 1)
@@ -427,9 +447,27 @@ function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, neg
             label=nothing,
             seriestype=:line,
             # linestyle=:dash,
-            linewidth=lineWidths[i],
-            linecolor=lineColors[i])
+            linewidth=networkRow[:width],
+            linecolor=networkRow[:color])
     end
+
+    # for (i, networkRow) in enumerate(eachrow(ena.networkModel))
+
+    #     ### ...contribute to the code weights...
+    #     j, k = ena.relationshipMap[networkRow[:relationship]]
+    #     codeWidths[j] += lineWidths[i]
+    #     codeWidths[k] += lineWidths[i]
+
+    #     ### ...and plot that line, in the right width and color
+    #     x = ena.codeModel[[j, k], :pos_x] * (flipX ? -1 : 1)
+    #     y = ena.codeModel[[j, k], :pos_y] * (flipY ? -1 : 1)
+    #     plot!(p, x, y,
+    #         label=nothing,
+    #         seriestype=:line,
+    #         # linestyle=:dash,
+    #         linewidth=lineWidths[i],
+    #         linecolor=lineColors[i])
+    # end
 
     ### Rescale the code widths
     codeWidths *= GLOBAL_MAX_CODE_SIZE / maximum(codeWidths)
