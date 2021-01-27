@@ -110,6 +110,9 @@ function plot(ena::AbstractENAModel;
                     posGroup = groups[j]
                     negGroup = groups[i]
                     p = plot(leg=false, margin=margin, size=(size, size))
+                    plot_subtraction!(p, ena, groupBy, groups[i], groups[j];
+                        kwargs..., negColor=extraColors[i], posColor=extraColors[j])
+
                     posGroupRows = [row[groupBy] == posGroup for row in eachrow(ena.metadata)]
                     negGroupRows = [row[groupBy] == negGroup for row in eachrow(ena.metadata)]
                     if showUnits
@@ -121,9 +124,6 @@ function plot(ena::AbstractENAModel;
                         plot_cis!(p, ena, posGroupRows, posGroup; color=extraColors[j], kwargs...)
                         plot_cis!(p, ena, negGroupRows, negGroup; color=extraColors[i], kwargs...)
                     end
-
-                    plot_subtraction!(p, ena; negColor=extraColors[i], posColor=extraColors[j],
-                        groupVar=groupBy, negGroup=groups[i], posGroup=groups[j], kwargs...)
 
                     temp = "$(groups[j]) - $(groups[i])"
                     title!(p, "($(letters[n])) " * string(get(titles, 2+n, temp)))
@@ -333,9 +333,8 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel;
 end
 
 ### Helper - Draw the subtraction lines (nearly identical to plot_predictive)
-function plot_subtraction!(p::Plot, ena::AbstractENAModel;
+function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, negGroup::Any, posGroup::Any;
     negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
-    groupVar::Symbol, negGroup::Any, posGroup::Any,
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)
 
@@ -359,6 +358,10 @@ function plot_subtraction!(p::Plot, ena::AbstractENAModel;
         end
     end
 
+    rowsForCor = map(eachrow(regressionData)) do row
+        return !ismissing(row[:SubtractionVar])
+    end
+
     ### Compute line widths as the strength (slope) between the xpos and the accum network weights
     f1 = @formula(y ~ SubtractionVar)
     lineData = map(eachrow(ena.networkModel)) do networkRow
@@ -367,7 +370,7 @@ function plot_subtraction!(p::Plot, ena::AbstractENAModel;
         try
             m1 = fit(LinearModel, f1, regressionData)
             slope = coef(m1)[2]
-            pearson = cor(regressionData[!, :pos_x], regressionData[!, r])
+            pearson = cor(regressionData[rowsForCor, :SubtractionVar], regressionData[rowsForCor, r])
             return (slope, pearson)
         catch e
             return (0, 0)
@@ -384,6 +387,7 @@ function plot_subtraction!(p::Plot, ena::AbstractENAModel;
                                            midColor,
                                            weighted_color_mean(0.95, posColor, colorant"black"),
                                            curve=2.5)
+    
     lineColors = map(lineData) do (slope, pearson)
         if isnan(pearson)
             pearson = 0
