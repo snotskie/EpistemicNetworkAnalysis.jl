@@ -101,6 +101,37 @@ function plot(ena::AbstractENAModel;
                 push!(ps, p)
             end
         end
+
+        #### ...then for each pair of groups...
+        n = length(groups)+1
+        for i in 1:length(groups)
+            for j in (i+1):length(groups)
+                if n <= length(letters) && j <= length(extraColors)
+                    posGroup = groups[j]
+                    negGroup = groups[i]
+                    p = plot(leg=false, margin=margin, size=(size, size))
+                    posGroupRows = [row[groupBy] == posGroup for row in eachrow(ena.metadata)]
+                    negGroupRows = [row[groupBy] == negGroup for row in eachrow(ena.metadata)]
+                    if showUnits
+                        plot_units!(p, ena, posGroupRows; color=extraColors[j], kwargs...)
+                        plot_units!(p, ena, negGroupRows; color=extraColors[i], kwargs...)
+                    end
+
+                    if showCIs
+                        plot_cis!(p, ena, posGroupRows, posGroup; color=extraColors[j], kwargs...)
+                        plot_cis!(p, ena, negGroupRows, negGroup; color=extraColors[i], kwargs...)
+                    end
+
+                    plot_subtraction!(p, ena; negColor=extraColors[i], posColor=extraColors[j],
+                        groupVar=groupBy, negGroup=groups[i], posGroup=groups[j], kwargs...)
+
+                    temp = "$(groups[j]) - $(groups[i])"
+                    title!(p, "($(letters[n])) " * string(get(titles, 2+n, temp)))
+                    push!(ps, p)
+                    n += 1
+                end
+            end
+        end
     end
 
     #### Layout the subplots
@@ -218,6 +249,118 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel;
 
     ### Compute line widths as the strength (slope) between the xpos and the accum network weights
     f1 = @formula(y ~ pos_x)
+    lineData = map(eachrow(ena.networkModel)) do networkRow
+        r = networkRow[:relationship]
+        f1 = FormulaTerm(term(r), f1.rhs)
+        try
+            m1 = fit(LinearModel, f1, regressionData)
+            slope = coef(m1)[2]
+            pearson = cor(regressionData[!, :pos_x], regressionData[!, r])
+            return (slope, pearson)
+        catch e
+            return (0, 0)
+        end
+    end
+
+    ### Color the lines based on their correlation with the x position
+    midColor = weighted_color_mean(0.5, RGB(negColor), RGB(posColor))
+    midColor = weighted_color_mean(0.3, RGB(midColor), colorant"white")
+    # midColor = weighted_color_mean(0.5, HSV(negColor), HSV(posColor))
+    # # midColor = HSV((midColor.h+180)%360, midColor.s, midColor.v)
+    # midColor = weighted_color_mean(0.1, RGB(midColor), colorant"#ccc")
+    lineColorMap = help_nonlinear_gradient(weighted_color_mean(0.95, negColor, colorant"black"),
+                                           midColor,
+                                           weighted_color_mean(0.95, posColor, colorant"black"),
+                                           curve=2.5)
+    lineColors = map(lineData) do (slope, pearson)
+        if isnan(pearson)
+            pearson = 0
+        end
+
+        if flipX
+            pearson *= -1
+        end        
+
+        index = 1 + round(Int, (length(lineColorMap) - 1) * (pearson + 1) / 2)
+        return lineColorMap[index]
+    end
+
+    ### Size the lines based on their slope with the x position
+    lineWidths = map(lineData) do (slope, pearson)
+        return abs(slope)
+    end
+
+    ### Normalize
+    lineWidths *= GLOBAL_MAX_LINE_SIZE / maximum(lineWidths)
+
+    ### Placeholder, let's compute code weights as we visit each line
+    codeWidths = zeros(nrow(ena.codeModel))
+
+    ### For each line...
+    for (i, networkRow) in enumerate(eachrow(ena.networkModel))
+
+        ### ...contribute to the code weights...
+        j, k = ena.relationshipMap[networkRow[:relationship]]
+        codeWidths[j] += lineWidths[i]
+        codeWidths[k] += lineWidths[i]
+
+        ### ...and plot that line, in the right width and color
+        x = ena.codeModel[[j, k], :pos_x] * (flipX ? -1 : 1)
+        y = ena.codeModel[[j, k], :pos_y] * (flipY ? -1 : 1)
+        plot!(p, x, y,
+            label=nothing,
+            seriestype=:line,
+            # linestyle=:dash,
+            linewidth=lineWidths[i],
+            linecolor=lineColors[i])
+    end
+
+    ### Rescale the code widths
+    codeWidths *= GLOBAL_MAX_CODE_SIZE / maximum(codeWidths)
+
+    ### And plot the codes and we're done
+    x = ena.codeModel[!, :pos_x] * (flipX ? -1 : 1)
+    y = ena.codeModel[!, :pos_y] * (flipY ? -1 : 1)
+    labels = map(label->text(label, :top, 8), ena.codeModel[!, :code])
+    plot!(p, x, y,
+        label=nothing,
+        seriestype=:scatter,
+        series_annotations=labels,
+        markershape=:circle,
+        markersize=codeWidths,
+        markercolor=:black,
+        markerstrokecolor=:black)
+end
+
+### Helper - Draw the subtraction lines (nearly identical to plot_predictive)
+function plot_subtraction!(p::Plot, ena::AbstractENAModel;
+    negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
+    groupVar::Symbol, negGroup::Any, posGroup::Any,
+    flipX::Bool=false, flipY::Bool=false,
+    kwargs...)
+
+    ### Grab the data we need as one data frame
+    regressionData = hcat(ena.accumModel, ena.metadata, makeunique=true)
+    regressionData[!, :pos_x] = ena.centroidModel[!, :pos_x] * (flipX ? -1 : 1)
+    regressionData[!, :pos_y] = ena.centroidModel[!, :pos_y] * (flipY ? -1 : 1)
+
+    ### Bugfix: https://github.com/JuliaStats/GLM.jl/issues/239
+    for networkRow in eachrow(ena.networkModel)
+        regressionData[!, networkRow[:relationship]] = map(Float64, regressionData[!, networkRow[:relationship]])
+    end
+
+    regressionData[!, :SubtractionVar] = map(eachrow(regressionData)) do row
+        if row[groupVar] == posGroup
+            return 1
+        elseif row[groupVar] == negGroup
+            return 0
+        else
+            return missing
+        end
+    end
+
+    ### Compute line widths as the strength (slope) between the xpos and the accum network weights
+    f1 = @formula(y ~ SubtractionVar)
     lineData = map(eachrow(ena.networkModel)) do networkRow
         r = networkRow[:relationship]
         f1 = FormulaTerm(term(r), f1.rhs)

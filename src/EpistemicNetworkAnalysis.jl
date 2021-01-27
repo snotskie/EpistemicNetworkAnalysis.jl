@@ -64,12 +64,13 @@ export ena_dataset
 
 # # rotation = SVDRotation()
 
+# rotation = MeansRotation(:GameHalf, "First", "Second")
 # # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
 
-# rotation = Means2Rotation(
-#     :Condition, "FirstGame", "SecondGame",
-#     :GameHalf, "First", "Second"
-# )
+# # rotation = Means2Rotation(
+# #     :Condition, "FirstGame", "SecondGame",
+# #     :GameHalf, "First", "Second"
+# # )
 
 # # rotation = FormulaRotation(
 # #     LinearModel, 2, @formula(y ~ 1 + CONFIDENCE_Pre), nothing
@@ -86,11 +87,29 @@ export ena_dataset
 # #     # LinearModel, 2, @formula(y ~ 1 + CONFIDENCE_Pre), nothing
 # # )
 
-# myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation, dropEmpty=false, deflateEmpty=false, meanCenter=true, sphereNormalize=true)
+# function myFilter(row)
+#     return row[:Condition] == "SecondGame"
+#     # return row[:GameHalf] == "First"
+# end
+
+# # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation, dropEmpty=false, deflateEmpty=false, meanCenter=true, sphereNormalize=true)
+# myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation, subsetFilter=myFilter)
 # display(myENA)
 # # p = plot(myENA, showExtras=false, showUnits=true, showNetworks=true, showCIs=true, flipY=false, leg=true)
 # # p = plot(myENA, groupBy=:GroupName)
-# p = plot(myENA)
+# p = plot(myENA, showUnits=false, showExtras=false, leg=false)
+
+# # graftedENA = ENAModel(
+# #     myENA.codes, myENA.conversations, myENA.units,
+# #     Means2Rotation(
+# #             :Condition, "FirstGame", "SecondGame",
+# #             :GameHalf, "First", "Second"
+# #     ),
+# #     myENA.accumModel, myENA.centroidModel, myENA.metadata,
+# #     myENA.codeModel, myENA.networkModel,
+# #     myENA.relationshipMap, myENA.windowSize
+# # )
+# # p = plot(graftedENA, showUnits=false, showExtras=false, flipY=true, ylabel="SVD")
 # display(p)
 
 
