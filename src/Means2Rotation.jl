@@ -131,9 +131,9 @@ function plot_cis!(p::Plot, ena::AbstractENAModel{<:AbstractMeans2Rotation}, dis
     kwargs...)
 
     #### Whole group
-    xs = ena.centroidModel[displayRows, :pos_x] * (flipX ? -1 : 1)
-    ys = ena.centroidModel[displayRows, :pos_y] * (flipY ? -1 : 1)
-    help_plot_ci(p, xs, ys, color, :square, "$(groupName) Mean")
+    # xs = ena.centroidModel[displayRows, :pos_x] * (flipX ? -1 : 1)
+    # ys = ena.centroidModel[displayRows, :pos_y] * (flipY ? -1 : 1)
+    # help_plot_ci(p, xs, ys, color, :square, "$(groupName) Mean")
 
     #### Partition by the second group var
     controlRows2 = map(ena.metadata[!, ena.rotation.groupVar2]) do group
