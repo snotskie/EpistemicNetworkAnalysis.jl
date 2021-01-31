@@ -13,7 +13,7 @@ using Pkg
 Pkg.add("https://github.com/snotskie/EpistemicNetworkAnalysis.jl")
 ```
 
-Third, run the following example code to test your setup. Note, the first load of ENA may take a few minutes to precompile.
+Third, run the following example code to test your setup. Note, the first load of ENA may take a few minutes to precompile. Subsequent runs will be quicker.
 
 ```julia
 using EpistemicNetworkAnalysis
@@ -50,3 +50,7 @@ display(ena)
 p = plot(ena)
 display(p)
 ```
+
+And that's it!
+
+Next, [learn about customizing the ENA model](ENAModel.html)
