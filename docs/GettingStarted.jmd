@@ -1,7 +1,7 @@
 ---
 title: Getting Started
 author: Mariah A. Knowles
-date: 30th January 2020
+date: January, 30th 2020
 ---
 
 First, install Julia and an IDE. I recommend [Julia in Visual Studio Code](https://www.julia-vscode.org/).
@@ -47,8 +47,7 @@ ena = ENAModel(data, codes, conversations, units, rotateBy=rotation)
 display(ena)
 
 # 5. Plot the results
-p = plot(ena)
-display(p)
+plot(ena)
 ```
 
 And that's it!

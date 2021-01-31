@@ -1,9 +1,89 @@
 ---
 title: ENA Models
 author: Mariah A. Knowles
-date: 30th January 2020
+date: January, 30th 2020
 ---
 
-TODO
+## Required Parameters
+
+First, the `ENAModel` constructor has four required parameters:
+
+1. A DataFrame containing the data to be analyzed
+2. An array of symbols specifying the column names of the qualitative codes to include in the model. The order of the array makes no difference.
+3. An array of symbols used to divide the rows into units of analysis. The order makes no difference.
+4. Similarly, an array of symbols used to divide the rows into conversations. The order makes no difference.
+
+For example:
+
+```julia
+using EpistemicNetworkAnalysis
+
+data = ena_dataset("RS.data")
+codes = [
+    :Data,
+    :Technical_Constraints,
+    :Performance_Parameters,
+    :Client_and_Consultant_Requests,
+    :Design_Reasoning,
+    :Collaboration
+]
+
+conversations = [:Condition, :GameHalf, :GroupName]
+units = [:Condition, :GameHalf, :UserName]
+ena = ENAModel(data, codes, conversations, units)
+plot(ena)
+```
+
+## Optional Parameters
+
+Second, the `ENAModel` constructor has multiple optional named parameters that are primitive types:
+
+- `windowSize`, an integer used to specify the size of the sliding stanza window. By default, this is 4. To specify an infinite stanza window, use a very large integer value.
+- `sphereNormalize`, a boolean that tells the model whether to normalize units to the sphere. By default, this is true.
+- `dropEmpty`, a boolean that tells the model whether to drop units with empty networks. By default, this is false.
+- `meanCenter`, a boolean that tells the model whether to center the units such that the mean lies at the origin. By default, this is true. When `dropEmpty=true` and `meanCenter=false`, the zero-network will lie at the origin instead.
+- `deflateEmpty`, a boolean that tells the model whether to deflate the "umbrella handle" from the high dimensional space before rotation. By default, this is false. When it is true, the variance that runs from the zero-network to the mean-network is removed. When `deflateEmpty=true`, changing the value of `meanCenter` will have no effect.
+
+For example:
+
+```julia
+ena = ENAModel(
+    data, codes, conversations, units,
+    windowSize=10,
+    sphereNormalize=true,
+    dropEmpty=true,
+    meanCenter=true,
+    deflateEmpty=true
+)
+
+plot(ena)
+```
+
+## Subset Filtering
+
+Third, the `ENAModel` constructor takes another optional named parameter, `subsetFilter`.
+
+This parameter is a lambda function that is used by the model to remove units from the model after accumulation.
+
+By default, a lambda is used that keeps all units.
+
+For example, one might want to include all units in the conversation, but then filter down to just the students in one group before computing the rotation:
+
+```julia
+function myFilter(unit)
+    if unit[:GroupName] == "1"
+        return true
+    else
+        return false
+    end
+end
+
+ena = ENAModel(data, codes, conversations, units, subsetFilter=myFilter)
+plot(ena)
+```
+
+## Rotation Parameter
+
+Finally, the `ENAModel` constructor has one more optional named parameter, `rotateBy`.
 
 Next, [learn about customizing the rotation](Rotations.html)

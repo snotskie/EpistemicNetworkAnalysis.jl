@@ -30,11 +30,6 @@ abstract type AbstractMeans2Rotation <: AbstractFormula2Rotation
     # plot accepts: (inherit)
 end
 
-abstract type AbstractPoleRotation <: AbstractENARotation
-    # fields: (inherit), leftCode, rightCode
-    # plot accepts: (inherit)
-end
-
 # Accumulation Models
 abstract type AbstractENAModel{T<:AbstractENARotation}
     # fields: units, conversations, codes, rotation, accumModel, centroidModel, metadata, codeModel, networkModel, relationshipMap

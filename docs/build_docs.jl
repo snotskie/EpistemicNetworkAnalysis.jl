@@ -1,5 +1,5 @@
-# using Pkg
-# Pkg.update("EpistemicNetworkAnalysis")
+using Pkg
+Pkg.update("EpistemicNetworkAnalysis")
 
 using Weave
 weave("GettingStarted.jmd"; doctype="md2html", out_path=:pwd)
