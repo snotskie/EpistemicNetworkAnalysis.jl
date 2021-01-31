@@ -64,8 +64,8 @@ export ena_dataset
 
 # # rotation = SVDRotation()
 
-# # rotation = MeansRotation(:GameHalf, "First", "Second")
-# rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
+# rotation = MeansRotation(:GameHalf, "First", "Second")
+# # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
 
 # # rotation = Means2Rotation(
 # #     :Condition, "FirstGame", "SecondGame",
@@ -105,20 +105,33 @@ export ena_dataset
 # # p = plot(myENA, showExtras=false, showUnits=true, showNetworks=true, showCIs=true, flipY=false, leg=true)
 # # p = plot(myENA, groupBy=:GroupName)
 # # p = plot(myENA, showUnits=false, showExtras=false, leg=true, groupBy=:ConditionHalf, extraColors=myExtraColors, flipY=false)
-# # p = plot(myENA, showUnits=false, showExtras=false, leg=false)
+# p = plot(myENA, showUnits=false, showExtras=false, leg=false)
 
-# graftedENA = ENAModel(
-#     myENA.codes, myENA.conversations, myENA.units,
-#     Means2Rotation(
-#             :Condition, "FirstGame", "SecondGame",
-#             :GameHalf, "First", "Second"
-#     ),
-#     myENA.accumModel, myENA.centroidModel, myENA.metadata,
-#     myENA.codeModel, myENA.networkModel,
-#     myENA.relationshipMap, myENA.windowSize
+# # graftedENA = ENAModel(
+# #     myENA.codes, myENA.conversations, myENA.units,
+# #     Means2Rotation(
+# #             :Condition, "FirstGame", "SecondGame",
+# #             :GameHalf, "First", "Second"
+# #     ),
+# #     myENA.accumModel, myENA.centroidModel, myENA.metadata,
+# #     myENA.codeModel, myENA.networkModel,
+# #     myENA.relationshipMap, myENA.windowSize
+# # )
+# # # p = plot(graftedENA, showUnits=false, showExtras=false, flipY=true, ylabel="SVD")
+# # p = plot(graftedENA, showUnits=false, showExtras=false, flipY=true, ylabel="SVD", groupBy=:ConditionHalf, extraColors=myExtraColors)
+
+# display(p)
+
+# using StatsPlots
+# p = plot()
+# plot!(
+#     p,
+#     myENA.accumModel[!, :pos_x],
+#     myENA.metadata[!, :GameHalf],
+#     seriestype=:scatter
 # )
-# # p = plot(graftedENA, showUnits=false, showExtras=false, flipY=true, ylabel="SVD")
-# p = plot(graftedENA, showUnits=false, showExtras=false, flipY=true, ylabel="SVD", groupBy=:ConditionHalf, extraColors=myExtraColors)
+
+# xlims!(p, (-1, 1))
 
 # display(p)
 

@@ -21,7 +21,7 @@ function plot(ena::AbstractENAModel;
     extraColors::Array{<:Colorant,1}=DEFAULT_EXTRA_COLORS,
     flipX=false, flipY=false,
     singleUnit=nothing, groupBy=nothing,
-    showExtras::Bool=true, showNetworks::Bool=true, showUnits::Bool=true, showCIs::Bool=true,
+    showExtras::Bool=false, showNetworks::Bool=true, showUnits::Bool=true, showCIs::Bool=true,
     kwargs...)
 
     #### Combine the kwargs to make them easier to pass without needing
