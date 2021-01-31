@@ -4,9 +4,7 @@ author: Mariah A. Knowles
 date: 30th January 2020
 ---
 
-# Getting Started
-
-First, install Julia and a Julia IDE. I recommend [Julia in Visual Studio Code](https://www.julia-vscode.org/).
+First, install Julia and an IDE. I recommend [Julia in Visual Studio Code](https://www.julia-vscode.org/).
 
 Second, install the Julia ENA package by running the following in Julia:
 
