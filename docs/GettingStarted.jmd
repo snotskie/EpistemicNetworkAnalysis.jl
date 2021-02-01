@@ -10,7 +10,7 @@ Second, install the Julia ENA package by running the following in Julia:
 
 ```{julia; eval=false}
 using Pkg
-Pkg.add("https://github.com/snotskie/EpistemicNetworkAnalysis.jl")
+Pkg.add(url="https://github.com/snotskie/EpistemicNetworkAnalysis.jl")
 ```
 
 Third, run the following example code to test your setup. Note, the first load of ENA may take a few minutes to precompile. Subsequent runs will be quicker.
