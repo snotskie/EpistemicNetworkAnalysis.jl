@@ -46,28 +46,24 @@ function help_plot_ci(p, xs, ys, color, shape, label)
             label=nothing,
             seriestype=:line,
             linewidth=1,
-            linestyle=:dash,
             linecolor=color)
 
         Plots.plot!(p, [ci_x[1], ci_x[2]], [ci_y[2], ci_y[2]], 
             label=nothing,
             seriestype=:line,
             linewidth=1,
-            linestyle=:dash,
             linecolor=color)
 
         Plots.plot!(p, [ci_x[1], ci_x[1]], [ci_y[1], ci_y[2]], 
             label=nothing,
             seriestype=:line,
             linewidth=1,
-            linestyle=:dash,
             linecolor=color)
 
         Plots.plot!(p, [ci_x[2], ci_x[2]], [ci_y[1], ci_y[2]], 
             label=nothing,
             seriestype=:line,
             linewidth=1,
-            linestyle=:dash,
             linecolor=color)
     end
 end

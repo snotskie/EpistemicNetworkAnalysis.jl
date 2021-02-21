@@ -1,6 +1,3 @@
-"""
-TODO document
-"""
 struct MeansRotation <: AbstractMeansRotation
     regression_model::Type{LinearModel}
     coefindex::Int
@@ -50,7 +47,11 @@ function plot(ena::AbstractENAModel{<:AbstractMeansRotation};
 
     if isnothing(groupBy) || groupBy == ena.rotation.groupVar
         groupBy = ena.rotation.groupVar
-        extraColors = [negColor, posColor, extraColors...]
+        if ena.rotation.controlGroup < ena.rotation.treatmentGroup
+            extraColors = [negColor, posColor, extraColors...]
+        else
+            extraColors = [posColor, negColor, extraColors...]
+        end
     end
 
     if isnothing(xlabel)

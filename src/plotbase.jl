@@ -11,7 +11,7 @@ const DEFAULT_EXTRA_COLORS = [
 
 const GLOBAL_MAX_LINE_SIZE = 8
 const GLOBAL_MAX_CODE_SIZE = 8
-const GLOBAL_UNIT_SIZE = 2
+const GLOBAL_UNIT_SIZE = 3
 
 ### Top-level wrapper
 function plot(ena::AbstractENAModel;
@@ -39,21 +39,8 @@ function plot(ena::AbstractENAModel;
         plot(leg=leg, margin=margin, size=(size, size)), # omnibus
         plot(leg=false, margin=margin, size=(size, size))  # predictive
     ]
-
-    #### Draw usual subplots: Distribution
-    allRows = [true for row in eachrow(ena.metadata)]
-    if showNetworks
-        plot_network!(ps[1], ena, allRows; kwargs...)
-    end
-
-    if showUnits
-        plot_units!(ps[1], ena, allRows; kwargs...)
-    end
-
-    if showExtras
-        plot_extras!(ps[1], ena, allRows; kwargs...)
-    end
-
+    
+    #### Start usual subplots: Distribution
     title!(ps[1], "(a) " * get(titles, 1, "Distribution"))
     results = test(ena)
     if !isnan(results[:variance_x])
@@ -71,7 +58,13 @@ function plot(ena::AbstractENAModel;
     #### If we need group-wise subplots...
     if !isnothing(groupBy)
 
-        #### ...then for each...
+        #### ...continue usual subplots: Distribution
+        allRows = [true for row in eachrow(ena.metadata)]
+        if showNetworks
+            plot_network!(ps[1], ena, allRows; kwargs...)
+        end
+
+        #### ...then for each group...
         groups = sort(unique(ena.metadata[!, groupBy]))
         letters = "abcdefghijklmnopqrstuvwxyz"[(1+length(ps)):end]
         for (g, group) in enumerate(groups)
@@ -85,7 +78,8 @@ function plot(ena::AbstractENAModel;
                 end
 
                 if showUnits
-                    plot_units!(p, ena, groupRows; color=extraColors[g], kwargs...)
+                    plot_units!(p, ena, groupRows; unitLabel="$(group) Units", color=extraColors[g], kwargs...)
+                    plot_units!(ps[1], ena, groupRows; unitLabel="$(group) Units", color=extraColors[g], kwargs...)
                 end
 
                 if showExtras
@@ -132,6 +126,25 @@ function plot(ena::AbstractENAModel;
                 end
             end
         end
+
+        #### then finish usual subplots: Distribution
+        if showExtras
+            plot_extras!(ps[1], ena, allRows; kwargs...)
+        end
+    else
+        #### Else just draw usual subplots: Distribution
+        allRows = [true for row in eachrow(ena.metadata)]
+        if showNetworks
+            plot_network!(ps[1], ena, allRows; kwargs...)
+        end
+
+        if showUnits
+            plot_units!(ps[1], ena, allRows; kwargs...)
+        end
+
+        if showExtras
+            plot_extras!(ps[1], ena, allRows; kwargs...)
+        end
     end
 
     #### Layout the subplots
@@ -159,6 +172,7 @@ end
 function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
     color::Colorant=colorant"black",
     flipX::Bool=false, flipY::Bool=false,
+    unitLabel::String="Units",
     kwargs...)
 
     #### Get the x/y positions
@@ -168,12 +182,12 @@ function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
 
     #### Draw them in black by default
     plot!(p, x, y,
-        label="Units",
+        label=unitLabel,
         seriestype=:scatter,
         markershape=:circle,
         markersize=GLOBAL_UNIT_SIZE,
         markercolor=color,
-        markerstrokecolor=color)
+        markerstrokewidth=0)
 end
 
 ### Helper - Draw the lines
@@ -228,7 +242,7 @@ function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1
         markershape=:circle,
         markersize=codeWidths,
         markercolor=:black,
-        markerstrokecolor=:black)
+        markerstrokewidth=0)
 end
 
 ### Helper - Draw the predictive lines
@@ -348,7 +362,7 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel;
         markershape=:circle,
         markersize=codeWidths,
         markercolor=:black,
-        markerstrokecolor=:black)
+        markerstrokewidth=0)
 end
 
 ### Helper - Draw the subtraction lines (nearly identical to plot_predictive)
@@ -483,7 +497,7 @@ function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, neg
         markershape=:circle,
         markersize=codeWidths,
         markercolor=:black,
-        markerstrokecolor=:black)
+        markerstrokewidth=0)
 end
 
 ### Helper Placeholder - extras to add to the distribution subplot

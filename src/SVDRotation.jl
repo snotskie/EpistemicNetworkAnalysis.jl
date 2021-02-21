@@ -1,6 +1,3 @@
-"""
-TODO document
-"""
 struct SVDRotation <: AbstractSVDRotation
     # no fields
 end

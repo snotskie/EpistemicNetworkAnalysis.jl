@@ -1,6 +1,3 @@
-"""
-TODO document
-"""
 struct FormulaRotation{T <: RegressionModel} <: AbstractFormulaRotation
     regression_model::Type{T}
     coefindex::Int
@@ -93,7 +90,15 @@ end
 function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, displayRows::Array{Bool,1};
     flipX::Bool=false, flipY::Bool=false, minLabel::Union{Nothing,String}=nothing, maxLabel::Union{Nothing,String}=nothing,
     negColor::Colorant=colorant"red", posColor::Colorant=colorant"blue",
+    groupBy=nothing,
     kwargs...)
+
+    ### Punt to the parent when we have a groupBy
+    if !isnothing(groupBy)
+        return invoke(plot_units!, Tuple{Plot, AbstractENAModel{<:AbstractENARotation}, Array{Bool,1}},
+            p, ena, displayRows; flipX=flipX, flipY=flipY, minLabel=minLabel, maxLabel=maxLabel, negColor=negColor,
+            posColor=posColor, groupBy=groupBy, kwargs...)
+    end
 
     ### Grab filtered values
     displayUnits = ena.centroidModel[displayRows, :]
@@ -101,7 +106,6 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
 
     ### Default, when we don't have a good column to use for a numeric variable, use all black
     unitColors = [colorant"black" for unitRow in eachrow(displayUnits)]
-    unitRings = [colorant"black" for unitRow in eachrow(displayUnits)]
 
     ### Grab the name of the potential column as a Symbol
     col = Symbol(ena.rotation.f1.rhs[ena.rotation.coefindex])
@@ -127,9 +131,6 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
                 ### ...and color-code the units based on a gradient, using black for those with missing values
                 midColor = weighted_color_mean(0.5, RGB(negColor), RGB(posColor))
                 midColor = weighted_color_mean(0.1, RGB(midColor), colorant"white")
-                # midColor = weighted_color_mean(0.5, HSV(negColor), HSV(posColor))
-                # # midColor = HSV((midColor.h+180)%360, midColor.s, midColor.v)
-                # midColor = weighted_color_mean(0.1, RGB(midColor), colorant"#ccc")
                 colorMap = help_nonlinear_gradient(negColor, midColor, posColor)
                 unitColors = map(eachrow(displayMetadata)) do unitRow
                     if !ismissing(unitRow[col])
@@ -137,24 +138,6 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
                         return colorMap[index]
                     else
                         return colorant"#111"
-                    end
-                end
-
-                ### ...and same for a ring around them, but a tad darker in the mid range
-                midColor = weighted_color_mean(0.5, RGB(negColor), RGB(posColor))
-                midColor = weighted_color_mean(0.3, RGB(midColor), colorant"white")
-                # midColor = weighted_color_mean(0.5, HSV(negColor), HSV(posColor))
-                # # midColor = HSV((midColor.h+180)%360, midColor.s, midColor.v)
-                # midColor = weighted_color_mean(0.3, RGB(midColor), colorant"#ccc")
-                colorMap = help_nonlinear_gradient(weighted_color_mean(0.95, negColor, colorant"black"),
-                                                   midColor,
-                                                   weighted_color_mean(0.95, posColor, colorant"black"))
-                unitRings = map(eachrow(displayMetadata)) do unitRow
-                    if !ismissing(unitRow[col])
-                        index = 1 + round(Int, (length(colorMap) - 1) * (unitRow[col] - lo) / (hi - lo))
-                        return colorMap[index]
-                    else
-                        return colorant"black"
                     end
                 end
             end
@@ -183,18 +166,16 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
             seriestype=:scatter,
             markershape=:circle,
             markersize=GLOBAL_UNIT_SIZE,
-            markerstrokewidth=1,
             markercolor=negColor,
-            markerstrokecolor=negColor)
+            markerstrokewidth=0)
         
         plot!(p, [-999], [-999],
             label=maxLabel,
             seriestype=:scatter,
             markershape=:circle,
             markersize=GLOBAL_UNIT_SIZE,
-            markerstrokewidth=1,
             markercolor=posColor,
-            markerstrokecolor=posColor)
+            markerstrokewidth=0)
         
         ### ...and plot the points with the correct gradient colors
         plot!(p, x, y,
@@ -202,9 +183,8 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
             seriestype=:scatter,
             markershape=:circle,
             markersize=GLOBAL_UNIT_SIZE,
-            markerstrokewidth=1,
             markercolor=unitColors,
-            markerstrokecolor=unitRings)
+            markerstrokewidth=0)
     else
         ### Otherwise, just show units in black
         plot!(p, x, y,
@@ -213,7 +193,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
             markershape=:circle,
             markersize=GLOBAL_UNIT_SIZE,
             markercolor=unitColors,
-            markerstrokecolor=unitColors)
+            markerstrokewidth=0)
     end
 end
 
@@ -247,13 +227,8 @@ function plot_extras!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation},
 
                 ### ...then let's prepare our gradient (same gradient used on the rings in plot_units)
                 midColor = weighted_color_mean(0.5, RGB(negColor), RGB(posColor))
-                midColor = weighted_color_mean(0.3, RGB(midColor), colorant"white")
-                # midColor = weighted_color_mean(0.5, HSV(negColor), HSV(posColor))
-                # # midColor = HSV((midColor.h+180)%360, midColor.s, midColor.v)
-                # midColor = weighted_color_mean(0.3, RGB(midColor), colorant"#ccc")
-                binMap = help_nonlinear_gradient(weighted_color_mean(0.95, negColor, colorant"black"),
-                                                 midColor,
-                                                 weighted_color_mean(0.95, posColor, colorant"black"))
+                midColor = weighted_color_mean(0.1, RGB(midColor), colorant"white")
+                binMap = help_nonlinear_gradient(negColor, midColor, posColor)
 
                 ### ...and prepare our placeholders
                 negBinColors = [colorant"black" for i in 1:bins] # average color in that bin

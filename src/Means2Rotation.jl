@@ -1,6 +1,3 @@
-"""
-TODO document
-"""
 struct Means2Rotation <: AbstractMeans2Rotation
     regression_model::Type{LinearModel}
     coefindex::Int

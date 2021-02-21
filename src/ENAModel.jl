@@ -1,8 +1,3 @@
-# TODO make a few different ENAModel overlap wrappers
-
-"""
-TODO: document
-"""
 struct ENAModel{T} <: AbstractENAModel{T}
     # Inherits:
     codes::Array{Symbol,1}

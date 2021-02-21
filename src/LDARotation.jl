@@ -1,6 +1,3 @@
-"""
-TODO document
-"""
 struct LDARotation <: AbstractLDARotation
     groupVar::Symbol
 end
@@ -16,8 +13,6 @@ function rotate!(rotation::AbstractLDARotation, networkModel::DataFrame, unitMod
     y = map(metadata[!, rotation.groupVar]) do group
         return groupMap[group]
     end
-
-    # y = Vector{Float64}(y)
 
     ## Run the LDA
     ldaModel = projection(fit(MulticlassLDA, nc, X, y))

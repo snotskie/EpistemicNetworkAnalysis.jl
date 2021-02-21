@@ -1,6 +1,3 @@
-"""
-TODO document
-"""
 struct Formula2Rotation{T <: RegressionModel, U <: RegressionModel} <: AbstractFormula2Rotation
     regression_model::Type{T}
     coefindex::Int
