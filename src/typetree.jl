@@ -10,6 +10,11 @@ abstract type AbstractSVDRotation <: AbstractENARotation
     # plot accepts: (inherit), groupVar
 end
 
+abstract type AbstractLDARotation <: AbstractENARotation
+    # fields: (inherit), groupVar
+    # plot accepts: (inherit)
+end
+
 abstract type AbstractFormulaRotation <: AbstractENARotation
     # fields: (inherit), regression_model, coefindex, f1, contrasts
     # plot accepts: (inherit), minLabel, maxLabel, minColor, maxColor

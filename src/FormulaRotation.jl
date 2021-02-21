@@ -41,15 +41,27 @@ function rotate!(rotation::AbstractFormulaRotation, networkModel::DataFrame, uni
         r = networkRow[:relationship]
         f1 = FormulaTerm(term(r), rotation.f1.rhs)
         try
-            ## The function call is different when we have contrasts
-            if isnothing(rotation.contrasts)
-                m1 = fit(rotation.regression_model, f1, regressionData)
-                slope = coef(m1)[rotation.coefindex]
-                networkRow[:weight_x] = slope
+            ## The function call is different depending on type and optional contrasts dict
+            if rotation.regression_model <: GeneralizedLinearModel
+                if isnothing(rotation.contrasts)
+                    m1 = fit(rotation.regression_model, f1, regressionData, Normal())
+                    slope = coef(m1)[rotation.coefindex]
+                    networkRow[:weight_x] = slope
+                else
+                    m1 = fit(rotation.regression_model, f1, regressionData, Normal(), contrasts=rotation.contrasts)
+                    slope = coef(m1)[rotation.coefindex]
+                    networkRow[:weight_x] = slope
+                end
             else
-                m1 = fit(rotation.regression_model, f1, regressionData, contrasts=rotation.contrasts)
-                slope = coef(m1)[rotation.coefindex]
-                networkRow[:weight_x] = slope
+                if isnothing(rotation.contrasts)
+                    m1 = fit(rotation.regression_model, f1, regressionData)
+                    slope = coef(m1)[rotation.coefindex]
+                    networkRow[:weight_x] = slope
+                else
+                    m1 = fit(rotation.regression_model, f1, regressionData, contrasts=rotation.contrasts)
+                    slope = coef(m1)[rotation.coefindex]
+                    networkRow[:weight_x] = slope
+                end
             end
         catch e
             println(e)

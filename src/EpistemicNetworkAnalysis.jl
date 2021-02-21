@@ -19,13 +19,13 @@ using LinearAlgebra
 using MultivariateStats
 using HypothesisTests
 using GLM
-# TODO using Lasso
 
 # Includes
 include("./helpers.jl")
 include("./typetree.jl")
 include("./plotbase.jl")
 include("./SVDRotation.jl")
+include("./LDARotation.jl")
 include("./FormulaRotation.jl")
 include("./Formula2Rotation.jl")
 include("./MeansRotation.jl")
@@ -36,111 +36,30 @@ include("./RSData.jl")
 # Exports
 export ENAModel
 export plot
+export SVDRotation
+export LDARotation
 export MeansRotation
 export Means2Rotation
-export SVDRotation
 export FormulaRotation
 export Formula2Rotation
 export ena_dataset
 
 
 # @warn "Running EpistemicNetworkAnalysis.jl as main. Performing kitchen sink operation."
-# RSdata = ena_dataset("RS.data")
+# let
+# data = ena_dataset("RS.data")
 # using Random
+# using Lasso
 # Random.seed!(4321)
-# RSdata[!, :RND] = rand(nrow(RSdata))
-# println(names(RSdata))
-# codes = [:Data,
-#     :Technical_Constraints,
-#     :Performance_Parameters,
-#     :Client_and_Consultant_Requests,
-#     :Design_Reasoning,
-#     :Collaboration]
-
-# conversations = [:Condition, :GameHalf, :GroupName]
-# units = [:Condition, :GameHalf, :UserName]
-
-# # myENA = ENAModel(RSdata, codes, conversations, units)
-
-# # rotation = SVDRotation()
-
-# rotation = MeansRotation(:GameHalf, "First", "Second")
-# # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
-
-# # rotation = Means2Rotation(
-# #     :Condition, "FirstGame", "SecondGame",
-# #     :GameHalf, "First", "Second"
-# # )
-
-# # rotation = FormulaRotation(
-# #     LinearModel, 2, @formula(y ~ 1 + CONFIDENCE_Pre), nothing
-# # )
-
-# # rotation = FormulaRotation(
-# #     LinearModel, 2, @formula(y ~ 1 + RND), nothing
-# # )
-
-# # rotation = Formula2Rotation(
-# #     LinearModel, 2, @formula(y ~ 1 + CONFIDENCE_Pre), nothing,
-# #     LinearModel, 1, @formula(y ~ 1 + 0), nothing
-# #     # LinearModel, 1, @formula(y ~ 1 + 0), nothing,
-# #     # LinearModel, 2, @formula(y ~ 1 + CONFIDENCE_Pre), nothing
-# # )
-
-# # function myFilter(row)
-# #     return row[:Condition] == "SecondGame"
-# #     # return row[:GameHalf] == "First"
-# # end
-
-# RSdata[!, :ConditionHalf] = map(eachrow(RSdata)) do row
-#     return "$(row[:Condition])$(row[:GameHalf])Half"
+# data[!, :RND] = rand(nrow(data))
+# data[!, :RNDGroup] = map(data[!, :RND]) do x
+#     if x <= 0.5
+#         return "First"
+#     else
+#         return "Second"
+#     end
 # end
 
-# # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation, dropEmpty=false, deflateEmpty=false, meanCenter=true, sphereNormalize=true)
-# # myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation, deflateEmpty=true)
-# myENA = ENAModel(RSdata, codes, conversations, units, rotateBy=rotation)
-# display(myENA)
-
-# myExtraColors = [colorant"#CC3A87", colorant"#3ECC3A", colorant"#F18E33", colorant"#333CF1"]
-# # p = plot(myENA, showExtras=false, showUnits=true, showNetworks=true, showCIs=true, flipY=false, leg=true)
-# # p = plot(myENA, groupBy=:GroupName)
-# # p = plot(myENA, showUnits=false, showExtras=false, leg=true, groupBy=:ConditionHalf, extraColors=myExtraColors, flipY=false)
-# p = plot(myENA, showUnits=false, showExtras=false, leg=false)
-
-# # graftedENA = ENAModel(
-# #     myENA.codes, myENA.conversations, myENA.units,
-# #     Means2Rotation(
-# #             :Condition, "FirstGame", "SecondGame",
-# #             :GameHalf, "First", "Second"
-# #     ),
-# #     myENA.accumModel, myENA.centroidModel, myENA.metadata,
-# #     myENA.codeModel, myENA.networkModel,
-# #     myENA.relationshipMap, myENA.windowSize
-# # )
-# # # p = plot(graftedENA, showUnits=false, showExtras=false, flipY=true, ylabel="SVD")
-# # p = plot(graftedENA, showUnits=false, showExtras=false, flipY=true, ylabel="SVD", groupBy=:ConditionHalf, extraColors=myExtraColors)
-
-# display(p)
-
-# using StatsPlots
-# p = plot()
-# plot!(
-#     p,
-#     myENA.accumModel[!, :pos_x],
-#     myENA.metadata[!, :GameHalf],
-#     seriestype=:scatter
-# )
-
-# xlims!(p, (-1, 1))
-
-# display(p)
-
-# # 1. Load your data into a DataFrame
-# data = ena_dataset("RS.data")
-# display(data)
-
-# # 2. Specify your model
-# ## 2a. What columns categorize each row? (numeric columns, usually containing only 0 or 1)
 # codes = [
 #     :Data,
 #     :Technical_Constraints,
@@ -150,22 +69,49 @@ export ena_dataset
 #     :Collaboration
 # ]
 
-# ## 2b. How do we specify unique conversations in the df?
 # conversations = [:Condition, :GameHalf, :GroupName]
-
-# ## 2c. How do we specify unique speakers in the df?
 # units = [:Condition, :GameHalf, :UserName]
 
-# # 3. Specify the rotation method (optional, defaults to SVD)
-# rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
+# # for t in 1:3
+# #     r = rand()
+# #     datac = copy(data)
+# #     for c in union(conversations, units)
+# #         datac[!, c] = string.(datac[!, c], r)
+# #     end
+# #     for c in codes
+# #         datac[!, c] = map(data[!, c]) do x
+# #             if rand() < 0.20
+# #                 return 1 - x
+# #             else
+# #                 return x
+# #             end
+# #         end
+# #     end
+# #     data = vcat(data, datac)
+# # end
 
-# # 4. Run the model
-# ena = ENAModel(data, codes, conversations, units, rotateBy=rotation)
-# display(ena)
-
-# # 5. Plot the results
-# p = plot(ena)
-# display(p)
+# # rotation = SVDRotation()
+# # rotation = LDARotation(:Condition)
+# # rotation = LDARotation(:GameHalf)
+# # rotation = LDARotation(:RNDGroup)
+# rotation = LDARotation(:GroupName)
+# # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
+# # rotation = MeansRotation(:GameHalf, "First", "Second")
+# # rotation = MeansRotation(:RNDGroup, "First", "Second")
+# # rotation = FormulaRotation(
+# #     LassoModel, 2, @formula(col ~ 0 + RND), nothing
+# # )
+# myENA = ENAModel(data, codes, conversations, units, rotateBy=rotation, subsetFilter=x->x[:GameHalf]=="First"&&x[:Condition]=="FirstGame")
+# display(myENA)
+# savefig(plot(myENA), "~/Downloads/temp.png")
+# run(`firefox "~/Downloads/temp.png"`)
+# # savefig(plot(myENA, groupBy=:RNDGroup, showUnits=false), "~/Downloads/temp.png")
+# # run(`firefox "~/Downloads/temp.png"`)
+# # f1 = @formula(pos_x ~ 1 + RNDGroup)
+# # regressionData = hcat(myENA.metadata, myENA.accumModel, makeunique=true)
+# # m1 = fit(LinearModel, f1, regressionData)
+# # display(m1)
+# end # let
 
 
 end # module
