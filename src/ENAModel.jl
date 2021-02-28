@@ -17,8 +17,8 @@ end
 
 function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
     windowSize::Int=4, rotateBy::T=SVDRotation(),
-    sphereNormalize::Bool=true, dropEmpty::Bool=false, deflateEmpty::Bool=false, meanCenter::Bool=true,
-    subsetFilter::Function=x->true) where {T<:AbstractENARotation}
+    sphereNormalize::Bool=true, dropEmpty::Bool=false, deflateEmpty::Bool=false, deflateTo::Vector{Float64}=Float64[], meanCenter::Bool=true,
+    subsetFilter::Function=x->true, relationshipFilter::Function=(x,y)->true) where {T<:AbstractENARotation}
 
     # Checking that the options are sane
     if windowSize < 1
@@ -38,7 +38,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     relationshipMap = Dict(Symbol(string(code1, "_", code2)) => (i, j)
                          for (i, code1) in enumerate(codes)
                          for (j, code2) in enumerate(codes)
-                         if i < j)
+                         if i < j && relationshipFilter(code1, code2))
 
     ## Adding a new column to the raw data that labels each unit properly
     data = hcat(data, DataFrame(:ENA_UNIT => map(eachrow(data)) do dataRow
@@ -216,9 +216,12 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     ## But first, maybe deflate the model we rotate on to reject the zero-to-nonzero-mean axis
     if deflateEmpty
         deflatedModel = copy(centroidModel)
-        zAxis = map(eachrow(networkModel)) do networkRow
-            r = networkRow[:relationship]
-            return sum(centroidModel[!, r])
+        zAxis = deflateTo
+        if length(zAxis) != nrow(networkModel)
+            zAxis = map(eachrow(networkModel)) do networkRow
+                r = networkRow[:relationship]
+                return sum(centroidModel[!, r])
+            end
         end
 
         s = sqrt(sum(zAxis .^ 2))

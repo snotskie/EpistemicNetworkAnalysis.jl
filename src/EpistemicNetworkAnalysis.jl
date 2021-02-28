@@ -48,13 +48,15 @@ export ena_dataset
 # @warn "Running EpistemicNetworkAnalysis.jl as main. Performing kitchen sink operation."
 # let
 # data = ena_dataset("RS.data")
+# data[!, :_] = ones(nrow(data))
 # codes = [
 #     :Data,
 #     :Technical_Constraints,
 #     :Performance_Parameters,
 #     :Client_and_Consultant_Requests,
 #     :Design_Reasoning,
-#     :Collaboration
+#     :Collaboration,
+#     :_
 # ]
 
 # conversations = [:Condition, :GameHalf, :GroupName]
@@ -72,7 +74,7 @@ export ena_dataset
 # end
 
 # # rotation = SVDRotation()
-# # rotation = LDARotation(:Condition)
+# rotation = LDARotation(:Condition)
 # # rotation = LDARotation(:GameHalf)
 # # rotation = LDARotation(:RNDGroup)
 # # rotation = LDARotation(:GroupName)
@@ -84,11 +86,28 @@ export ena_dataset
 # # rotation = FormulaRotation(
 # #     LassoModel, 2, @formula(col ~ 0 + RND), nothing
 # # )
-# rotation = FormulaRotation(
-#     LinearModel, 2, @formula(col ~ 1 + RND), nothing
+# # rotation = FormulaRotation(
+# #     LinearModel, 2, @formula(col ~ 1 + RND), nothing
+# # )
+# myENA = ENAModel(
+#     data, codes, conversations, units,
+#     rotateBy=rotation,
+#     # deflateEmpty=true,
+#     # meanCenter=false,
+#     relationshipFilter=(code1, code2)->(code2 == :_),
+#     windowSize=1
 # )
-# myENA = ENAModel(data, codes, conversations, units, rotateBy=rotation, deflateEmpty=true)
-# # myENA = ENAModel(data, codes, conversations, units, rotateBy=rotation, subsetFilter=x->x[:GameHalf]=="First"&&x[:Condition]=="FirstGame")
+
+# myENA = ENAModel(
+#     data, codes, conversations, units,
+#     rotateBy=rotation,
+#     deflateEmpty=true,
+#     deflateTo=Vector{Float64}(myENA.codeModel[7, myENA.networkModel[!, :relationship]]),
+#     # meanCenter=false,
+#     relationshipFilter=(code1, code2)->(code2 == :_),
+#     windowSize=1
+# )
+
 # display(myENA)
 # savefig(plot(myENA), "~/Downloads/temp.png")
 # # savefig(plot(myENA, groupBy=:Condition), "~/Downloads/temp.png")

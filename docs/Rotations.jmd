@@ -103,7 +103,9 @@ plot(ena)
 
 *Interpretation: TODO*
 
-## Formula Rotation
+## TODO LDA Rotation
+
+## Formula Rotation - TODO mean center the VOIs in F2
 
 Fifth, advanced users may want to have more control over the model. Doing so is an experimental feature, and the researcher should be careful to validate their model and their results.
 
