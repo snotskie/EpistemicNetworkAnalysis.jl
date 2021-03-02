@@ -91,7 +91,7 @@ function plot_network!(p::Plot, ena::AbstractBiplotModel, displayRows::Array{Boo
 end
 
 ### Helper - Draw the predictive lines
-function plot_predictive!(p::Plot, ena::AbstractENAModel;
+function plot_predictive!(p::Plot, ena::AbstractBiplotModel;
     negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)
