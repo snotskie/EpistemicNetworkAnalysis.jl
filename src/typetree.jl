@@ -86,9 +86,11 @@ function test(ena::AbstractENAModel)
     pearson_y = cor(centroidDiffsY, accumDiffsY)
 
     ### Find the percent variance explained by the x and y axis of the entire high dimensional space
+    total_variance_accum = sum(var.(eachcol(ena.accumModel[!, ena.networkModel[!, :relationship]])))
     total_variance = sum(var.(eachcol(ena.centroidModel[!, ena.networkModel[!, :relationship]])))
     variance_x = var(ena.centroidModel[!, :pos_x]) / total_variance
     variance_y = var(ena.centroidModel[!, :pos_y]) / total_variance
+    centroid_variance = total_variance / total_variance_accum
 
     ### Package and return
     return Dict(
@@ -97,7 +99,8 @@ function test(ena::AbstractENAModel)
         :coregistration_x => pearson_x,
         :coregistration_y => pearson_y,
         :variance_x => variance_x,
-        :variance_y => variance_y
+        :variance_y => variance_y,
+        :centroid_variance => centroid_variance
     )
 end
 

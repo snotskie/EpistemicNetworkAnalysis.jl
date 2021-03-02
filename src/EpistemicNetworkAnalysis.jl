@@ -91,7 +91,7 @@ export ena_dataset
 # #     LassoModel, 2, @formula(col ~ 0 + RND), nothing
 # # )
 
-# myENA = BiplotModel(
+# myENA = ENAModel(
 #     data, codes, conversations, units,
 #     rotateBy=rotation,
 #     # deflateEmpty=true,
