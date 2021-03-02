@@ -31,6 +31,7 @@ include("./Formula2Rotation.jl")
 include("./MeansRotation.jl")
 include("./Means2Rotation.jl")
 include("./ENAModel.jl")
+include("./BiplotModel.jl")
 include("./RSData.jl")
 
 # Exports
@@ -56,7 +57,6 @@ export ena_dataset
 #     :Client_and_Consultant_Requests,
 #     :Design_Reasoning,
 #     :Collaboration,
-#     :_
 # ]
 
 # conversations = [:Condition, :GameHalf, :GroupName]
@@ -74,38 +74,27 @@ export ena_dataset
 # end
 
 # # rotation = SVDRotation()
-# rotation = LDARotation(:Condition)
-# # rotation = LDARotation(:GameHalf)
+# # rotation = LDARotation(:Condition)
+# rotation = LDARotation(:GameHalf)
 # # rotation = LDARotation(:RNDGroup)
 # # rotation = LDARotation(:GroupName)
 # # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
 # # rotation = MeansRotation(:Condition, "SecondGame", "FirstGame")
 # # rotation = MeansRotation(:GameHalf, "First", "Second")
 # # rotation = MeansRotation(:RNDGroup, "First", "Second")
+# # rotation = FormulaRotation(
+# #     LinearModel, 2, @formula(col ~ 1 + RND), nothing
+# # )
 # # using Lasso
 # # rotation = FormulaRotation(
 # #     LassoModel, 2, @formula(col ~ 0 + RND), nothing
 # # )
-# # rotation = FormulaRotation(
-# #     LinearModel, 2, @formula(col ~ 1 + RND), nothing
-# # )
-# myENA = ENAModel(
+
+# myENA = BiplotModel(
 #     data, codes, conversations, units,
 #     rotateBy=rotation,
 #     # deflateEmpty=true,
-#     # meanCenter=false,
-#     relationshipFilter=(code1, code2)->(code2 == :_),
-#     windowSize=1
-# )
-
-# myENA = ENAModel(
-#     data, codes, conversations, units,
-#     rotateBy=rotation,
-#     deflateEmpty=true,
-#     deflateTo=Vector{Float64}(myENA.codeModel[7, myENA.networkModel[!, :relationship]]),
-#     # meanCenter=false,
-#     relationshipFilter=(code1, code2)->(code2 == :_),
-#     windowSize=1
+#     # meanCenter=false
 # )
 
 # display(myENA)

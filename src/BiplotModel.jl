@@ -1,197 +1,43 @@
-## Plotting
-### Common defaults and globals
-const DEFAULT_NEG_COLOR = colorant"#cc423a"
-const DEFAULT_POS_COLOR = colorant"#218ebf"
-const DEFAULT_EXTRA_COLORS = [
-    colorant"#56BD7C", colorant"#EF691B", colorant"#9d5dbb",
-    colorant"#FBC848", colorant"#56bd7c", colorant"#D0386C",
-    colorant"#f18e9f", colorant"#9A9EAB", colorant"#ff8c39",
-    colorant"#346B88"
-]
+struct BiplotModel{T} <: AbstractBiplotModel{T}
+    # Inherits:
+    codes::Array{Symbol,1}
+    conversations::Array{Symbol,1}
+    units::Array{Symbol,1}
+    rotation::T
+    accumModel::DataFrame # all the unit-level data we compute
+    centroidModel::DataFrame # accumModel with re-approximated relationship columns
+    metadata::DataFrame
+    codeModel::DataFrame # all the code-level data we compute
+    networkModel::DataFrame # all the connections-level data we compute
+    relationshipMap::Any
 
-const GLOBAL_MAX_LINE_SIZE = 8
-const GLOBAL_MAX_CODE_SIZE = 8
-const GLOBAL_UNIT_SIZE = 3
+    # Adds:
+    windowSize::Int
+end
 
-### Top-level wrapper
-function plot(ena::AbstractENAModel;
-    margin=10mm, size=600, lims=1, ticks=[-1, 0, 1],
-    titles=[], xlabel="X", ylabel="Y", leg=:topleft,
-    negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
-    extraColors::Array{<:Colorant,1}=DEFAULT_EXTRA_COLORS,
-    flipX=false, flipY=false,
-    singleUnit=nothing, groupBy=nothing,
-    showExtras::Bool=false, showNetworks::Bool=true, showUnits::Bool=true, showCIs::Bool=true,
-    kwargs...)
+function BiplotModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
+                     kwargs...)
 
-    #### Combine the kwargs to make them easier to pass without needing
-    #### knowledge of what my child functions need
-    kwargs = (
-        margin=margin, size=size, lims=lims, ticks=ticks,
-        titles=titles, xlabel=xlabel, ylabel=ylabel, leg=leg,
-        negColor=negColor, posColor=posColor, extraColors=extraColors,
-        flipX=flipX, flipY=flipY, singleUnit=singleUnit, groupBy=groupBy,
-        kwargs...
+    # Let ENA do all the work
+    ena = ENAModel(
+        data, codes, conversations, units;
+        kwargs..., 
+        relationshipFilter=(i, j, ci, cj)->(i == j),
+        windowSize=1
     )
 
-    #### Initialize usual subplots
-    ps = [
-        plot(leg=leg, margin=margin, size=(size, size)), # omnibus
-        plot(leg=false, margin=margin, size=(size, size))  # predictive
-    ]
-    
-    #### Start usual subplots: Distribution
-    title!(ps[1], "(a) " * get(titles, 1, "Distribution"))
-    results = test(ena)
-    if !isnan(results[:variance_x])
-        xlabel!(ps[1], "$xlabel ($(round(Int, results[:variance_x]*100))%)")
-    end
-
-    if !isnan(results[:variance_y])
-        ylabel!(ps[1], "$ylabel ($(round(Int, results[:variance_y]*100))%)")
-    end
-
-    #### Draw usual subplots: Dynamics
-    title!(ps[2], "(b) " * get(titles, 2, "Rate of Change by X"))
-    plot_predictive!(ps[2], ena; kwargs...)
-
-    #### If we need group-wise subplots...
-    if !isnothing(groupBy)
-
-        #### ...continue usual subplots: Distribution
-        allRows = [true for row in eachrow(ena.metadata)]
-        if showNetworks
-            plot_network!(ps[1], ena, allRows; kwargs...)
-        end
-
-        #### ...then for each group...
-        groups = sort(unique(ena.metadata[!, groupBy]))
-        letters = "abcdefghijklmnopqrstuvwxyz"[(1+length(ps)):end]
-        for (g, group) in enumerate(groups)
-
-            #### Initialize and draw them, until we run out of letters
-            if g <= length(extraColors) && g <= length(letters)
-                p = plot(leg=false, margin=margin, size=(size, size))
-                groupRows = [row[groupBy] == group for row in eachrow(ena.metadata)]
-                if showNetworks
-                    plot_network!(p, ena, groupRows; color=extraColors[g], kwargs...)
-                end
-
-                if showUnits
-                    plot_units!(p, ena, groupRows; unitLabel="$(group) Units", color=extraColors[g], kwargs...)
-                    plot_units!(ps[1], ena, groupRows; unitLabel="$(group) Units", color=extraColors[g], kwargs...)
-                end
-
-                if showExtras
-                    plot_extras!(p, ena, groupRows; color=extraColors[g], kwargs...)
-                end
-                
-                if showCIs
-                    plot_cis!(p, ena, groupRows, group; color=extraColors[g], kwargs...)
-                    plot_cis!(ps[1], ena, groupRows, group; color=extraColors[g], kwargs...)
-                end
-
-                title!(p, "($(letters[g])) " * string(get(titles, 2+g, group)))
-                push!(ps, p)
-            end
-        end
-
-        #### ...then for each pair of groups...
-        n = length(groups)+1
-        for i in 1:length(groups)
-            for j in (i+1):length(groups)
-                if n <= length(letters) && j <= length(extraColors)
-                    posGroup = groups[j]
-                    negGroup = groups[i]
-                    p = plot(leg=false, margin=margin, size=(size, size))
-                    plot_subtraction!(p, ena, groupBy, groups[i], groups[j];
-                        kwargs..., negColor=extraColors[i], posColor=extraColors[j])
-
-                    posGroupRows = [row[groupBy] == posGroup for row in eachrow(ena.metadata)]
-                    negGroupRows = [row[groupBy] == negGroup for row in eachrow(ena.metadata)]
-                    if showUnits
-                        plot_units!(p, ena, posGroupRows; color=extraColors[j], kwargs...)
-                        plot_units!(p, ena, negGroupRows; color=extraColors[i], kwargs...)
-                    end
-
-                    if showCIs
-                        plot_cis!(p, ena, posGroupRows, posGroup; color=extraColors[j], kwargs...)
-                        plot_cis!(p, ena, negGroupRows, negGroup; color=extraColors[i], kwargs...)
-                    end
-
-                    temp = "$(groups[j]) - $(groups[i])"
-                    title!(p, "($(letters[n])) " * string(get(titles, 2+n, temp)))
-                    push!(ps, p)
-                    n += 1
-                end
-            end
-        end
-
-        #### then finish usual subplots: Distribution
-        if showExtras
-            plot_extras!(ps[1], ena, allRows; kwargs...)
-        end
-    else
-        #### Else just draw usual subplots: Distribution
-        allRows = [true for row in eachrow(ena.metadata)]
-        if showNetworks
-            plot_network!(ps[1], ena, allRows; kwargs...)
-        end
-
-        if showUnits
-            plot_units!(ps[1], ena, allRows; kwargs...)
-        end
-
-        if showExtras
-            plot_extras!(ps[1], ena, allRows; kwargs...)
-        end
-    end
-
-    #### Layout the subplots
-    for p in ps
-        xticks!(p, ticks)
-        yticks!(p, ticks)
-        xlims!(p, -lims, lims)
-        ylims!(p, -lims, lims)
-    end
-
-    N = ceil(Int, sqrt(length(ps)))
-    M = ceil(Int, length(ps)/N)
-    layout = grid(N, M)
-    while length(ps) < N*M
-        push!(ps, plot(legend=false,grid=false,foreground_color_subplot=:white))
-    end
-
-    p = plot(ps..., size=(size*M, size*N), layout=layout)
-
-    #### And done
-    return p
+    return BiplotModel(
+        ena.codes, ena.conversations, ena.units, ena.rotation,
+        ena.accumModel, ena.centroidModel, ena.metadata, ena.codeModel, ena.networkModel,
+        ena.relationshipMap,
+        ena.windowSize
+    )
 end
 
-### Helper - Draw the dots
-function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
-    color::Colorant=colorant"black",
-    flipX::Bool=false, flipY::Bool=false,
-    unitLabel::String="Units",
-    kwargs...)
-
-    #### Get the x/y positions
-    displayUnits = ena.centroidModel[displayRows, :]
-    x = displayUnits[!, :pos_x] * (flipX ? -1 : 1)
-    y = displayUnits[!, :pos_y] * (flipY ? -1 : 1)
-
-    #### Draw them in black by default
-    plot!(p, x, y,
-        label=unitLabel,
-        seriestype=:scatter,
-        markershape=:circle,
-        markersize=GLOBAL_UNIT_SIZE,
-        markercolor=color,
-        markerstrokewidth=0)
-end
+####### Plot base overrides : nearly identical line methods to the base, except one end of each line is at the origin ######
 
 ### Helper - Draw the lines
-function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
+function plot_network!(p::Plot, ena::AbstractBiplotModel, displayRows::Array{Bool,1};
     color::Colorant=colorant"#aaa",
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)
@@ -218,11 +64,10 @@ function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1
 
         #### ...add to its code weights
         codeWidths[j] += lineWidths[i]
-        codeWidths[k] += lineWidths[i]
 
         #### and plot that line
-        x = ena.codeModel[[j, k], :pos_x] * (flipX ? -1 : 1)
-        y = ena.codeModel[[j, k], :pos_y] * (flipY ? -1 : 1)
+        x = [ena.codeModel[j, :pos_x] * (flipX ? -1 : 1), 0]
+        y = [ena.codeModel[j, :pos_y] * (flipY ? -1 : 1), 0]
         plot!(p, x, y,
             label=nothing,
             seriestype=:line,
@@ -314,11 +159,10 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel;
         ### ...contribute to the code weights...
         j, k = ena.relationshipMap[networkRow[:relationship]]
         codeWidths[j] += networkRow[:width]
-        codeWidths[k] += networkRow[:width]
 
         ### ...and plot that line, in the right width and color
-        x = ena.codeModel[[j, k], :pos_x] * (flipX ? -1 : 1)
-        y = ena.codeModel[[j, k], :pos_y] * (flipY ? -1 : 1)
+        x = [ena.codeModel[j, :pos_x] * (flipX ? -1 : 1), 0]
+        y = [ena.codeModel[j, :pos_y] * (flipY ? -1 : 1), 0]
         plot!(p, x, y,
             label=nothing,
             seriestype=:line,
@@ -344,7 +188,7 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel;
 end
 
 ### Helper - Draw the subtraction lines (nearly identical to plot_predictive)
-function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, negGroup::Any, posGroup::Any;
+function plot_subtraction!(p::Plot, ena::AbstractBiplotModel, groupVar::Symbol, negGroup::Any, posGroup::Any;
     negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)
@@ -427,11 +271,10 @@ function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, neg
         ### ...contribute to the code weights...
         j, k = ena.relationshipMap[networkRow[:relationship]]
         codeWidths[j] += networkRow[:width]
-        codeWidths[k] += networkRow[:width]
 
         ### ...and plot that line, in the right width and color
-        x = ena.codeModel[[j, k], :pos_x] * (flipX ? -1 : 1)
-        y = ena.codeModel[[j, k], :pos_y] * (flipY ? -1 : 1)
+        x = [ena.codeModel[j, :pos_x] * (flipX ? -1 : 1), 0]
+        y = [ena.codeModel[j, :pos_y] * (flipY ? -1 : 1), 0]
         plot!(p, x, y,
             label=nothing,
             seriestype=:line,
@@ -457,19 +300,8 @@ function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, neg
 end
 
 ### Helper Placeholder - extras to add to the distribution subplot
-function plot_extras!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
+function plot_extras!(p::Plot, ena::AbstractBiplotModel, displayRows::Array{Bool,1};
     kwargs...)
 
     # do nothing
-end
-
-### Helper - draw the confidence intervals
-function plot_cis!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1}, groupName::String;
-    color::Colorant=colorant"black",
-    flipX::Bool=false, flipY::Bool=false,
-    kwargs...)
-
-    xs = ena.centroidModel[displayRows, :pos_x] * (flipX ? -1 : 1)
-    ys = ena.centroidModel[displayRows, :pos_y] * (flipY ? -1 : 1)
-    help_plot_ci(p, xs, ys, color, :square, "$(groupName) Mean")
 end

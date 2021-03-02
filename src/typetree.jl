@@ -41,6 +41,11 @@ abstract type AbstractENAModel{T<:AbstractENARotation}
     # test reports: coregistration
 end
 
+abstract type AbstractBiplotModel{T} <: AbstractENAModel{T}
+    # fields: units, conversations, codes, rotation, accumModel, centroidModel, metadata, codeModel, networkModel, relationshipMap
+    # test reports: coregistration
+end
+
 # Default Functions
 ## Rotations
 function rotate!(rotation::AbstractENARotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame)
