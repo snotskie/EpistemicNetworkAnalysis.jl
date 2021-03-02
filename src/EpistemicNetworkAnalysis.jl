@@ -36,6 +36,7 @@ include("./RSData.jl")
 
 # Exports
 export ENAModel
+export BiplotModel
 export plot
 export SVDRotation
 export LDARotation
