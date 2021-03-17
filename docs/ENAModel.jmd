@@ -1,7 +1,7 @@
 ---
 title: ENA Models
 author: Mariah A. Knowles
-date: January, 30th 2020
+date: March, 17th 2021
 ---
 
 ## Required Parameters
@@ -43,6 +43,7 @@ Second, the `ENAModel` constructor has multiple optional named parameters that a
 - `dropEmpty`, a boolean that tells the model whether to drop units with empty networks. By default, this is false.
 - `meanCenter`, a boolean that tells the model whether to center the units such that the mean lies at the origin. By default, this is true. When `dropEmpty=true` and `meanCenter=false`, the zero-network will lie at the origin instead.
 - `deflateEmpty`, a boolean that tells the model whether to deflate the "umbrella handle" from the high dimensional space before rotation. By default, this is false. When it is true, the variance that runs from the zero-network to the mean-network is removed. When `deflateEmpty=true`, changing the value of `meanCenter` will have no effect.
+- `rotateOn`, a symbol that can be `:accumModel` (default), `:centroidModel`, or `:codeModel`, used to specify which model to use to define the rotation vectors, to plot units for, and to run tests on. 
 
 For example:
 
@@ -53,7 +54,8 @@ ena = ENAModel(
     sphereNormalize=true,
     dropEmpty=true,
     meanCenter=true,
-    deflateEmpty=true
+    deflateEmpty=true,
+    rotateOn=:centroidModel
 )
 
 plot(ena)

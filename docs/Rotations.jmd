@@ -1,34 +1,14 @@
 ---
 title: Rotations
 author: Mariah A. Knowles
-date: January, 30th 2020
+date: March, 17th 2021
 ---
 
 ## Family Tree
 
 First, in the Julia implementation of ENA, there is a family tree of rotations to choose from. This takes advantage of Julia's type system and optimization strategies.
 
-Visually:
-
-![jENA Rotation Type Tree](https://yuml.me/0ad3061c.svg)
-
-```txt
-[AbstractENARotation]
-[AbstractSVDRotation]<-[AbstractENARotation]
-[AbstractFormulaRotation]<-[AbstractENARotation]
-[AbstractFormula2Rotation]<-[AbstractFormulaRotation]
-[AbstractMeansRotation]<-[AbstractFormulaRotation]
-[AbstractMeans2Rotation]<-[AbstractFormula2Rotation]
-[SVDRotation]<-[AbstractSVDRotation]
-[FormulaRotation]<-[AbstractFormulaRotation]
-[Formula2Rotation]<-[AbstractFormula2Rotation]
-[MeansRotation]<-[AbstractMeansRotation]
-[Means2Rotation]<-[AbstractMeans2Rotation]
-```
-
-The `Abstract...` types are uninstantiable and are only used for organizing the type tree.
-
-The remaining types, the leaf nodes of the type tree, are instantiable.
+The following sections describe the members of this family tree that are instantiable.
 
 ## SVD Rotation
 
@@ -103,11 +83,42 @@ plot(ena)
 
 *Interpretation: TODO*
 
-## TODO LDA Rotation
+## LDA Rotation
 
-## Formula Rotation - TODO mean center the VOIs in F2
+Fifth, an experimental new addition in the Julia implementation of ENA, one can choose to show an axis that maximizes the effect size between two or more groups.
 
-Fifth, advanced users may want to have more control over the model. Doing so is an experimental feature, and the researcher should be careful to validate their model and their results.
+```julia
+myRotation = LDARotation(:Condition)
+ena = ENAModel(data, codes, conversations, units, rotateBy=myRotation)
+plot(ena)
+```
+
+*Interpretation: TODO*
+
+However, the LDA rotation tends to find a rotation along which the accumulation and centroid spaces do not have high correlations. Rotating on the centroid space directly may fix this.
+
+```julia
+myRotation = LDARotation(:Condition)
+ena = ENAModel(data, codes, conversations, units, rotateBy=myRotation, rotateOn=:centroidModel)
+plot(ena)
+```
+
+*Interpretation: TODO*
+
+LDA can also be used to visually spread many groups.
+
+```julia
+myRotation = LDARotation(:GroupName)
+ena = ENAModel(data, codes, conversations, units, rotateBy=myRotation, rotateOn=:centroidModel)
+plot(ena)
+```
+
+*Interpretation: TODO*
+
+
+## Formula Rotation
+
+Sixth, advanced users may want to have more control over the model. Doing so is an experimental feature, and the researcher should be careful to validate their model and their results.
 
 To do this, the researcher can access the `FormulaRotation` that underlies the `MeansRotation`, or similarly the `Formula2Rotation` that underlies the `Means2Rotation`.
 
@@ -138,9 +149,14 @@ The parameters for `Formula2Rotation` are identical to the first, just repeated:
 ```julia
 using GLM
 
+# Mean Center
+data[!, :CONFIDENCE_Pre_MC] = data[!, :CONFIDENCE_Pre] .- mean(data[!, :CONFIDENCE_Pre])
+data[!, :CONFIDENCE_Post_MC] = data[!, :CONFIDENCE_Post] .- mean(data[!, :CONFIDENCE_Post])
+
+# ENA Model
 myRotation = Formula2Rotation(
-    LinearModel, 2, @formula(y ~ 1 + CONFIDENCE_Pre + CONFIDENCE_Post), nothing,
-    LinearModel, 3, @formula(y ~ 1 + CONFIDENCE_Pre + CONFIDENCE_Post), nothing
+    LinearModel, 2, @formula(y ~ 1 + CONFIDENCE_Pre_MC + CONFIDENCE_Post_MC), nothing,
+    LinearModel, 3, @formula(y ~ 1 + CONFIDENCE_Pre_MC + CONFIDENCE_Post_MC), nothing
 )
 
 ena = ENAModel(data, codes, conversations, units, rotateBy=myRotation)
