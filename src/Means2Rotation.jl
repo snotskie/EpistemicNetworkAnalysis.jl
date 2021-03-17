@@ -127,11 +127,6 @@ function plot_cis!(p::Plot, ena::AbstractENAModel{<:AbstractMeans2Rotation}, dis
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)
 
-    #### Whole group
-    # xs = ena.centroidModel[displayRows, :pos_x] * (flipX ? -1 : 1)
-    # ys = ena.centroidModel[displayRows, :pos_y] * (flipY ? -1 : 1)
-    # help_plot_ci(p, xs, ys, color, :square, "$(groupName) Mean")
-
     #### Partition by the second group var
     controlRows2 = map(ena.metadata[!, ena.rotation.groupVar2]) do group
         if group == ena.rotation.controlGroup2
@@ -153,11 +148,9 @@ function plot_cis!(p::Plot, ena::AbstractENAModel{<:AbstractMeans2Rotation}, dis
     treatmentDisplayRows2 = displayRows .& treatmentRows2
 
     #### Show them as up/down triangles
-    xs = ena.centroidModel[controlDisplayRows2, :pos_x] * (flipX ? -1 : 1)
-    ys = ena.centroidModel[controlDisplayRows2, :pos_y] * (flipY ? -1 : 1)
+    xs, ys = help_xs_and_ys(ena, controlDisplayRows2, flipX, flipY)
     help_plot_ci(p, xs, ys, color, :dtriangle, "$(groupName) Mean where $(ena.rotation.groupVar2) = $(ena.rotation.controlGroup2)")
 
-    xs = ena.centroidModel[treatmentDisplayRows2, :pos_x] * (flipX ? -1 : 1)
-    ys = ena.centroidModel[treatmentDisplayRows2, :pos_y] * (flipY ? -1 : 1)
+    xs, ys = help_xs_and_ys(ena, treatmentDisplayRows2, flipX, flipY)
     help_plot_ci(p, xs, ys, color, :utriangle, "$(groupName) Mean where $(ena.rotation.groupVar2) = $(ena.rotation.treatmentGroup2)")
 end

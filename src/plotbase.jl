@@ -176,12 +176,10 @@ function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
     kwargs...)
 
     #### Get the x/y positions
-    displayUnits = ena.centroidModel[displayRows, :]
-    x = displayUnits[!, :pos_x] * (flipX ? -1 : 1)
-    y = displayUnits[!, :pos_y] * (flipY ? -1 : 1)
+    xs, ys = help_xs_and_ys(ena, displayRows, flipX, flipY)
 
     #### Draw them in black by default
-    plot!(p, x, y,
+    plot!(p, xs, ys,
         label=unitLabel,
         seriestype=:scatter,
         markershape=:circle,
@@ -253,8 +251,9 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel;
 
     ### Grab the data we need as one data frame
     regressionData = hcat(ena.accumModel, ena.metadata, makeunique=true)
-    regressionData[!, :pos_x] = ena.centroidModel[!, :pos_x] * (flipX ? -1 : 1)
-    regressionData[!, :pos_y] = ena.centroidModel[!, :pos_y] * (flipY ? -1 : 1)
+    xs, ys = help_xs_and_ys(ena, !, flipX, flipY)
+    regressionData[!, :pos_x] = xs
+    regressionData[!, :pos_y] = ys
 
     ### Bugfix: https://github.com/JuliaStats/GLM.jl/issues/239
     for networkRow in eachrow(ena.networkModel)
@@ -351,8 +350,9 @@ function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, neg
 
     ### Grab the data we need as one data frame
     regressionData = hcat(ena.accumModel, ena.metadata, makeunique=true)
-    regressionData[!, :pos_x] = ena.centroidModel[!, :pos_x] * (flipX ? -1 : 1)
-    regressionData[!, :pos_y] = ena.centroidModel[!, :pos_y] * (flipY ? -1 : 1)
+    xs, ys = help_xs_and_ys(ena, !, flipX, flipY)
+    regressionData[!, :pos_x] = xs
+    regressionData[!, :pos_y] = ys
 
     ### Bugfix: https://github.com/JuliaStats/GLM.jl/issues/239
     for networkRow in eachrow(ena.networkModel)
@@ -469,7 +469,6 @@ function plot_cis!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1}, g
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)
 
-    xs = ena.centroidModel[displayRows, :pos_x] * (flipX ? -1 : 1)
-    ys = ena.centroidModel[displayRows, :pos_y] * (flipY ? -1 : 1)
+    xs, ys = help_xs_and_ys(ena, displayRows, flipX, flipY)
     help_plot_ci(p, xs, ys, color, :square, "$(groupName) Mean")
 end

@@ -4,6 +4,7 @@ struct ENAModel{T} <: AbstractENAModel{T}
     conversations::Array{Symbol,1}
     units::Array{Symbol,1}
     rotation::T
+    rotateOn::Symbol
     accumModel::DataFrame # all the unit-level data we compute
     centroidModel::DataFrame # accumModel with re-approximated relationship columns
     metadata::DataFrame
@@ -16,7 +17,7 @@ struct ENAModel{T} <: AbstractENAModel{T}
 end
 
 function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
-    windowSize::Int=4, rotateBy::T=SVDRotation(),
+    windowSize::Int=4, rotateBy::T=SVDRotation(), rotateOn::Symbol=:centroidModel,
     sphereNormalize::Bool=true, dropEmpty::Bool=false, deflateEmpty::Bool=false, meanCenter::Bool=true,
     subsetFilter::Function=x->true, relationshipFilter::Function=(i,j,ci,cj)->(i<j)) where {T<:AbstractENARotation}
 
@@ -31,6 +32,8 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         error("Need at least one column to define conversations")
     elseif length(units) < 1
         error("Need at least one column to define units")
+    elseif !(rotateOn in [:centroidModel, :accumModel, :codeModel])
+        error("rotateOn must be one of :centroidModel, :accumModel, or :codeModel")
     end
 
     # Preparing model structures
@@ -216,11 +219,18 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     # Rotation step
     ## Use the given rotation method, probably one of the out-of-the-box ENARotations, but could be anything user defined
     ## But first, maybe deflate the model we rotate on to reject the zero-to-nonzero-mean axis
+    rotationModel = centroidModel
+    if rotateOn == :accumModel
+        rotationModel = accumModel
+    elseif rotateOn == :codeModel
+        rotationModel = codeModel
+    end
+
     if deflateEmpty
-        deflatedModel = copy(centroidModel)
+        deflatedModel = copy(rotationModel)
         zAxis = map(eachrow(networkModel)) do networkRow
             r = networkRow[:relationship]
-            return sum(centroidModel[!, r])
+            return sum(rotationModel[!, r])
         end
 
         s = sqrt(sum(zAxis .^ 2))
@@ -239,12 +249,12 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
             end
 
             scalar = dot(rAxis, zAxis) / dot(zAxis, zAxis)
-            deflatedModel[!, r] = centroidModel[!, r] .- (scalar * deflatedModel[!, :pos_z])
+            deflatedModel[!, r] = rotationModel[!, r] .- (scalar * deflatedModel[!, :pos_z])
         end
 
         rotate!(rotateBy, networkModel, deflatedModel, metadata)
     else
-        rotate!(rotateBy, networkModel, centroidModel, metadata)
+        rotate!(rotateBy, networkModel, rotationModel, metadata)
     end
 
     # Layout step
@@ -273,8 +283,6 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         mu_y = mean(centroidModel[!, :pos_y])
         centroidModel[!, :pos_x] = centroidModel[!, :pos_x] .- mu_x
         centroidModel[!, :pos_y] = centroidModel[!, :pos_y] .- mu_y
-        # codeModel[!, :pos_x] = codeModel[!, :pos_x] .- mu_x
-        # codeModel[!, :pos_y] = codeModel[!, :pos_y] .- mu_y
         mu_x = mean(accumModel[!, :pos_x])
         mu_y = mean(accumModel[!, :pos_y])
         accumModel[!, :pos_x] = accumModel[!, :pos_x] .- mu_x
@@ -297,7 +305,7 @@ And this can cause problems with ENA's optimization algorithm fitting the codes 
 
     # Done!
     return ENAModel(
-        codes, conversations, units, rotateBy,
+        codes, conversations, units, rotateBy, rotateOn,
         accumModel, centroidModel, metadata, codeModel, networkModel,
         relationshipMap,
         windowSize

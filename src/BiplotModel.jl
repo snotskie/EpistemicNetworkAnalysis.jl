@@ -4,6 +4,7 @@ struct BiplotModel{T} <: AbstractBiplotModel{T}
     conversations::Array{Symbol,1}
     units::Array{Symbol,1}
     rotation::T
+    rotateOn::Symbol
     accumModel::DataFrame # all the unit-level data we compute
     centroidModel::DataFrame # accumModel with re-approximated relationship columns
     metadata::DataFrame
@@ -27,7 +28,7 @@ function BiplotModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Arr
     )
 
     return BiplotModel(
-        ena.codes, ena.conversations, ena.units, ena.rotation,
+        ena.codes, ena.conversations, ena.units, ena.rotation, ena.rotateOn,
         ena.accumModel, ena.centroidModel, ena.metadata, ena.codeModel, ena.networkModel,
         ena.relationshipMap,
         ena.windowSize
@@ -98,8 +99,9 @@ function plot_predictive!(p::Plot, ena::AbstractBiplotModel;
 
     ### Grab the data we need as one data frame
     regressionData = hcat(ena.accumModel, ena.metadata, makeunique=true)
-    regressionData[!, :pos_x] = ena.centroidModel[!, :pos_x] * (flipX ? -1 : 1)
-    regressionData[!, :pos_y] = ena.centroidModel[!, :pos_y] * (flipY ? -1 : 1)
+    xs, ys = help_xs_and_ys(ena, !, flipX, flipY)
+    regressionData[!, :pos_x] = xs
+    regressionData[!, :pos_y] = ys
 
     ### Bugfix: https://github.com/JuliaStats/GLM.jl/issues/239
     for networkRow in eachrow(ena.networkModel)
@@ -195,8 +197,9 @@ function plot_subtraction!(p::Plot, ena::AbstractBiplotModel, groupVar::Symbol, 
 
     ### Grab the data we need as one data frame
     regressionData = hcat(ena.accumModel, ena.metadata, makeunique=true)
-    regressionData[!, :pos_x] = ena.centroidModel[!, :pos_x] * (flipX ? -1 : 1)
-    regressionData[!, :pos_y] = ena.centroidModel[!, :pos_y] * (flipY ? -1 : 1)
+    xs, ys = help_xs_and_ys(ena, !, flipX, flipY)
+    regressionData[!, :pos_x] = xs
+    regressionData[!, :pos_y] = ys
 
     ### Bugfix: https://github.com/JuliaStats/GLM.jl/issues/239
     for networkRow in eachrow(ena.networkModel)
@@ -297,11 +300,4 @@ function plot_subtraction!(p::Plot, ena::AbstractBiplotModel, groupVar::Symbol, 
         markersize=codeWidths,
         markercolor=:black,
         markerstrokewidth=0)
-end
-
-### Helper Placeholder - extras to add to the distribution subplot
-function plot_extras!(p::Plot, ena::AbstractBiplotModel, displayRows::Array{Bool,1};
-    kwargs...)
-
-    # do nothing
 end
