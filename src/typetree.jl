@@ -5,6 +5,11 @@ abstract type AbstractENARotation
     # test reports: variance_x, variance_y
 end
 
+abstract type AbstractCopyRotation <: AbstractENARotation
+# fields: (inherit), ena
+# plot accepts: (inherit), groupVar
+end
+
 abstract type AbstractSVDRotation <: AbstractENARotation
     # fields: (inherit)
     # plot accepts: (inherit), groupVar

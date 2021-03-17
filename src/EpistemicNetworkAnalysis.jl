@@ -24,6 +24,7 @@ using GLM
 include("./helpers.jl")
 include("./typetree.jl")
 include("./plotbase.jl")
+include("./CopyRotation.jl")
 include("./SVDRotation.jl")
 include("./LDARotation.jl")
 include("./FormulaRotation.jl")
@@ -75,7 +76,7 @@ export ena_dataset
 # end
 
 # # rotation = SVDRotation()
-# # rotation = LDARotation(:Condition)
+# rotation = LDARotation(:Condition)
 # # rotation = LDARotation(:GameHalf)
 # # rotation = LDARotation(:RNDGroup)
 # # rotation = LDARotation(:GroupName)
@@ -85,9 +86,9 @@ export ena_dataset
 # # rotation = MeansRotation(:RNDGroup, "First", "Second")
 # # rotation = Means2Rotation(:Condition, "SecondGame", "FirstGame",
 # #                           :GameHalf, "First", "Second")
-# rotation = FormulaRotation(
-#     LinearModel, 2, @formula(col ~ 1 + RND), nothing
-# )
+# # rotation = FormulaRotation(
+# #     LinearModel, 2, @formula(col ~ 1 + RND), nothing
+# # )
 # # using Lasso
 # # rotation = FormulaRotation(
 # #     LassoModel, 2, @formula(col ~ 0 + RND), nothing
@@ -97,15 +98,25 @@ export ena_dataset
 # # myENA = BiplotModel(
 #     data, codes, conversations, units,
 #     rotateBy=rotation,
-#     rotateOn=:accumModel,
+#     # rotateOn=:accumModel,
 #     # rotateOn=:codeModel,
 #     # deflateEmpty=true,
 #     # meanCenter=false
 # )
 
+# # myENA = ENAModel(
+# # # myENA = BiplotModel(
+# #     data, codes, conversations, units,
+# #     rotateBy=CopyRotation(myENA),
+# #     rotateOn=:accumModel,
+# #     # rotateOn=:codeModel,
+# #     # deflateEmpty=true,
+# #     # meanCenter=false
+# # )
+
 # display(myENA)
-# savefig(plot(myENA), "~/Downloads/temp.png")
-# # savefig(plot(myENA, groupBy=:Condition), "~/Downloads/temp.png")
+# # savefig(plot(myENA), "~/Downloads/temp.png")
+# savefig(plot(myENA, groupBy=:Condition), "~/Downloads/temp.png")
 # run(`firefox "~/Downloads/temp.png"`)
 # end # let
 
