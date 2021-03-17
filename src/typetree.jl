@@ -60,13 +60,6 @@ end
 ## Tests
 function test(ena::AbstractENAModel)
 
-    # For reference:
-    # p = pvalue(OneSampleTTest(fitDiffs, dimDiffs))
-    # pvalue(EqualVarianceTTest(x, y))
-    # pvalue(UnequalVarianceTTest(x, y))
-    # pvalue(MannWhitneyUTest(x, y))
-    # pvalue(SignedRankTest(x, y))
-
     ### Find difference between each pair of points, in accum and centroid
     centroidDiffsX = Real[]
     centroidDiffsY = Real[]
@@ -91,11 +84,14 @@ function test(ena::AbstractENAModel)
     pearson_y = cor(centroidDiffsY, accumDiffsY)
 
     ### Find the percent variance explained by the x and y axis of the entire high dimensional space
-    total_variance_accum = sum(var.(eachcol(ena.accumModel[!, ena.networkModel[!, :relationship]])))
-    total_variance = sum(var.(eachcol(ena.centroidModel[!, ena.networkModel[!, :relationship]])))
-    variance_x = var(ena.centroidModel[!, :pos_x]) / total_variance
-    variance_y = var(ena.centroidModel[!, :pos_y]) / total_variance
-    centroid_variance = total_variance / total_variance_accum
+    unitModel = ena.centroidModel
+    if ena.rotateOn == :accumModel
+        unitModel = ena.accumModel
+    end
+
+    total_variance = sum(var.(eachcol(unitModel[!, ena.networkModel[!, :relationship]])))
+    variance_x = var(unitModel[!, :pos_x]) / total_variance
+    variance_y = var(unitModel[!, :pos_y]) / total_variance
 
     ### Package and return
     return Dict(
@@ -104,8 +100,7 @@ function test(ena::AbstractENAModel)
         :coregistration_x => pearson_x,
         :coregistration_y => pearson_y,
         :variance_x => variance_x,
-        :variance_y => variance_y,
-        :centroid_variance => centroid_variance
+        :variance_y => variance_y
     )
 end
 

@@ -100,6 +100,7 @@ export ena_dataset
 #     rotateBy=rotation,
 #     # rotateOn=:accumModel,
 #     # rotateOn=:codeModel,
+#     # rotateOn=:centroidModel,
 #     # deflateEmpty=true,
 #     # meanCenter=false
 # )

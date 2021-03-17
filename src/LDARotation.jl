@@ -15,6 +15,10 @@ function rotate!(rotation::AbstractLDARotation, networkModel::DataFrame, unitMod
     groupMap = Dict(group => i for (i, group) in enumerate(groups))
     nc = length(groups)
     X = Matrix{Float64}(transpose(Matrix{Float64}(unitModel[!, networkModel[!, :relationship]])))
+    for j in 1:size(X, 2)
+        X[:, j] = X[:, j] .- mean(X[:, j])
+    end
+
     y = map(metadata[!, rotation.groupVar]) do group
         return groupMap[group]
     end

@@ -17,7 +17,10 @@ struct ENAModel{T} <: AbstractENAModel{T}
 end
 
 function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
-    windowSize::Int=4, rotateBy::T=SVDRotation(), rotateOn::Symbol=:centroidModel,
+    windowSize::Int=4, rotateBy::T=SVDRotation(), rotateOn::Symbol=:accumModel,
+    # why change the rotateOn to accum and not centroid? because the original complaint I had goes
+    # away when you use the "rate of change on x" plot to interpret the space, and you have high correlation;
+    # and because we gain slightly easier to explain rotations
     sphereNormalize::Bool=true, dropEmpty::Bool=false, deflateEmpty::Bool=false, meanCenter::Bool=true,
     subsetFilter::Function=x->true, relationshipFilter::Function=(i,j,ci,cj)->(i<j)) where {T<:AbstractENARotation}
 
