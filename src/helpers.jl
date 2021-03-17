@@ -89,6 +89,9 @@ function help_xs_and_ys(ena, displayRows, flipX::Bool, flipY::Bool)
     # why don't we have an if for the codeModel option?
     # because the codeModel exists within the space of the centroidModel
 
+    # why have one rotateOn param and not a separate one for display?
+    # because what you rotate on, display, and test on should all be the same space
+
     xs = unitModel[displayRows, :pos_x] * (flipX ? -1 : 1)
     ys = unitModel[displayRows, :pos_y] * (flipY ? -1 : 1)
     return (xs, ys)
