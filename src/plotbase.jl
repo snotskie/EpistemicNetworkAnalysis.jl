@@ -4,7 +4,7 @@ const DEFAULT_NEG_COLOR = colorant"#cc423a"
 const DEFAULT_POS_COLOR = colorant"#218ebf"
 const DEFAULT_EXTRA_COLORS = [
     colorant"#56BD7C", colorant"#EF691B", colorant"#9d5dbb",
-    colorant"#FBC848", colorant"#56bd7c", colorant"#D0386C",
+    colorant"#FBC848", colorant"#D0386C",
     colorant"#f18e9f", colorant"#9A9EAB", colorant"#ff8c39",
     colorant"#346B88"
 ]
@@ -15,7 +15,7 @@ const GLOBAL_UNIT_SIZE = 3
 
 ### Top-level wrapper
 function plot(ena::AbstractENAModel;
-    margin=10mm, size=600, lims=1, ticks=[-1, 0, 1],
+    margin=10mm, size=600, lims=1, ticks=[-lims, 0, lims],
     titles=[], xlabel="X", ylabel="Y", leg=:topleft,
     negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
     extraColors::Array{<:Colorant,1}=DEFAULT_EXTRA_COLORS,
@@ -66,11 +66,12 @@ function plot(ena::AbstractENAModel;
 
         #### ...then for each group...
         groups = sort(unique(ena.metadata[!, groupBy]))
-        letters = "abcdefghijklmnopqrstuvwxyz"[(1+length(ps)):end]
+        letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZθωερτψυπασδφγηςκλζχξωβνμΘΩΨΥΠΣΔΦΓΛΞΩ"[(1+length(ps)):end]
+        letterIndices = collect(eachindex(letters)) # because we're possibly dealing with unicode
         for (g, group) in enumerate(groups)
 
             #### Initialize and draw them, until we run out of letters
-            if g <= length(extraColors) && g <= length(letters)
+            if g <= length(extraColors) && g <= length(letterIndices)
                 p = plot(leg=false, margin=margin, size=(size, size))
                 groupRows = [row[groupBy] == group for row in eachrow(ena.metadata)]
                 if showNetworks
@@ -91,7 +92,7 @@ function plot(ena::AbstractENAModel;
                     plot_cis!(ps[1], ena, groupRows, group; color=extraColors[g], kwargs...)
                 end
 
-                title!(p, "($(letters[g])) " * string(get(titles, 2+g, group)))
+                title!(p, "($(letters[letterIndices[g]])) " * string(get(titles, 2+g, group)))
                 push!(ps, p)
             end
         end
@@ -100,7 +101,7 @@ function plot(ena::AbstractENAModel;
         n = length(groups)+1
         for i in 1:length(groups)
             for j in (i+1):length(groups)
-                if n <= length(letters) && j <= length(extraColors)
+                if n <= length(letterIndices) && j <= length(extraColors)
                     posGroup = groups[j]
                     negGroup = groups[i]
                     p = plot(leg=false, margin=margin, size=(size, size))
@@ -120,7 +121,7 @@ function plot(ena::AbstractENAModel;
                     end
 
                     temp = "$(groups[j]) - $(groups[i])"
-                    title!(p, "($(letters[n])) " * string(get(titles, 2+n, temp)))
+                    title!(p, "($(letters[letterIndices[n]])) " * string(get(titles, 2+n, temp)))
                     push!(ps, p)
                     n += 1
                 end

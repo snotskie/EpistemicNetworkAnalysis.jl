@@ -95,13 +95,7 @@ plot(ena)
 
 *Interpretation: TODO*
 
-However, the LDA rotation tends to find a rotation along which the accumulation and centroid spaces do not have high correlations. Rotating on the centroid space directly may fix this.
-
-```julia
-myRotation = LDARotation(:Condition)
-ena = ENAModel(data, codes, conversations, units, rotateBy=myRotation, rotateOn=:centroidModel)
-plot(ena)
-```
+However, the LDA rotation tends to find a rotation along which the accumulation and centroid spaces do not have high correlations. This hinders interpretability of the axes in terms of the plotted network positions. It also tends to find a rotation with very low variances explained. This hinders interpretability of the plots in terms of any original qualitative story.
 
 *Interpretation: TODO*
 
@@ -109,12 +103,13 @@ LDA can also be used to visually spread many groups.
 
 ```julia
 myRotation = LDARotation(:GroupName)
-ena = ENAModel(data, codes, conversations, units, rotateBy=myRotation, rotateOn=:centroidModel)
+someData = data[data[!, :Condition] .== "FirstGame", :]
+someData = someData[someData[!, :GameHalf] .== "Second", :]
+ena = ENAModel(someData, codes, conversations, units, rotateBy=myRotation)
 plot(ena)
 ```
 
 *Interpretation: TODO*
-
 
 ## Formula Rotation
 
@@ -150,6 +145,7 @@ The parameters for `Formula2Rotation` are identical to the first, just repeated:
 using GLM
 
 # Mean Center
+using Statistics
 data[!, :CONFIDENCE_Pre_MC] = data[!, :CONFIDENCE_Pre] .- mean(data[!, :CONFIDENCE_Pre])
 data[!, :CONFIDENCE_Post_MC] = data[!, :CONFIDENCE_Post] .- mean(data[!, :CONFIDENCE_Post])
 
@@ -168,5 +164,7 @@ plot(ena)
 While the formula rotations allow you to fully customize the rotation, it is still in the air what the best way to visualize the rotations should be. Unlike in a means rotation where the confidence intervals give some indication to the strength of the rotation, that cue is missing in formula rotations.
 
 ## Plotting
+
+TODO add a page about the biplot model
 
 Finally, [learn about customizing the plots](Plotting.html)
