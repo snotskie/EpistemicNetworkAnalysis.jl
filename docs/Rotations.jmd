@@ -106,7 +106,7 @@ myRotation = LDARotation(:GroupName)
 someData = data[data[!, :Condition] .== "FirstGame", :]
 someData = someData[someData[!, :GameHalf] .== "Second", :]
 ena = ENAModel(someData, codes, conversations, units, rotateBy=myRotation)
-plot(ena)
+plot(ena, lims=0.3)
 ```
 
 *Interpretation: TODO*
