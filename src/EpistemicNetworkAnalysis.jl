@@ -79,13 +79,13 @@ export ena_dataset
 # # rotation = LDARotation(:Condition)
 # # rotation = LDARotation(:GameHalf)
 # # rotation = LDARotation(:RNDGroup)
-# rotation = LDARotation(:GroupName)
+# # rotation = LDARotation(:GroupName)
 # # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
 # # rotation = MeansRotation(:Condition, "SecondGame", "FirstGame")
 # # rotation = MeansRotation(:GameHalf, "First", "Second")
 # # rotation = MeansRotation(:RNDGroup, "First", "Second")
-# # rotation = Means2Rotation(:Condition, "SecondGame", "FirstGame",
-# #                           :GameHalf, "First", "Second")
+# rotation = Means2Rotation(:Condition, "SecondGame", "FirstGame",
+#                           :GameHalf, "First", "Second")
 # # rotation = FormulaRotation(
 # #     LinearModel, 2, @formula(col ~ 1 + RND), nothing
 # # )
@@ -94,11 +94,11 @@ export ena_dataset
 # #     LassoModel, 2, @formula(col ~ 0 + RND), nothing
 # # )
 
-# someData = data[data[!, :Condition] .== "FirstGame", :]
-# someData = someData[someData[!, :GameHalf] .== "Second", :]
+# # someData = data[data[!, :Condition] .== "FirstGame", :]
+# # someData = someData[someData[!, :GameHalf] .== "Second", :]
 # myENA = ENAModel(
 # # myENA = BiplotModel(
-#     someData, codes, conversations, units,
+#     data, codes, conversations, units,
 #     rotateBy=rotation,
 #     # rotateOn=:accumModel,
 #     # rotateOn=:codeModel,
@@ -107,19 +107,24 @@ export ena_dataset
 #     # meanCenter=false
 # )
 
-# # myENA = ENAModel(
-# # # myENA = BiplotModel(
-# #     data, codes, conversations, units,
-# #     rotateBy=CopyRotation(myENA),
-# #     rotateOn=:accumModel,
-# #     # rotateOn=:codeModel,
-# #     # deflateEmpty=true,
-# #     # meanCenter=false
-# # )
+# println(std(myENA.accumModel[!, :pos_x]))
+# println(median(myENA.accumModel[!, :pos_x]))
+# println(median(myENA.accumModel[myENA.metadata[!, :Condition] .== "FirstGame", :pos_x]))
+# println(median(myENA.accumModel[myENA.metadata[!, :Condition] .== "SecondGame", :pos_x]))
+
+# # # myENA = ENAModel(
+# # # # myENA = BiplotModel(
+# # #     data, codes, conversations, units,
+# # #     rotateBy=CopyRotation(myENA),
+# # #     rotateOn=:accumModel,
+# # #     # rotateOn=:codeModel,
+# # #     # deflateEmpty=true,
+# # #     # meanCenter=false
+# # # )
 
 # display(myENA)
 # # savefig(plot(myENA), "~/Downloads/temp.png")
-# savefig(plot(myENA, lims=0.3), "~/Downloads/temp.png")
+# savefig(plot(myENA), "~/Downloads/temp.png")
 # # savefig(plot(myENA, groupBy=:Condition), "~/Downloads/temp.png")
 # run(`firefox "~/Downloads/temp.png"`)
 # end # let

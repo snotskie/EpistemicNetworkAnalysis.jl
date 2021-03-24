@@ -92,7 +92,7 @@ function plot_network!(p::Plot, ena::AbstractBiplotModel, displayRows::Array{Boo
 end
 
 ### Helper - Draw the predictive lines
-function plot_predictive!(p::Plot, ena::AbstractBiplotModel;
+function plot_predictive!(p::Plot, ena::AbstractBiplotModel, targetCol::Symbol;
     negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)
@@ -109,14 +109,14 @@ function plot_predictive!(p::Plot, ena::AbstractBiplotModel;
     end
 
     ### Compute line widths as the strength (slope) between the xpos and the accum network weights
-    f1 = @formula(y ~ pos_x)
+    f1 = FormulaTerm(term(:y), term(targetCol))
     lineData = map(eachrow(ena.networkModel)) do networkRow
         r = networkRow[:relationship]
         f1 = FormulaTerm(term(r), f1.rhs)
         try
             m1 = fit(LinearModel, f1, regressionData)
             slope = coef(m1)[2]
-            pearson = cor(regressionData[!, :pos_x], regressionData[!, r])
+            pearson = cor(regressionData[!, targetCol], regressionData[!, r])
             return (slope, pearson)
         catch e
             return (0, 0)

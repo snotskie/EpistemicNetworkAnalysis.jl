@@ -37,7 +37,8 @@ function plot(ena::AbstractENAModel;
     #### Initialize usual subplots
     ps = [
         plot(leg=leg, margin=margin, size=(size, size)), # omnibus
-        plot(leg=false, margin=margin, size=(size, size))  # predictive
+        plot(leg=false, margin=margin, size=(size, size)),  # predictive x
+        plot(leg=false, margin=margin, size=(size, size))  # predictive y
     ]
     
     #### Start usual subplots: Distribution
@@ -53,7 +54,9 @@ function plot(ena::AbstractENAModel;
 
     #### Draw usual subplots: Dynamics
     title!(ps[2], "(b) " * get(titles, 2, "Rate of Change by X"))
-    plot_predictive!(ps[2], ena; kwargs...)
+    plot_predictive!(ps[2], ena, :pos_x; kwargs...)
+    title!(ps[3], "(c) " * get(titles, 3, "Rate of Change by Y"))
+    plot_predictive!(ps[3], ena, :pos_y; kwargs...)
 
     #### If we need group-wise subplots...
     if !isnothing(groupBy)
@@ -245,7 +248,7 @@ function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1
 end
 
 ### Helper - Draw the predictive lines
-function plot_predictive!(p::Plot, ena::AbstractENAModel;
+function plot_predictive!(p::Plot, ena::AbstractENAModel, targetCol::Symbol;
     negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)
@@ -262,14 +265,14 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel;
     end
 
     ### Compute line widths as the strength (slope) between the xpos and the accum network weights
-    f1 = @formula(y ~ pos_x)
+    f1 = FormulaTerm(term(:y), term(targetCol))
     lineData = map(eachrow(ena.networkModel)) do networkRow
         r = networkRow[:relationship]
         f1 = FormulaTerm(term(r), f1.rhs)
         try
             m1 = fit(LinearModel, f1, regressionData)
             slope = coef(m1)[2]
-            pearson = cor(regressionData[!, :pos_x], regressionData[!, r])
+            pearson = cor(regressionData[!, targetCol], regressionData[!, r])
             return (slope, pearson)
         catch e
             return (0, 0)
