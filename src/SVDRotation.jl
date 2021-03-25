@@ -1,5 +1,11 @@
 struct SVDRotation <: AbstractSVDRotation
-    # no fields
+    dim1::Integer
+    dim2::Integer
+end
+
+# Simplified constructor
+function SVDRotation(dim1::Integer=1)
+    return SVDRotation(dim1, dim1+1)
 end
 
 # Implement rotation
@@ -7,8 +13,8 @@ function rotate!(rotation::AbstractSVDRotation, networkModel::DataFrame, unitMod
 
     ## Run an ortho svd and use those values as the axis weights
     pcaModel = projection(help_deflating_svd(networkModel, unitModel))
-    networkModel[!, :weight_x] = pcaModel[:, 1]
-    networkModel[!, :weight_y] = pcaModel[:, 2]
+    networkModel[!, :weight_x] = pcaModel[:, rotation.dim1]
+    networkModel[!, :weight_y] = pcaModel[:, rotation.dim2]
 end
 
 # Override plotting pieces
@@ -18,11 +24,11 @@ function plot(ena::AbstractENAModel{<:AbstractSVDRotation};
     kwargs...)
 
     if isnothing(xlabel)
-        xlabel = "SVD1"
+        xlabel = string("SVD", ena.rotation.dim1)
     end
 
     if isnothing(ylabel)
-        ylabel = "SVD2"
+        ylabel = string("SVD", ena.rotation.dim2)
     end
 
     return invoke(plot, Tuple{AbstractENAModel{<:AbstractENARotation}}, ena;

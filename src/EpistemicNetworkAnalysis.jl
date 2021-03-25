@@ -76,16 +76,18 @@ export ena_dataset
 # end
 
 # # rotation = SVDRotation()
+# # rotation = SVDRotation(1)
 # # rotation = LDARotation(:Condition)
 # # rotation = LDARotation(:GameHalf)
 # # rotation = LDARotation(:RNDGroup)
 # # rotation = LDARotation(:GroupName)
+# rotation = LDARotation(:GroupName, 2)
 # # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
 # # rotation = MeansRotation(:Condition, "SecondGame", "FirstGame")
 # # rotation = MeansRotation(:GameHalf, "First", "Second")
 # # rotation = MeansRotation(:RNDGroup, "First", "Second")
-# rotation = Means2Rotation(:Condition, "SecondGame", "FirstGame",
-#                           :GameHalf, "First", "Second")
+# # rotation = Means2Rotation(:Condition, "SecondGame", "FirstGame",
+# #                           :GameHalf, "First", "Second")
 # # rotation = FormulaRotation(
 # #     LinearModel, 2, @formula(col ~ 1 + RND), nothing
 # # )
@@ -103,14 +105,14 @@ export ena_dataset
 #     # rotateOn=:accumModel,
 #     # rotateOn=:codeModel,
 #     # rotateOn=:centroidModel,
-#     # deflateEmpty=true,
+#     deflateEmpty=true,
 #     # meanCenter=false
 # )
 
-# println(std(myENA.accumModel[!, :pos_x]))
-# println(median(myENA.accumModel[!, :pos_x]))
-# println(median(myENA.accumModel[myENA.metadata[!, :Condition] .== "FirstGame", :pos_x]))
-# println(median(myENA.accumModel[myENA.metadata[!, :Condition] .== "SecondGame", :pos_x]))
+# # println(std(myENA.accumModel[!, :pos_x]))
+# # println(median(myENA.accumModel[!, :pos_x]))
+# # println(median(myENA.accumModel[myENA.metadata[!, :Condition] .== "FirstGame", :pos_x]))
+# # println(median(myENA.accumModel[myENA.metadata[!, :Condition] .== "SecondGame", :pos_x]))
 
 # # # myENA = ENAModel(
 # # # # myENA = BiplotModel(
