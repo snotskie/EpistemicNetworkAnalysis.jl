@@ -105,10 +105,15 @@ function test(ena::AbstractENAModel{<:AbstractLDARotation})
 
 
     ## Run SNR test
-    ldaModel = fit(MulticlassLDA, nc, X, y)
-    W = MultivariateStats.withclass_scatter(ldaModel)
-    B = MultivariateStats.betweenclass_scatter(ldaModel)
-    snr = sum(diag(inv(W) * B))
-    results[:signal_to_noise_ratio] = snr
+    try
+        ldaModel = fit(MulticlassLDA, nc, X, y)
+        W = MultivariateStats.withclass_scatter(ldaModel)
+        B = MultivariateStats.betweenclass_scatter(ldaModel)
+        snr = sum(diag(inv(W) * B))
+        results[:signal_to_noise_ratio] = snr
+    catch e
+        # do nothing
+    end
+
     return results
 end
