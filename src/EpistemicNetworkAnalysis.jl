@@ -125,10 +125,7 @@ export ena_dataset
 # # # )
 
 # display(myENA)
-# # savefig(plot(myENA), "~/Downloads/temp.png")
-# savefig(plot(myENA), "~/Downloads/temp.png")
-# # savefig(plot(myENA, groupBy=:Condition), "~/Downloads/temp.png")
-# run(`firefox "~/Downloads/temp.png"`)
+# savefig(plot(myENA, weakLinks=false), "~/Downloads/temp.png")
 # end # let
 
 

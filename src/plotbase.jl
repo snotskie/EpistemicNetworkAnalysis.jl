@@ -250,7 +250,7 @@ end
 ### Helper - Draw the predictive lines
 function plot_predictive!(p::Plot, ena::AbstractENAModel, targetCol::Symbol;
     negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
-    flipX::Bool=false, flipY::Bool=false,
+    flipX::Bool=false, flipY::Bool=false, weakLinks::Bool=true,
     kwargs...)
 
     ### Grab the data we need as one data frame
@@ -309,9 +309,10 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel, targetCol::Symbol;
 
     ### Placeholder, let's compute code weights as we visit each line
     codeWidths = zeros(nrow(ena.codeModel))
+    codeVisible = Bool.(zeros(nrow(ena.codeModel)))
 
     ### For each line...
-    networkData = hcat(ena.networkModel, DataFrame(:width => lineWidths, :color => lineColors))
+    networkData = hcat(ena.networkModel, DataFrame(:width => lineWidths, :color => lineColors, :pearson => last.(lineData)))
     for networkRow in sort(eachrow(networkData), by=row->row[:width])
 
         ### ...contribute to the code weights...
@@ -319,23 +320,28 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel, targetCol::Symbol;
         codeWidths[j] += networkRow[:width]
         codeWidths[k] += networkRow[:width]
 
-        ### ...and plot that line, in the right width and color
-        x = ena.codeModel[[j, k], :pos_x] * (flipX ? -1 : 1)
-        y = ena.codeModel[[j, k], :pos_y] * (flipY ? -1 : 1)
-        plot!(p, x, y,
-            label=nothing,
-            seriestype=:line,
-            linewidth=networkRow[:width],
-            linecolor=networkRow[:color])
+        ### ...and if that line should be shown...
+        if weakLinks || abs(networkRow[:pearson]) >= 0.3
+            ### ...plot it in the right width and color
+            x = ena.codeModel[[j, k], :pos_x] * (flipX ? -1 : 1)
+            y = ena.codeModel[[j, k], :pos_y] * (flipY ? -1 : 1)
+            codeVisible[j] = true
+            codeVisible[k] = true
+            plot!(p, x, y,
+                label=nothing,
+                seriestype=:line,
+                linewidth=networkRow[:width],
+                linecolor=networkRow[:color])
+        end
     end
 
     ### Rescale the code widths
     codeWidths *= GLOBAL_MAX_CODE_SIZE / maximum(codeWidths)
 
     ### And plot the codes and we're done
-    x = ena.codeModel[!, :pos_x] * (flipX ? -1 : 1)
-    y = ena.codeModel[!, :pos_y] * (flipY ? -1 : 1)
-    labels = map(label->text(label, :top, 8), ena.codeModel[!, :code])
+    x = ena.codeModel[codeVisible, :pos_x] * (flipX ? -1 : 1)
+    y = ena.codeModel[codeVisible, :pos_y] * (flipY ? -1 : 1)
+    labels = map(label->text(label, :top, 8), ena.codeModel[codeVisible, :code])
     plot!(p, x, y,
         label=nothing,
         seriestype=:scatter,
@@ -349,7 +355,7 @@ end
 ### Helper - Draw the subtraction lines (nearly identical to plot_predictive)
 function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, negGroup::Any, posGroup::Any;
     negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
-    flipX::Bool=false, flipY::Bool=false,
+    flipX::Bool=false, flipY::Bool=false, weakLinks::Bool=false,
     kwargs...)
 
     ### Grab the data we need as one data frame
@@ -423,9 +429,10 @@ function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, neg
 
     ### Placeholder, let's compute code weights as we visit each line
     codeWidths = zeros(nrow(ena.codeModel))
+    codeVisible = Bool.(zeros(nrow(ena.codeModel)))
 
     ### For each line...
-    networkData = hcat(ena.networkModel, DataFrame(:width => lineWidths, :color => lineColors))
+    networkData = hcat(ena.networkModel, DataFrame(:width => lineWidths, :color => lineColors, :pearson => last.(lineData)))
     for networkRow in sort(eachrow(networkData), by=row->row[:width])
 
         ### ...contribute to the code weights...
@@ -433,23 +440,28 @@ function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, neg
         codeWidths[j] += networkRow[:width]
         codeWidths[k] += networkRow[:width]
 
-        ### ...and plot that line, in the right width and color
-        x = ena.codeModel[[j, k], :pos_x] * (flipX ? -1 : 1)
-        y = ena.codeModel[[j, k], :pos_y] * (flipY ? -1 : 1)
-        plot!(p, x, y,
-            label=nothing,
-            seriestype=:line,
-            linewidth=networkRow[:width],
-            linecolor=networkRow[:color])
+        ### ...and if that line should be shown...
+        if weakLinks || abs(networkRow[:pearson]) >= 0.3
+            ### ...plot it in the right width and color
+            x = ena.codeModel[[j, k], :pos_x] * (flipX ? -1 : 1)
+            y = ena.codeModel[[j, k], :pos_y] * (flipY ? -1 : 1)
+            codeVisible[j] = true
+            codeVisible[k] = true
+            plot!(p, x, y,
+                label=nothing,
+                seriestype=:line,
+                linewidth=networkRow[:width],
+                linecolor=networkRow[:color])
+        end
     end
 
     ### Rescale the code widths
     codeWidths *= GLOBAL_MAX_CODE_SIZE / maximum(codeWidths)
 
     ### And plot the codes and we're done
-    x = ena.codeModel[!, :pos_x] * (flipX ? -1 : 1)
-    y = ena.codeModel[!, :pos_y] * (flipY ? -1 : 1)
-    labels = map(label->text(label, :top, 8), ena.codeModel[!, :code])
+    x = ena.codeModel[codeVisible, :pos_x] * (flipX ? -1 : 1)
+    y = ena.codeModel[codeVisible, :pos_y] * (flipY ? -1 : 1)
+    labels = map(label->text(label, :top, 8), ena.codeModel[codeVisible, :code])
     plot!(p, x, y,
         label=nothing,
         seriestype=:scatter,
@@ -458,6 +470,46 @@ function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, neg
         markersize=codeWidths,
         markercolor=:black,
         markerstrokewidth=0)
+
+
+    # ### Placeholder, let's compute code weights as we visit each line
+    # codeWidths = zeros(nrow(ena.codeModel))
+
+    # ### For each line...
+    # networkData = hcat(ena.networkModel, DataFrame(:width => lineWidths, :color => lineColors))
+    # for networkRow in sort(eachrow(networkData), by=row->row[:width])
+
+    #     ### ...contribute to the code weights...
+    #     j, k = ena.relationshipMap[networkRow[:relationship]]
+    #     codeWidths[j] += networkRow[:width]
+    #     codeWidths[k] += networkRow[:width]
+
+    #     ### ...and plot that line, in the right width and color
+    #     x = ena.codeModel[[j, k], :pos_x] * (flipX ? -1 : 1)
+    #     y = ena.codeModel[[j, k], :pos_y] * (flipY ? -1 : 1)
+    #     plot!(p, x, y,
+    #         label=nothing,
+    #         seriestype=:line,
+    #         linewidth=networkRow[:width],
+    #         linecolor=networkRow[:color])
+    # end
+
+    # ### Rescale the code widths
+    # codeWidths *= GLOBAL_MAX_CODE_SIZE / maximum(codeWidths)
+
+    # ### And plot the codes and we're done
+    # x = ena.codeModel[!, :pos_x] * (flipX ? -1 : 1)
+    # y = ena.codeModel[!, :pos_y] * (flipY ? -1 : 1)
+    # labels = map(label->text(label, :top, 8), ena.codeModel[!, :code])
+    # plot!(p, x, y,
+    #     label=nothing,
+    #     seriestype=:scatter,
+    #     series_annotations=labels,
+    #     markershape=:circle,
+    #     markersize=codeWidths,
+    #     markercolor=:black,
+    #     markerstrokewidth=0)
+        
 end
 
 ### Helper Placeholder - extras to add to the distribution subplot
