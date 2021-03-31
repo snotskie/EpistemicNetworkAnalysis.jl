@@ -125,7 +125,7 @@ export ena_dataset
 # # # )
 
 # display(myENA)
-# savefig(plot(myENA, weakLinks=false), "~/Downloads/temp.png")
+# savefig(plot(myENA), "~/Downloads/temp.png")
 # end # let
 
 
