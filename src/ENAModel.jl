@@ -21,7 +21,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     # why change the rotateOn to accum and not centroid? because the original complaint I had goes
     # away when you use the "rate of change on x" plot to interpret the space, and you have high correlation;
     # and because we gain slightly easier to explain rotations
-    sphereNormalize::Bool=true, dropEmpty::Bool=false, deflateEmpty::Bool=false, meanCenter::Bool=true,
+    sphereNormalize::Bool=true, dropEmpty::Bool=false, deflateEmpty::Bool=false, meanCenter::Bool=true, dimensionNormalize::Bool=false,
     subsetFilter::Function=x->true, relationshipFilter::Function=(i,j,ci,cj)->(i<j)) where {T<:AbstractENARotation}
 
     # Checking that the options are sane
@@ -118,19 +118,33 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         end
     end
 
-    ## Normalize and overwrite the unit model's placeholders
+    ## Overwrite the unit model's placeholders
     for unitRow in eachrow(accumModel)
         unit = unitRow[:ENA_UNIT]
         vector = [counts[unit][i][j] for (i,j) in values(relationshipMap)]
-        if sphereNormalize
-            s = sqrt(sum(vector .^ 2))
-            if s != 0
-                vector /= s
-            end
-        end
-
         for (k, r) in enumerate(keys(relationshipMap))
             unitRow[r] = vector[k]
+        end
+    end
+
+    ## Normalize each accumulated dimension, if requested
+    if dimensionNormalize
+        for r in keys(relationshipMap)
+            s = maximum(accumModel[!, r])
+            if s != 0
+                accumModel[!, r] /= s
+            end
+        end
+    end
+
+    ## Normalize each unit, if requested
+    if sphereNormalize
+        for unitRow in eachrow(accumModel)
+            vector = Vector{Float64}(unitRow[collect(keys(relationshipMap))])
+            s = sqrt(sum(vector .^ 2))
+            if s != 0
+                unitRow[collect(keys(relationshipMap))] = vector / s
+            end
         end
     end
 

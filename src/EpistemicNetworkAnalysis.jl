@@ -75,13 +75,13 @@ export ena_dataset
 #     end
 # end
 
-# # rotation = SVDRotation()
+# rotation = SVDRotation()
 # # rotation = SVDRotation(1)
 # # rotation = LDARotation(:Condition)
 # # rotation = LDARotation(:GameHalf)
 # # rotation = LDARotation(:RNDGroup)
 # # rotation = LDARotation(:GroupName)
-# rotation = LDARotation(:GroupName, 2)
+# # rotation = LDARotation(:GroupName, 2)
 # # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
 # # rotation = MeansRotation(:Condition, "SecondGame", "FirstGame")
 # # rotation = MeansRotation(:GameHalf, "First", "Second")
@@ -102,10 +102,11 @@ export ena_dataset
 # # myENA = BiplotModel(
 #     data, codes, conversations, units,
 #     rotateBy=rotation,
+#     dimensionNormalize=true,
 #     # rotateOn=:accumModel,
 #     # rotateOn=:codeModel,
 #     # rotateOn=:centroidModel,
-#     deflateEmpty=true,
+#     # deflateEmpty=true,
 #     # meanCenter=false
 # )
 
