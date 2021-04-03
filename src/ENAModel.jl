@@ -130,7 +130,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     ## Normalize each accumulated dimension, if requested
     if dimensionNormalize
         for r in keys(relationshipMap)
-            s = maximum(accumModel[!, r])
+            s = sum(accumModel[!, r])
             if s != 0
                 accumModel[!, r] /= s
             end
