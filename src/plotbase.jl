@@ -195,7 +195,7 @@ end
 ### Helper - Draw the lines
 function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
     color::Colorant=colorant"#aaa",
-    flipX::Bool=false, flipY::Bool=false,
+    flipX::Bool=false, flipY::Bool=false, showWarps::Bool=false,
     kwargs...)
 
     #### Find the true weight on each line
@@ -223,11 +223,19 @@ function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1
         codeWidths[k] += lineWidths[i]
 
         #### and plot that line
-        x = ena.codeModel[[j, k], :pos_x] * (flipX ? -1 : 1)
-        y = ena.codeModel[[j, k], :pos_y] * (flipY ? -1 : 1)
-        plot!(p, x, y,
+        pointA = [ena.codeModel[j, :pos_x] * (flipX ? -1 : 1), ena.codeModel[j, :pos_y] * (flipY ? -1 : 1)]
+        pointB = [ena.codeModel[k, :pos_x] * (flipX ? -1 : 1), ena.codeModel[k, :pos_y] * (flipY ? -1 : 1)]
+        pointT = (pointA+pointB)/2
+        if showWarps
+            pointT = [networkRow[:weight_x] * (flipX ? -1 : 1), networkRow[:weight_y] * (flipY ? -1 : 1)]
+        end
+
+        points = hcat(pointA, pointT, pointT, pointT, pointB)
+        plot!(p,
+            points[1, :],
+            points[2, :],
             label=nothing,
-            seriestype=:line,
+            seriestype=:curves,
             linewidth=lineWidths[i],
             linecolor=color)
     end
@@ -250,7 +258,7 @@ end
 ### Helper - Draw the predictive lines
 function plot_predictive!(p::Plot, ena::AbstractENAModel, targetCol::Symbol;
     negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
-    flipX::Bool=false, flipY::Bool=false, weakLinks::Bool=true,
+    flipX::Bool=false, flipY::Bool=false, weakLinks::Bool=true, showWarps::Bool=false,
     kwargs...)
 
     ### Grab the data we need as one data frame
@@ -323,13 +331,21 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel, targetCol::Symbol;
         ### ...and if that line should be shown...
         if weakLinks || abs(networkRow[:pearson]) >= 0.3
             ### ...plot it in the right width and color
-            x = ena.codeModel[[j, k], :pos_x] * (flipX ? -1 : 1)
-            y = ena.codeModel[[j, k], :pos_y] * (flipY ? -1 : 1)
             codeVisible[j] = true
             codeVisible[k] = true
-            plot!(p, x, y,
+            pointA = [ena.codeModel[j, :pos_x] * (flipX ? -1 : 1), ena.codeModel[j, :pos_y] * (flipY ? -1 : 1)]
+            pointB = [ena.codeModel[k, :pos_x] * (flipX ? -1 : 1), ena.codeModel[k, :pos_y] * (flipY ? -1 : 1)]
+            pointT = (pointA+pointB)/2
+            if showWarps
+                pointT = [networkRow[:weight_x] * (flipX ? -1 : 1), networkRow[:weight_y] * (flipY ? -1 : 1)]
+            end
+
+            points = hcat(pointA, pointT, pointT, pointT, pointB)
+            plot!(p,
+                points[1, :],
+                points[2, :],
                 label=nothing,
-                seriestype=:line,
+                seriestype=:curves,
                 linewidth=networkRow[:width],
                 linecolor=networkRow[:color])
         end
@@ -355,7 +371,7 @@ end
 ### Helper - Draw the subtraction lines (nearly identical to plot_predictive)
 function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, negGroup::Any, posGroup::Any;
     negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
-    flipX::Bool=false, flipY::Bool=false, weakLinks::Bool=true,
+    flipX::Bool=false, flipY::Bool=false, weakLinks::Bool=true, showWarps::Bool=true,
     kwargs...)
 
     ### Grab the data we need as one data frame
@@ -443,13 +459,21 @@ function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, neg
         ### ...and if that line should be shown...
         if weakLinks || abs(networkRow[:pearson]) >= 0.3
             ### ...plot it in the right width and color
-            x = ena.codeModel[[j, k], :pos_x] * (flipX ? -1 : 1)
-            y = ena.codeModel[[j, k], :pos_y] * (flipY ? -1 : 1)
             codeVisible[j] = true
             codeVisible[k] = true
-            plot!(p, x, y,
+            pointA = [ena.codeModel[j, :pos_x] * (flipX ? -1 : 1), ena.codeModel[j, :pos_y] * (flipY ? -1 : 1)]
+            pointB = [ena.codeModel[k, :pos_x] * (flipX ? -1 : 1), ena.codeModel[k, :pos_y] * (flipY ? -1 : 1)]
+            pointT = (pointA+pointB)/2
+            if showWarps
+                pointT = [networkRow[:weight_x] * (flipX ? -1 : 1), networkRow[:weight_y] * (flipY ? -1 : 1)]
+            end
+
+            points = hcat(pointA, pointT, pointT, pointT, pointB)
+            plot!(p,
+                points[1, :],
+                points[2, :],
                 label=nothing,
-                seriestype=:line,
+                seriestype=:curves,
                 linewidth=networkRow[:width],
                 linecolor=networkRow[:color])
         end

@@ -79,10 +79,10 @@ export ena_dataset
 # # rotation = SVDRotation(1)
 # # rotation = LDARotation(:Condition)
 # # rotation = LDARotation(:GameHalf)
-# # rotation = LDARotation(:RNDGroup)
+# rotation = LDARotation(:RNDGroup)
 # # rotation = LDARotation(:GroupName)
 # # rotation = LDARotation(:GroupName, 2)
-# rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
+# # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
 # # rotation = MeansRotation(:Condition, "SecondGame", "FirstGame")
 # # rotation = MeansRotation(:GameHalf, "First", "Second")
 # # rotation = MeansRotation(:RNDGroup, "First", "Second")
@@ -126,7 +126,7 @@ export ena_dataset
 # # # )
 
 # display(myENA)
-# savefig(plot(myENA), "~/Downloads/temp.png")
+# savefig(plot(myENA, showWarps=true), "~/Downloads/temp.png")
 # end # let
 
 
