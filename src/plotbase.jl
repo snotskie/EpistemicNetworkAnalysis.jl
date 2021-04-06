@@ -371,7 +371,7 @@ end
 ### Helper - Draw the subtraction lines (nearly identical to plot_predictive)
 function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, negGroup::Any, posGroup::Any;
     negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
-    flipX::Bool=false, flipY::Bool=false, weakLinks::Bool=true, showWarps::Bool=true,
+    flipX::Bool=false, flipY::Bool=false, weakLinks::Bool=true, showWarps::Bool=false,
     kwargs...)
 
     ### Grab the data we need as one data frame
