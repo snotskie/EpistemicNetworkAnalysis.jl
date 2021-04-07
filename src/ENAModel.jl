@@ -127,26 +127,17 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         end
     end
 
-    ## Drop empty columns, drop disconnected nodes, fixes singular matrix error
-    colsToDrop = Symbol[]
-    codesToKeep = [false for code in codes]
-    for r in keys(relationshipMap)
-        if sum(accumModel[!, r]) == 0
-            push!(colsToDrop, r)
-        else
-            j, k = relationshipMap[r]
-            codesToKeep[j] = true
-            codesToKeep[k] = true
-        end
-    end
+    # Filtering
+    ## User-defined unit subsetting - we kept all the data in the count model up to this point so the user can define filters as they please
+    filter!(subsetFilter, accumModel)
 
-    codeModel = codeModel[codesToKeep, :]
-    codes = codeModel[!, :code]
-    for r in colsToDrop
-        select!(accumModel, Not(r))
-        select!(codeModel, Not(r))
-        networkModel = networkModel[networkModel[!, :relationship] .!== r, :]
-        delete!(relationshipMap, r)
+    ## Maybe drop rows with empty values
+    if dropEmpty
+        nonZeroRows = map(eachrow(accumModel)) do unitRow
+            return !all(iszero.(values(unitRow[networkModel[!, :relationship]])))
+        end
+
+        accumModel = accumModel[nonZeroRows, :]
     end
 
     ## Normalize each accumulated dimension, if requested
@@ -178,20 +169,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         end
     end
 
-    # Filtering
-    ## User-defined unit subsetting - we kept all the data in the count model up to this point so the user can define filters as they please
-    filter!(subsetFilter, accumModel)
-
-    ## Maybe drop rows with empty values
-    if dropEmpty
-        nonZeroRows = map(eachrow(accumModel)) do unitRow
-            return !all(iszero.(values(unitRow[networkModel[!, :relationship]])))
-        end
-
-        accumModel = accumModel[nonZeroRows, :]
-    end
-
-    ## Now that we have all the data counted, divvy and copy it between accumModel, centroidModel, and metadata
+    # Now that we have all the data counted, divvy and copy it between accumModel, centroidModel, and metadata
     modelColumns = [:pos_x, :pos_y, networkModel[!, :relationship]...]
     nonModelColumns = setdiff(Symbol.(names(accumModel)), modelColumns)
     metadata = accumModel[!, nonModelColumns]

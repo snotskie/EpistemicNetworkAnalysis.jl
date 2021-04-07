@@ -54,6 +54,7 @@ export ena_dataset
 # data[!, :_] = ones(nrow(data))
 # data[!, :_1] = zeros(nrow(data))
 # data[!, :_2] = zeros(nrow(data))
+# data[!, :_3] = [row[:Condition] == "FirstGame" ? 1 : 0 for row in eachrow(data)]
 # codes = [
 #     :Data,
 #     :Technical_Constraints,
@@ -61,8 +62,10 @@ export ena_dataset
 #     :Client_and_Consultant_Requests,
 #     :Design_Reasoning,
 #     :Collaboration,
-#     :_1,
-#     :_2
+#     # :_1,
+#     # :_2,
+#     # :_3,
+#     # :_
 # ]
 
 # conversations = [:Condition, :GameHalf, :GroupName]
@@ -79,14 +82,14 @@ export ena_dataset
 #     end
 # end
 
-# rotation = SVDRotation()
+# # rotation = SVDRotation()
 # # rotation = SVDRotation(1)
 # # rotation = LDARotation(:Condition)
 # # rotation = LDARotation(:GameHalf)
 # # rotation = LDARotation(:RNDGroup)
 # # rotation = LDARotation(:GroupName)
 # # rotation = LDARotation(:GroupName, 2)
-# # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
+# rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
 # # rotation = MeansRotation(:Condition, "SecondGame", "FirstGame")
 # # rotation = MeansRotation(:GameHalf, "First", "Second")
 # # rotation = MeansRotation(:RNDGroup, "First", "Second")
@@ -111,7 +114,7 @@ export ena_dataset
 #     # rotateOn=:accumModel,
 #     # rotateOn=:codeModel,
 #     # rotateOn=:centroidModel,
-#     deflateEmpty=true,
+#     # deflateEmpty=true,
 #     # meanCenter=false
 # )
 
@@ -131,7 +134,7 @@ export ena_dataset
 # # # )
 
 # display(myENA)
-# savefig(plot(myENA, showWarps=true), "~/Downloads/temp.png")
+# savefig(plot(myENA, showWarps=false), "~/Downloads/temp.png")
 # end # let
 
 
