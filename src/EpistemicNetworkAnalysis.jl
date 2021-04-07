@@ -75,11 +75,11 @@ export ena_dataset
 #     end
 # end
 
-# # rotation = SVDRotation()
+# rotation = SVDRotation()
 # # rotation = SVDRotation(1)
 # # rotation = LDARotation(:Condition)
 # # rotation = LDARotation(:GameHalf)
-# rotation = LDARotation(:RNDGroup)
+# # rotation = LDARotation(:RNDGroup)
 # # rotation = LDARotation(:GroupName)
 # # rotation = LDARotation(:GroupName, 2)
 # # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
@@ -106,7 +106,7 @@ export ena_dataset
 #     # rotateOn=:accumModel,
 #     # rotateOn=:codeModel,
 #     # rotateOn=:centroidModel,
-#     # deflateEmpty=true,
+#     deflateEmpty=true,
 #     # meanCenter=false
 # )
 

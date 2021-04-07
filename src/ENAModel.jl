@@ -127,6 +127,21 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         end
     end
 
+    ## Drop empty columns, fixes singular matrix error
+    colsToDrop = Symbol[]
+    for r in keys(relationshipMap)
+        if sum(accumModel[!, r]) == 0
+            push!(colsToDrop, r)
+        end
+    end
+
+    for r in colsToDrop
+        select!(accumModel, Not(r))
+        select!(codeModel, Not(r))
+        networkModel = networkModel[networkModel[!, :relationship] .!== r, :]
+        delete!(relationshipMap, r)
+    end
+
     ## Normalize each accumulated dimension, if requested
     if dimensionNormalize
         for r in keys(relationshipMap)
