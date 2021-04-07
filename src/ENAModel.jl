@@ -127,14 +127,21 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
         end
     end
 
-    ## Drop empty columns, fixes singular matrix error
+    ## Drop empty columns, drop disconnected nodes, fixes singular matrix error
     colsToDrop = Symbol[]
+    codesToKeep = [false for code in codes]
     for r in keys(relationshipMap)
         if sum(accumModel[!, r]) == 0
             push!(colsToDrop, r)
+        else
+            j, k = relationshipMap[r]
+            codesToKeep[j] = true
+            codesToKeep[k] = true
         end
     end
 
+    codeModel = codeModel[codesToKeep, :]
+    codes = codeModel[!, :code]
     for r in colsToDrop
         select!(accumModel, Not(r))
         select!(codeModel, Not(r))
@@ -215,7 +222,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     codeModel[!, :density] /= s
 
     ## Regression model for placing the code dots into the approximated high-dimensional space
-    X = Matrix{Float64}(zeros(nrow(accumModel), nrow(codeModel)))
+    X = Matrix{Float64}(rand(nrow(accumModel), nrow(codeModel)) / 1000000000)
     for (i, unitRow) in enumerate(eachrow(accumModel))
         for r in keys(relationshipMap)
             a, b = relationshipMap[r]

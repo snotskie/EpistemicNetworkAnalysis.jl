@@ -52,6 +52,8 @@ export ena_dataset
 # let
 # data = ena_dataset("RS.data")
 # data[!, :_] = ones(nrow(data))
+# data[!, :_1] = zeros(nrow(data))
+# data[!, :_2] = zeros(nrow(data))
 # codes = [
 #     :Data,
 #     :Technical_Constraints,
@@ -59,6 +61,8 @@ export ena_dataset
 #     :Client_and_Consultant_Requests,
 #     :Design_Reasoning,
 #     :Collaboration,
+#     :_1,
+#     :_2
 # ]
 
 # conversations = [:Condition, :GameHalf, :GroupName]
@@ -102,6 +106,7 @@ export ena_dataset
 # # myENA = BiplotModel(
 #     data, codes, conversations, units,
 #     rotateBy=rotation,
+#     subsetFilter=(x->x[:RND] < 1),
 #     # dimensionNormalize=true,
 #     # rotateOn=:accumModel,
 #     # rotateOn=:codeModel,
