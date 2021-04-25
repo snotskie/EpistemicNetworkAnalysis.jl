@@ -544,7 +544,7 @@ function plot_extras!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1}
 end
 
 ### Helper - draw the confidence intervals
-function plot_cis!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1}, groupName::String;
+function plot_cis!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1}, groupName::Any;
     color::Colorant=colorant"black",
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)

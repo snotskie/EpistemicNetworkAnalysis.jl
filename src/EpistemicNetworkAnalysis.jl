@@ -61,7 +61,7 @@ export ena_dataset
 #     :Performance_Parameters,
 #     :Client_and_Consultant_Requests,
 #     :Design_Reasoning,
-#     :Collaboration,
+#     # :Collaboration,
 #     # :_1,
 #     # :_2,
 #     # :_3,
@@ -89,7 +89,8 @@ export ena_dataset
 # # rotation = LDARotation(:RNDGroup)
 # # rotation = LDARotation(:GroupName)
 # # rotation = LDARotation(:GroupName, 2)
-# rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
+# # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
+# rotation = MeansRotation(:Collaboration, 0, 1)
 # # rotation = MeansRotation(:Condition, "SecondGame", "FirstGame")
 # # rotation = MeansRotation(:GameHalf, "First", "Second")
 # # rotation = MeansRotation(:RNDGroup, "First", "Second")
