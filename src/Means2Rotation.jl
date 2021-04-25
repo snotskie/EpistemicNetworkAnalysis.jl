@@ -122,7 +122,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractMeans2Rotation}, d
 end
 
 ### CIs - also draw triangles for the sub groups
-function plot_cis!(p::Plot, ena::AbstractENAModel{<:AbstractMeans2Rotation}, displayRows::Array{Bool,1}, groupName::String;
+function plot_cis!(p::Plot, ena::AbstractENAModel{<:AbstractMeans2Rotation}, displayRows::Array{Bool,1}, groupName::Any;
     color::Colorant=colorant"black",
     flipX::Bool=false, flipY::Bool=false,
     kwargs...)

@@ -90,12 +90,12 @@ export ena_dataset
 # # rotation = LDARotation(:GroupName)
 # # rotation = LDARotation(:GroupName, 2)
 # # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
-# rotation = MeansRotation(:Collaboration, 0, 1)
+# # rotation = MeansRotation(:Collaboration, 0, 1)
 # # rotation = MeansRotation(:Condition, "SecondGame", "FirstGame")
 # # rotation = MeansRotation(:GameHalf, "First", "Second")
 # # rotation = MeansRotation(:RNDGroup, "First", "Second")
-# # rotation = Means2Rotation(:Condition, "SecondGame", "FirstGame",
-# #                           :GameHalf, "First", "Second")
+# rotation = Means2Rotation(:Condition, "SecondGame", "FirstGame",
+#                           :GameHalf, "First", "Second")
 # # rotation = FormulaRotation(
 # #     LinearModel, 2, @formula(col ~ 1 + RND), nothing
 # # )
