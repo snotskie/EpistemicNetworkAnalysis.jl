@@ -6,8 +6,13 @@ abstract type AbstractENARotation
 end
 
 abstract type AbstractCopyRotation <: AbstractENARotation
-# fields: (inherit), ena
-# plot accepts: (inherit), groupVar
+    # fields: (inherit), ena
+    # plot accepts: (inherit), groupVar
+end
+
+abstract type AbstractCodeNetworkRotation <: AbstractENARotation
+    # fields: (inherit), alg
+    # plot accepts: (inherit)
 end
 
 abstract type AbstractSVDRotation <: AbstractENARotation
@@ -53,7 +58,7 @@ end
 
 # Default Functions
 ## Rotations
-function rotate!(rotation::AbstractENARotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame)
+function rotate!(rotation::AbstractENARotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame, codeModel::DataFrame)
     error("Unimplemented")
 end
 

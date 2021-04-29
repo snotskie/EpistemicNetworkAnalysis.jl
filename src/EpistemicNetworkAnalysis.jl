@@ -25,6 +25,7 @@ include("./helpers.jl")
 include("./typetree.jl")
 include("./plotbase.jl")
 include("./CopyRotation.jl")
+include("./CodeNetworkRotation.jl")
 include("./SVDRotation.jl")
 include("./LDARotation.jl")
 include("./FormulaRotation.jl")
@@ -61,7 +62,7 @@ export ena_dataset
 #     :Performance_Parameters,
 #     :Client_and_Consultant_Requests,
 #     :Design_Reasoning,
-#     # :Collaboration,
+#     :Collaboration,
 #     # :_1,
 #     # :_2,
 #     # :_3,
@@ -94,11 +95,13 @@ export ena_dataset
 # # rotation = MeansRotation(:Condition, "SecondGame", "FirstGame")
 # # rotation = MeansRotation(:GameHalf, "First", "Second")
 # # rotation = MeansRotation(:RNDGroup, "First", "Second")
-# rotation = Means2Rotation(:Condition, "SecondGame", "FirstGame",
-#                           :GameHalf, "First", "Second")
+# # rotation = Means2Rotation(:Condition, "SecondGame", "FirstGame",
+# #                           :GameHalf, "First", "Second")
 # # rotation = FormulaRotation(
 # #     LinearModel, 2, @formula(col ~ 1 + RND), nothing
 # # )
+# using NetworkLayout
+# rotation = CodeNetworkRotation(NetworkLayout.Stress)
 # # using Lasso
 # # rotation = FormulaRotation(
 # #     LassoModel, 2, @formula(col ~ 0 + RND), nothing
@@ -110,7 +113,7 @@ export ena_dataset
 # # myENA = BiplotModel(
 #     data, codes, conversations, units,
 #     rotateBy=rotation,
-#     subsetFilter=(x->x[:RND] < 1),
+#     # subsetFilter=(x->x[:RND] < 1),
 #     # dimensionNormalize=true,
 #     # rotateOn=:accumModel,
 #     # rotateOn=:codeModel,
@@ -135,7 +138,7 @@ export ena_dataset
 # # # )
 
 # display(myENA)
-# savefig(plot(myENA, showWarps=false), "~/Downloads/temp.png")
+# savefig(plot(myENA, showWarps=false, weakLinks=true), "~/Downloads/temp.png")
 # end # let
 
 

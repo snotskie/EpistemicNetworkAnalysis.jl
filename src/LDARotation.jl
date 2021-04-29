@@ -10,7 +10,7 @@ function LDARotation(groupVar::Symbol, dim1::Integer=1)
 end
 
 # Implement rotation
-function rotate!(rotation::AbstractLDARotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame)
+function rotate!(rotation::AbstractLDARotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame, codeModel::DataFrame)
 
     # Check assumptions
     if nrow(unitModel) != nrow(metadata)

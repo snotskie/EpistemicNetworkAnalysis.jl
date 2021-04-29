@@ -73,6 +73,8 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
 
     ## Network model placeholders
     networkModel = DataFrame(relationship=collect(keys(relationshipMap)),
+                             response=[i for (i, j) in values(relationshipMap)],
+                             referent=[j for (i, j) in values(relationshipMap)],
                              density=Real[0 for r in relationshipMap], # how thick to make the line
                              weight_x=Real[0 for r in relationshipMap], # the weight I contribute to dim_x's
                              weight_y=Real[0 for r in relationshipMap]) # the weight I contribute to dim_y's
@@ -269,9 +271,9 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
             deflatedModel[!, r] = rotationModel[!, r] .- (scalar * deflatedModel[!, :pos_z])
         end
 
-        rotate!(rotateBy, networkModel, deflatedModel, metadata)
+        rotate!(rotateBy, networkModel, deflatedModel, metadata, codeModel)
     else
-        rotate!(rotateBy, networkModel, rotationModel, metadata)
+        rotate!(rotateBy, networkModel, rotationModel, metadata, codeModel)
     end
 
     # Layout step
