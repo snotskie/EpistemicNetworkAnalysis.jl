@@ -83,18 +83,29 @@ export ena_dataset
 #     end
 # end
 
+# data[!, :RND3Group] = map(data[!, :RND]) do x
+#     if x <= 1/3
+#         return "First"
+#     elseif x <= 2/3
+#         return "Second"
+#     else
+#         return "Third"
+#     end
+# end
+
 # # rotation = SVDRotation()
 # # rotation = SVDRotation(5)
 # # rotation = LDARotation(:Condition)
 # # rotation = LDARotation(:GameHalf)
 # # rotation = LDARotation(:RNDGroup)
-# # rotation = LDARotation(:GroupName)
+# # rotation = LDARotation(:RND3Group)
+# rotation = LDARotation(:GroupName)
 # # rotation = LDARotation(:GroupName, 2)
 # # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
 # # rotation = MeansRotation(:Collaboration, 0, 1)
 # # rotation = MeansRotation(:Condition, "SecondGame", "FirstGame")
 # # rotation = MeansRotation(:GameHalf, "First", "Second")
-# rotation = MeansRotation(:RNDGroup, "First", "Second")
+# # rotation = MeansRotation(:RNDGroup, "First", "Second")
 # # rotation = Means2Rotation(:Condition, "SecondGame", "FirstGame",
 # #                           :GameHalf, "First", "Second")
 # # rotation = FormulaRotation(
@@ -113,8 +124,9 @@ export ena_dataset
 # # myENA = BiplotModel(
 #     data, codes, conversations, units,
 #     rotateBy=rotation,
-#     subspace = 4,
+#     subspace = 3,
 #     # subsetFilter=(x->x[:RND] < 1),
+#     subsetFilter=(x->x[:GroupName] in ["1", "2", "3"] && x[:Condition] == "FirstGame"),
 #     # dimensionNormalize=true,
 #     # rotateOn=:accumModel,
 #     # rotateOn=:codeModel,
