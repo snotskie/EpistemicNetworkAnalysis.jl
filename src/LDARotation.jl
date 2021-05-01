@@ -47,9 +47,9 @@ function rotate!(rotation::AbstractLDARotation, networkModel::DataFrame, unitMod
             networkModel[!, :weight_y] /= s
         end
     else
-        ## Use MR1's x-axis as my approximate y-axis
+        ## Try to use MR1's x-axis as my approximate y-axis
         groups = unique(metadata[!, rotation.groupVar])
-        rotate!(MeansRotation(rotation.groupVar, groups[1], groups[2]), networkModel, unitModel, metadata)
+        rotate!(MeansRotation(rotation.groupVar, groups[1], groups[2]), networkModel, unitModel, metadata, codeModel)
         networkModel[!, :weight_y] = networkModel[!, :weight_x]
         networkModel[!, :weight_x] = ldaModel[:, 1]
         help_two_vectors(networkModel)

@@ -84,7 +84,7 @@ export ena_dataset
 # end
 
 # # rotation = SVDRotation()
-# # rotation = SVDRotation(1)
+# # rotation = SVDRotation(5)
 # # rotation = LDARotation(:Condition)
 # # rotation = LDARotation(:GameHalf)
 # # rotation = LDARotation(:RNDGroup)
@@ -94,14 +94,14 @@ export ena_dataset
 # # rotation = MeansRotation(:Collaboration, 0, 1)
 # # rotation = MeansRotation(:Condition, "SecondGame", "FirstGame")
 # # rotation = MeansRotation(:GameHalf, "First", "Second")
-# # rotation = MeansRotation(:RNDGroup, "First", "Second")
+# rotation = MeansRotation(:RNDGroup, "First", "Second")
 # # rotation = Means2Rotation(:Condition, "SecondGame", "FirstGame",
 # #                           :GameHalf, "First", "Second")
 # # rotation = FormulaRotation(
 # #     LinearModel, 2, @formula(col ~ 1 + RND), nothing
 # # )
-# using NetworkLayout
-# rotation = CodeNetworkRotation(NetworkLayout.Stress)
+# # using NetworkLayout
+# # rotation = CodeNetworkRotation(NetworkLayout.Stress)
 # # using Lasso
 # # rotation = FormulaRotation(
 # #     LassoModel, 2, @formula(col ~ 0 + RND), nothing
@@ -113,6 +113,7 @@ export ena_dataset
 # # myENA = BiplotModel(
 #     data, codes, conversations, units,
 #     rotateBy=rotation,
+#     subspace = 4,
 #     # subsetFilter=(x->x[:RND] < 1),
 #     # dimensionNormalize=true,
 #     # rotateOn=:accumModel,
@@ -137,7 +138,7 @@ export ena_dataset
 # # #     # meanCenter=false
 # # # )
 
-# display(myENA)
+# # display(myENA)
 # savefig(plot(myENA, showWarps=false, weakLinks=true), "~/Downloads/temp.png")
 # end # let
 

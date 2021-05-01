@@ -22,6 +22,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
     # away when you use the "rate of change on x" plot to interpret the space, and you have high correlation;
     # and because we gain slightly easier to explain rotations
     sphereNormalize::Bool=true, dropEmpty::Bool=false, deflateEmpty::Bool=false, meanCenter::Bool=true, dimensionNormalize::Bool=false,
+    subspace::Int=0,
     subsetFilter::Function=x->true, relationshipFilter::Function=(i,j,ci,cj)->(i<j)) where {T<:AbstractENARotation}
 
     # Checking that the options are sane
@@ -257,7 +258,7 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
             zAxis /= s
         end
 
-        deflatedModel[!, :pos_z] = Matrix{Float64}(deflatedModel[!, networkModel[!, :relationship]]) * Vector{Float64}(zAxis)
+        deflatedModel[!, :pos_z] = Matrix{Float64}(rotationModel[!, networkModel[!, :relationship]]) * Vector{Float64}(zAxis)
         for r in networkModel[!, :relationship]
             rAxis = map(networkModel[!, :relationship]) do rp
                 if r == rp
@@ -271,10 +272,36 @@ function ENAModel(data::DataFrame, codes::Array{Symbol,1}, conversations::Array{
             deflatedModel[!, r] = rotationModel[!, r] .- (scalar * deflatedModel[!, :pos_z])
         end
 
-        rotate!(rotateBy, networkModel, deflatedModel, metadata, codeModel)
-    else
-        rotate!(rotateBy, networkModel, rotationModel, metadata, codeModel)
+        rotationModel = deflatedModel
     end
+
+    if subspace >= 2
+        deflatedModel = copy(rotationModel)
+        pcaModel = projection(help_deflating_svd(networkModel, rotationModel))
+        for r in networkModel[!, :relationship]
+            rAxis = map(networkModel[!, :relationship]) do rp
+                if r == rp
+                    return 1
+                else
+                    return 0
+                end
+            end
+
+            rAxisNew = rAxis * 0
+            deflatedModel[!, r] = deflatedModel[!, r] * 0
+            for i in 1:min(subspace, size(pcaModel, 2))
+                zAxis = pcaModel[:, i]
+                deflatedModel[!, :pos_z] = Matrix{Float64}(rotationModel[!, networkModel[!, :relationship]]) * Vector{Float64}(zAxis)
+
+                scalar = dot(rAxis, zAxis) / dot(zAxis, zAxis)
+                deflatedModel[!, r] = deflatedModel[!, r] + scalar * deflatedModel[!, :pos_z]
+            end
+        end
+
+        rotationModel = deflatedModel
+    end
+
+    rotate!(rotateBy, networkModel, rotationModel, metadata, codeModel)
 
     # Layout step
     ## Project the pos_x and pos_y for the original units onto the plane, now that we have the rotation
