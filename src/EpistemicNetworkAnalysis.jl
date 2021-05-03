@@ -36,7 +36,7 @@ include("./CopyRotation.jl")
 include("./CodeNetworkRotation.jl")
 include("./DifferenceRotation.jl")
 include("./DirectionRotation.jl")
-include("./RSData.jl")
+include("./ena_dataset.jl")
 
 # Exports
 export ENAModel
@@ -58,21 +58,40 @@ export ena_dataset
 # data[!, :_1] = zeros(nrow(data))
 # data[!, :_2] = zeros(nrow(data))
 # data[!, :_3] = [row[:Condition] == "FirstGame" ? 1 : 0 for row in eachrow(data)]
+# # codes = [
+# #     :Data,
+# #     :Technical_Constraints,
+# #     :Performance_Parameters,
+# #     :Client_and_Consultant_Requests,
+# #     :Design_Reasoning,
+# #     :Collaboration,
+# #     # :_1,
+# #     # :_2,
+# #     # :_3,
+# #     # :_
+# # ]
+
+# # conversations = [:Condition, :GameHalf, :GroupName]
+# # units = [:Condition, :GameHalf, :UserName]
+# # Data
+# data = ena_dataset("shakespeare.data")
+
+# # Config
 # codes = [
-#     :Data,
-#     :Technical_Constraints,
-#     :Performance_Parameters,
-#     :Client_and_Consultant_Requests,
-#     :Design_Reasoning,
-#     :Collaboration,
-#     # :_1,
-#     # :_2,
-#     # :_3,
-#     # :_
+#     :Love,
+#     :Beauty,
+#     :Death,
+#     :Fear,
+#     :Friendship,
+#     :Hate,
+#     :Honor,
+#     :Men,
+#     :Women,
+#     :Pride
 # ]
 
-# conversations = [:Condition, :GameHalf, :GroupName]
-# units = [:Condition, :GameHalf, :UserName]
+# conversations = [:Play, :Act, :Scene]
+# units = [:Play, :Act, :Speaker]
 
 # using Random
 # Random.seed!(4321)
@@ -122,15 +141,15 @@ export ena_dataset
 
 # # someData = data[data[!, :Condition] .== "FirstGame", :]
 # # someData = someData[someData[!, :GameHalf] .== "Second", :]
-# # rotation = DifferenceRotation(1, 4)
-# rotation = DirectionRotation(6)
+# rotation = DifferenceRotation(1, 4)
+# # rotation = DirectionRotation(6)
 # myENA = ENAModel(
 # # myENA = BiplotModel(
 #     data, codes, conversations, units,
 #     rotateBy=rotation,
 #     # subspace = 6,
 #     # subsetFilter=(x->x[:RND] < 1),
-#     subsetFilter=(x->x[:GroupName] in ["1", "2", "3"] && x[:Condition] == "FirstGame"),
+#     # subsetFilter=(x->x[:GroupName] in ["1", "2", "3"] && x[:Condition] == "FirstGame"),
 #     # dimensionNormalize=true,
 #     # rotateOn=:accumModel,
 #     rotateOn=:codeModel,
