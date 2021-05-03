@@ -19,7 +19,7 @@ function MeansRotation(groupVar::Symbol, controlGroup::Any, treatmentGroup::Any)
 end
 
 # Implement rotate
-function rotate!(rotation::AbstractMeansRotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame, codeModel::DataFrame)
+function rotate!(rotation::AbstractMeansRotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame)
 
     ## Manually factor the grouping variable to 0/1/missing
     metadata[!, :FactoredGroupVar] = map(eachrow(metadata)) do unitRow
@@ -33,7 +33,7 @@ function rotate!(rotation::AbstractMeansRotation, networkModel::DataFrame, unitM
     end
 
     ## Use a FormulaRotation to do the rest of the work
-    invoke(rotate!, Tuple{AbstractFormulaRotation, DataFrame, DataFrame, DataFrame, DataFrame}, rotation, networkModel, unitModel, metadata, codeModel)
+    invoke(rotate!, Tuple{AbstractFormulaRotation, DataFrame, DataFrame, DataFrame}, rotation, networkModel, unitModel, metadata)
 end
 
 # Override plotting pieces

@@ -10,7 +10,7 @@ function LDARotation(groupVar::Symbol, dim1::Integer=1)
 end
 
 # Implement rotation
-function rotate!(rotation::AbstractLDARotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame, codeModel::DataFrame)
+function rotate!(rotation::AbstractLDARotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame)
 
     # Check assumptions
     if nrow(unitModel) != nrow(metadata)
@@ -49,7 +49,7 @@ function rotate!(rotation::AbstractLDARotation, networkModel::DataFrame, unitMod
     else
         ## Try to use MR1's x-axis as my approximate y-axis
         groups = unique(metadata[!, rotation.groupVar])
-        rotate!(MeansRotation(rotation.groupVar, groups[1], groups[2]), networkModel, unitModel, metadata, codeModel)
+        rotate!(MeansRotation(rotation.groupVar, groups[1], groups[2]), networkModel, unitModel, metadata)
         networkModel[!, :weight_y] = networkModel[!, :weight_x]
         networkModel[!, :weight_x] = ldaModel[:, 1]
         help_two_vectors(networkModel)

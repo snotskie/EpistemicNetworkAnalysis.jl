@@ -10,7 +10,7 @@ struct Formula2Rotation{T <: RegressionModel, U <: RegressionModel} <: AbstractF
 end
 
 # Implement rotation
-function rotate!(rotation::AbstractFormula2Rotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame, codeModel::DataFrame)
+function rotate!(rotation::AbstractFormula2Rotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame)
 
     # Check assumptions
     if nrow(unitModel) != nrow(metadata)

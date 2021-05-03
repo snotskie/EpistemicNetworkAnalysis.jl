@@ -41,7 +41,7 @@ function Means2Rotation(
 end
 
 # Implement rotate
-function rotate!(rotation::AbstractMeans2Rotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame, codeModel::DataFrame)
+function rotate!(rotation::AbstractMeans2Rotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame)
 
     ## Manually factor the grouping variable to 0/1/missing
     metadata[!, :FactoredGroupVar] = map(eachrow(metadata)) do unitRow
@@ -72,7 +72,7 @@ function rotate!(rotation::AbstractMeans2Rotation, networkModel::DataFrame, unit
     metadata[!, :InteractionOfMCFactors] = metadata[!, :MCFactoredGroupVar] .* metadata[!, :MCFactoredGroupVar2]
 
     ## Use a Formula2Rotation to do the rest of the work
-    invoke(rotate!, Tuple{AbstractFormula2Rotation, DataFrame, DataFrame, DataFrame, DataFrame}, rotation, networkModel, unitModel, metadata, codeModel)
+    invoke(rotate!, Tuple{AbstractFormula2Rotation, DataFrame, DataFrame, DataFrame}, rotation, networkModel, unitModel, metadata)
 end
 
 # Override plotting pieces

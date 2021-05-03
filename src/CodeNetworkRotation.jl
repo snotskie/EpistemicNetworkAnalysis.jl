@@ -1,26 +1,37 @@
 struct CodeNetworkRotation <: AbstractCodeNetworkRotation
     alg::Module # any module that defines a layout(adj_matrix[, n_dim]) function that returns an array of n_dim vectors
+    f::Function # a unary function for how to transform the density of a line, defaults to inv
+end
+
+# Simplified constructor
+function CodeNetworkRotation(alg::Module)
+    return CodeNetworkRotation(alg, inv)
 end
 
 # Implement rotation
-function rotate!(rotation::AbstractCodeNetworkRotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame, codeModel::DataFrame)
+function rotate!(rotation::AbstractCodeNetworkRotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame)
 
     N = max(maximum(networkModel[!, :response]), maximum(networkModel[!, :referent]))
-    M = median(networkModel[!, :density])
+    # M = median(networkModel[!, :density])
+    # N = nrow(unitModel)
     adj = zeros(N, N)
+    # for (i, A) in enumerate(eachrow(unitModel))
+    #     for (j, B) in enumerate(eachrow(unitModel))
+    #         if i == j
+    #             adj[i, j] = adj[j, i] = 0
+    #         elseif i < j
+    #             vecA = Vector{Float64}(A[networkModel[!, :relationship]])
+    #             vecB = Vector{Float64}(B[networkModel[!, :relationship]])
+    #             adj[i, j] = adj[j, i] = sqrt(sum((vecA .- vecB) .^ 2))
+    #         end
+    #     end
+    # end
     for row in eachrow(networkModel)
         i, j = row[:response], row[:referent]
-        s = row[:density]
-        adj[i, j] = adj[j, i] = s
-        # if s > M
-        #     adj[i, j] = adj[j, i] = 1
-        # end
-        # if s > 0
-        #     adj[i, j] = adj[j, i] = 1/s
-        # end
+        adj[i, j] = adj[j, i] = rotation.f(row[:density])
     end
 
-    positions = [[0, 0] for row in eachrow(codeModel)]
+    positions = [[0, 0] for i in 1:N]
     try
         positions = rotation.alg.layout(adj, 2)
     catch e
@@ -28,6 +39,9 @@ function rotate!(rotation::AbstractCodeNetworkRotation, networkModel::DataFrame,
     end
 
     for row in eachrow(networkModel)
+        # vecR = Vector{Float64}(unitModel[!, row[:relationship]])
+        # row[:weight_x] = sum(first.(positions) .* vecR) / sum(vecR)
+        # row[:weight_y] = sum(last.(positions) .* vecR) / sum(vecR)
         i, j = row[:response], row[:referent]
         row[:weight_x] = (positions[i][1] + positions[j][1]) / 2
         row[:weight_y] = (positions[i][2] + positions[j][2]) / 2

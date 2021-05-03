@@ -12,7 +12,7 @@ function Base.getproperty(rotation::AbstractCopyRotation, field::Symbol)
 end
 
 # Implement rotation
-function rotate!(rotation::AbstractCopyRotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame, codeModel::DataFrame)
+function rotate!(rotation::AbstractCopyRotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame)
 
     # check assumptions
     if nrow(networkModel) != nrow(rotation.ena.networkModel)

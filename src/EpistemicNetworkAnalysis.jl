@@ -124,7 +124,7 @@ export ena_dataset
 # # myENA = BiplotModel(
 #     data, codes, conversations, units,
 #     rotateBy=rotation,
-#     subspace = 3,
+#     subspace = 6,
 #     # subsetFilter=(x->x[:RND] < 1),
 #     subsetFilter=(x->x[:GroupName] in ["1", "2", "3"] && x[:Condition] == "FirstGame"),
 #     # dimensionNormalize=true,
