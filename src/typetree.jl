@@ -5,16 +5,6 @@ abstract type AbstractENARotation
     # test reports: variance_x, variance_y
 end
 
-abstract type AbstractCopyRotation <: AbstractENARotation
-    # fields: (inherit), ena
-    # plot accepts: (inherit), groupVar
-end
-
-abstract type AbstractCodeNetworkRotation <: AbstractENARotation
-    # fields: (inherit), alg
-    # plot accepts: (inherit)
-end
-
 abstract type AbstractSVDRotation <: AbstractENARotation
     # fields: (inherit)
     # plot accepts: (inherit), groupVar
@@ -45,6 +35,26 @@ abstract type AbstractMeans2Rotation <: AbstractFormula2Rotation
     # plot accepts: (inherit)
 end
 
+abstract type AbstractCopyRotation <: AbstractENARotation
+    # fields: (inherit), ena
+    # plot accepts: (inherit), groupVar
+end
+
+abstract type AbstractCodeNetworkRotation <: AbstractENARotation
+    # fields: (inherit), alg, f
+    # plot accepts: (inherit)
+end
+
+abstract type AbstractDifferenceRotation <: AbstractENARotation
+    # fields: (inherit), i, j
+    # plot accepts: (inherit)
+end
+
+abstract type AbstractDirectionRotation <: AbstractENARotation
+    # fields: (inherit), i
+    # plot accepts: (inherit)
+end
+
 # Accumulation Models
 abstract type AbstractENAModel{T<:AbstractENARotation}
     # fields: units, conversations, codes, rotation, accumModel, centroidModel, metadata, codeModel, networkModel, relationshipMap
@@ -58,7 +68,7 @@ end
 
 # Default Functions
 ## Rotations
-function rotate!(rotation::AbstractENARotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame, codeModel::DataFrame)
+function rotate!(rotation::AbstractENARotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame)
     error("Unimplemented")
 end
 

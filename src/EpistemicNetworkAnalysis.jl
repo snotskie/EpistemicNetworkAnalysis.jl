@@ -24,8 +24,6 @@ using GLM
 include("./helpers.jl")
 include("./typetree.jl")
 include("./plotbase.jl")
-include("./CopyRotation.jl")
-include("./CodeNetworkRotation.jl")
 include("./SVDRotation.jl")
 include("./LDARotation.jl")
 include("./FormulaRotation.jl")
@@ -34,6 +32,10 @@ include("./MeansRotation.jl")
 include("./Means2Rotation.jl")
 include("./ENAModel.jl")
 include("./BiplotModel.jl")
+include("./CopyRotation.jl")
+include("./CodeNetworkRotation.jl")
+include("./DifferenceRotation.jl")
+include("./DirectionRotation.jl")
 include("./RSData.jl")
 
 # Exports
@@ -99,7 +101,7 @@ export ena_dataset
 # # rotation = LDARotation(:GameHalf)
 # # rotation = LDARotation(:RNDGroup)
 # # rotation = LDARotation(:RND3Group)
-# rotation = LDARotation(:GroupName)
+# # rotation = LDARotation(:GroupName)
 # # rotation = LDARotation(:GroupName, 2)
 # # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
 # # rotation = MeansRotation(:Collaboration, 0, 1)
@@ -120,16 +122,18 @@ export ena_dataset
 
 # # someData = data[data[!, :Condition] .== "FirstGame", :]
 # # someData = someData[someData[!, :GameHalf] .== "Second", :]
+# # rotation = DifferenceRotation(1, 4)
+# rotation = DirectionRotation(6)
 # myENA = ENAModel(
 # # myENA = BiplotModel(
 #     data, codes, conversations, units,
 #     rotateBy=rotation,
-#     subspace = 6,
+#     # subspace = 6,
 #     # subsetFilter=(x->x[:RND] < 1),
 #     subsetFilter=(x->x[:GroupName] in ["1", "2", "3"] && x[:Condition] == "FirstGame"),
 #     # dimensionNormalize=true,
 #     # rotateOn=:accumModel,
-#     # rotateOn=:codeModel,
+#     rotateOn=:codeModel,
 #     # rotateOn=:centroidModel,
 #     # deflateEmpty=true,
 #     # meanCenter=false
