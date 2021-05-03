@@ -9,7 +9,7 @@ function SVDRotation(dim1::Integer=1)
 end
 
 # Implement rotation
-function rotate!(rotation::AbstractSVDRotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame, codeModel::DataFrame)
+function rotate!(rotation::AbstractSVDRotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame)
 
     ## Run an ortho svd and use those values as the axis weights
     pcaModel = projection(help_deflating_svd(networkModel, unitModel))
