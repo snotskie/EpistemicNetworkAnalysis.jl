@@ -116,7 +116,7 @@ export ena_dataset
 
 # # rotation = SVDRotation()
 # # rotation = SVDRotation(5)
-# # rotation = LDARotation(:Condition)
+# # rotation = LDARotation(:Act, 2)
 # # rotation = LDARotation(:GameHalf)
 # # rotation = LDARotation(:RNDGroup)
 # # rotation = LDARotation(:RND3Group)
@@ -152,7 +152,7 @@ export ena_dataset
 #     # subsetFilter=(x->x[:GroupName] in ["1", "2", "3"] && x[:Condition] == "FirstGame"),
 #     # dimensionNormalize=true,
 #     # rotateOn=:accumModel,
-#     rotateOn=:codeModel,
+#     # rotateOn=:codeModel,
 #     # rotateOn=:centroidModel,
 #     # deflateEmpty=true,
 #     # meanCenter=false

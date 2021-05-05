@@ -1,12 +1,11 @@
 struct LDARotation <: AbstractLDARotation
     groupVar::Symbol
     dim1::Integer
-    dim2::Integer
 end
 
 # Simplified constructor
-function LDARotation(groupVar::Symbol, dim1::Integer=1)
-    return LDARotation(groupVar, dim1, dim1+1)
+function LDARotation(groupVar::Symbol)
+    return LDARotation(groupVar, 1)
 end
 
 # Implement rotation
@@ -32,28 +31,31 @@ function rotate!(rotation::AbstractLDARotation, networkModel::DataFrame, unitMod
 
     ## Run the LDA
     ldaModel = projection(fit(MulticlassLDA, nc, X, y))
-    if size(ldaModel, 2) >= 2
-        networkModel[!, :weight_x] = ldaModel[:, rotation.dim1]
-        networkModel[!, :weight_y] = ldaModel[:, rotation.dim2]
+    networkModel[!, :weight_x] = ldaModel[:, rotation.dim1]
+    help_one_vector(networkModel, unitModel)
 
-        ## Normalize the axis weights
-        s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
-        if s != 0
-            networkModel[!, :weight_x] /= s
-        end
+    # if size(ldaModel, 2) >= 2
+    #     networkModel[!, :weight_x] = ldaModel[:, rotation.dim1]
+    #     networkModel[!, :weight_y] = ldaModel[:, rotation.dim2]
 
-        s = sqrt(sum(networkModel[!, :weight_y] .^ 2))
-        if s != 0
-            networkModel[!, :weight_y] /= s
-        end
-    else
-        ## Try to use MR1's x-axis as my approximate y-axis
-        groups = unique(metadata[!, rotation.groupVar])
-        rotate!(MeansRotation(rotation.groupVar, groups[1], groups[2]), networkModel, unitModel, metadata)
-        networkModel[!, :weight_y] = networkModel[!, :weight_x]
-        networkModel[!, :weight_x] = ldaModel[:, 1]
-        help_two_vectors(networkModel)
-    end
+    #     ## Normalize the axis weights
+    #     s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
+    #     if s != 0
+    #         networkModel[!, :weight_x] /= s
+    #     end
+
+    #     s = sqrt(sum(networkModel[!, :weight_y] .^ 2))
+    #     if s != 0
+    #         networkModel[!, :weight_y] /= s
+    #     end
+    # else
+    #     ## Try to use MR1's x-axis as my approximate y-axis
+    #     groups = unique(metadata[!, rotation.groupVar])
+    #     rotate!(MeansRotation(rotation.groupVar, groups[1], groups[2]), networkModel, unitModel, metadata)
+    #     networkModel[!, :weight_y] = networkModel[!, :weight_x]
+    #     networkModel[!, :weight_x] = ldaModel[:, 1]
+    #     help_two_vectors(networkModel)
+    # end
 end
 
 # Override plotting pieces
@@ -74,7 +76,7 @@ function plot(ena::AbstractENAModel{<:AbstractLDARotation};
     end
 
     if isnothing(ylabel)
-        ylabel = string("LDA", ena.rotation.dim2)
+        ylabel = "SVD"
     end
 
     return invoke(plot, Tuple{AbstractENAModel{<:AbstractENARotation}}, ena;
@@ -82,38 +84,38 @@ function plot(ena::AbstractENAModel{<:AbstractLDARotation};
                   groupBy=groupBy, xlabel=xlabel, ylabel=ylabel, kwargs...)
 end
 
-function test(ena::AbstractENAModel{<:AbstractLDARotation})
-    results = invoke(test, Tuple{AbstractENAModel}, ena)
+# function test(ena::AbstractENAModel{<:AbstractLDARotation})
+#     results = invoke(test, Tuple{AbstractENAModel}, ena)
 
-    ## 99% copy pasta from rotation function, since I don't have the best way to de-dup this work just yet
-    groups = sort(unique(ena.metadata[!, ena.rotation.groupVar]))
-    groupMap = Dict(group => i for (i, group) in enumerate(groups))
-    nc = length(groups)
-    unitModel = ena.centroidModel
-    if ena.rotateOn == :accumModel
-        unitModel = ena.accumModel
-    end
+#     ## 99% copy pasta from rotation function, since I don't have the best way to de-dup this work just yet
+#     groups = sort(unique(ena.metadata[!, ena.rotation.groupVar]))
+#     groupMap = Dict(group => i for (i, group) in enumerate(groups))
+#     nc = length(groups)
+#     unitModel = ena.centroidModel
+#     if ena.rotateOn == :accumModel
+#         unitModel = ena.accumModel
+#     end
 
-    X = Matrix{Float64}(transpose(Matrix{Float64}(unitModel[!, ena.networkModel[!, :relationship]])))
-    for j in 1:size(X, 2)
-        X[:, j] = X[:, j] .- mean(X[:, j])
-    end
+#     X = Matrix{Float64}(transpose(Matrix{Float64}(unitModel[!, ena.networkModel[!, :relationship]])))
+#     for j in 1:size(X, 2)
+#         X[:, j] = X[:, j] .- mean(X[:, j])
+#     end
 
-    y = map(ena.metadata[!, ena.rotation.groupVar]) do group
-        return groupMap[group]
-    end
+#     y = map(ena.metadata[!, ena.rotation.groupVar]) do group
+#         return groupMap[group]
+#     end
 
 
-    ## Run SNR test
-    try
-        ldaModel = fit(MulticlassLDA, nc, X, y)
-        W = MultivariateStats.withclass_scatter(ldaModel)
-        B = MultivariateStats.betweenclass_scatter(ldaModel)
-        snr = sum(diag(inv(W) * B))
-        results[:signal_to_noise_ratio] = snr
-    catch e
-        # do nothing
-    end
+#     ## Run SNR test
+#     try
+#         ldaModel = fit(MulticlassLDA, nc, X, y)
+#         W = MultivariateStats.withclass_scatter(ldaModel)
+#         B = MultivariateStats.betweenclass_scatter(ldaModel)
+#         snr = sum(diag(inv(W) * B))
+#         results[:signal_to_noise_ratio] = snr
+#     catch e
+#         # do nothing
+#     end
 
-    return results
-end
+#     return results
+# end

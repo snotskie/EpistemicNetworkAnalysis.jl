@@ -43,14 +43,6 @@ function plot(ena::AbstractENAModel;
     
     #### Start usual subplots: Distribution
     title!(ps[1], "(a) " * get(titles, 1, "Distribution"))
-    results = test(ena)
-    if !isnan(results[:variance_x])
-        xlabel!(ps[1], "$xlabel ($(round(Int, results[:variance_x]*100))%)")
-    end
-
-    if !isnan(results[:variance_y])
-        ylabel!(ps[1], "$ylabel ($(round(Int, results[:variance_y]*100))%)")
-    end
 
     #### Draw usual subplots: Dynamics
     title!(ps[2], "(b) " * get(titles, 2, "Rate of Change by X"))
@@ -152,11 +144,23 @@ function plot(ena::AbstractENAModel;
     end
 
     #### Layout the subplots
+    results = test(ena)
     for p in ps
         xticks!(p, ticks)
         yticks!(p, ticks)
         xlims!(p, -lims, lims)
         ylims!(p, -lims, lims)
+        if !isnan(results[:variance_x])
+            xlabel!(p, "$xlabel ($(round(Int, results[:variance_x]*100))%)")
+        else
+            xlabel!(p, xlabel)
+        end
+
+        if !isnan(results[:variance_y])
+            ylabel!(p, "$ylabel ($(round(Int, results[:variance_y]*100))%)")
+        else
+            ylabel!(p, ylabel)
+        end
     end
 
     N = ceil(Int, sqrt(length(ps)))
