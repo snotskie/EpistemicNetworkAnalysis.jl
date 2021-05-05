@@ -115,7 +115,7 @@ function plot(ena::AbstractENAModel;
                         plot_cis!(p, ena, negGroupRows, negGroup; color=extraColors[i], kwargs...)
                     end
 
-                    temp = "$(groups[j]) - $(groups[i])"
+                    temp = "$(groups[i]) vs. $(groups[j])"
                     title!(p, "($(letters[letterIndices[n]])) " * string(get(titles, 2+n, temp)))
                     push!(ps, p)
                     n += 1

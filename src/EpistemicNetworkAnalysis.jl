@@ -116,7 +116,7 @@ export ena_dataset
 
 # # rotation = SVDRotation()
 # # rotation = SVDRotation(5)
-# # rotation = LDARotation(:Act, 2)
+# rotation = LDARotation(:Play)
 # # rotation = LDARotation(:GameHalf)
 # # rotation = LDARotation(:RNDGroup)
 # # rotation = LDARotation(:RND3Group)
@@ -141,7 +141,7 @@ export ena_dataset
 
 # # someData = data[data[!, :Condition] .== "FirstGame", :]
 # # someData = someData[someData[!, :GameHalf] .== "Second", :]
-# rotation = DifferenceRotation(1, 4)
+# # rotation = DifferenceRotation(1, 4)
 # # rotation = DirectionRotation(6)
 # myENA = ENAModel(
 # # myENA = BiplotModel(
