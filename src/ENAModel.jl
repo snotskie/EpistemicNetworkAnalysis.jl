@@ -10,7 +10,7 @@ struct ENAModel{T} <: AbstractENAModel{T}
     metadata::DataFrame
     codeModel::DataFrame # all the code-level data we compute
     networkModel::DataFrame # all the connections-level data we compute
-    relationshipMap::Any
+    relationshipMap::Dict{Symbol,Tuple{Int,Int}}
 
     # Adds:
     windowSize::Int
@@ -21,7 +21,7 @@ function ENAModel(
         data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
         # optional
         windowSize::Int=4, rotateBy::AbstractENARotation=SVDRotation(), rotateOn::Symbol=:accumModel,
-        sphereNormalize::Bool=true, dropEmpty::Bool=false, deflateEmpty::Bool=false, meanCenter::Bool=true, subspace::Int=0,
+        sphereNormalize::Bool=true, dropEmpty::Bool=false, deflateEmpty::Bool=false, meanCenter::Bool=true, subspaces::Int=0,
         subsetFilter::Function=x->true, relationshipFilter::Function=(i,j,ci,cj)->(i<j)
     )
 
@@ -42,25 +42,39 @@ function ENAModel(
 
     # Preparing model structures
     ## Relationships between codes
-    relationshipMap = Dict(
-        Symbol(string(code1, "_", code2)) => (i, j)
-        for (i, code1) in enumerate(codes)
+    relationshipMap = Dict{Symbol,Tuple{Int,Int}}()
+    for (i, code1) in enumerate(codes)
         for (j, code2) in enumerate(codes)
-        if relationshipFilter(i, j, code1, code2)
-    )
+            if relationshipFilter(i, j, code1, code2)
+                key = Symbol(string(code1, "_", code2))
+                relationshipMap[key] = (i, j)
+            end
+        end
+    end
+
+    relationshipIds = collect(keys(relationshipMap))
 
     ## Adding a new column to the raw data that labels each unit properly
-    data = hcat(data, DataFrame(:ENA_UNIT => map(eachrow(data)) do dataRow
+    ena_ids = map(eachrow(data)) do dataRow
         return join(dataRow[units], ".")
-    end))
+    end
+
+    data = hcat(data, DataFrame(:ENA_UNIT => ena_ids))
 
     ## Unit model placeholders
     accumModel = combine(first, groupby(data, :ENA_UNIT))
-    accumModel = hcat(accumModel, DataFrame(Dict(r => Real[0 for i in 1:nrow(accumModel)] # my relative strength for each relationship
-                                               for r in keys(relationshipMap))))
+    emptyValues = DataFrame(Dict(
+        r => Real[0 for i in 1:nrow(accumModel)]
+        for r in relationshipIds
+    ))
 
-    accumModel = hcat(accumModel, DataFrame(pos_x=Real[0 for i in 1:nrow(accumModel)], # my position on the x and y axes
-                                          pos_y=Real[0 for i in 1:nrow(accumModel)])) 
+    emptyPositions = DataFrame(
+        pos_x=Real[0 for i in 1:nrow(accumModel)],
+        pos_y=Real[0 for i in 1:nrow(accumModel)]
+    )
+
+    accumModel = hcat(accumModel, emptyValues)
+    accumModel = hcat(accumModel, emptyPositions) 
     
     ## Replace codes "first" metadata with sums instead (ie, code and count)
     sums = combine(
@@ -73,26 +87,36 @@ function ENAModel(
     end
 
     ## Network model placeholders
-    networkModel = DataFrame(relationship=collect(keys(relationshipMap)),
-                             response=[i for (i, j) in values(relationshipMap)],
-                             referent=[j for (i, j) in values(relationshipMap)],
-                             density=Real[0 for r in relationshipMap], # how thick to make the line
-                             weight_x=Real[0 for r in relationshipMap], # the weight I contribute to dim_x's
-                             weight_y=Real[0 for r in relationshipMap]) # the weight I contribute to dim_y's
+    networkModel = DataFrame(
+        relationship=relationshipIds,
+        response=[i for (i, j) in values(relationshipMap)],
+        referent=[j for (i, j) in values(relationshipMap)],
+        density=Real[0 for r in relationshipIds], # how thick to make the line
+        weight_x=Real[0 for r in relationshipIds], # the weight I contribute to dim_x's
+        weight_y=Real[0 for r in relationshipIds] # the weight I contribute to dim_y's
+    )
     
     ## Code model placeholders
-    codeModel = DataFrame(code=codes,
-                          density=Real[0 for c in codes], # how thick to make the dot
-                          pos_x=Real[0 for c in codes], # where to plot this code on the fitted plot's x-axis
-                          pos_y=Real[0 for c in codes]) # where to plot this code on the fitted plot's y-axis
+    codeModel = DataFrame(
+        code=codes,
+        density=Real[0 for c in codes], # how thick to make the dot
+        pos_x=Real[0 for c in codes], # where to plot this code on the fitted plot's x-axis
+        pos_y=Real[0 for c in codes] # where to plot this code on the fitted plot's y-axis
+    )
 
-    codeModel = hcat(codeModel, DataFrame(Dict(r => Real[0 for i in 1:nrow(codeModel)]
-                     for r in keys(relationshipMap)))) # my position on the approximated x-axis if we use a relationship as the x-axis
+    emptyValues2 = DataFrame(Dict(
+        r => Real[0 for c in codes] # my position on the approximated x-axis if we use a relationship as the x-axis
+        for r in relationshipIds
+    ))
+
+    codeModel = hcat(codeModel, emptyValues2)
 
     # Accumulation step
     ## Raw counts for all the units
-    counts = Dict(unit => [[0 for j in codes] for i in codes]
-                  for unit in accumModel[!, :ENA_UNIT])
+    counts = Dict(
+        unit => [[0 for j in codes] for i in codes]
+        for unit in accumModel[!, :ENA_UNIT]
+    )
 
     prev_convo = data[1, conversations]
     howrecents = [Inf for c in codes]
@@ -111,7 +135,7 @@ function ENAModel(
         end
 
         unit = line[:ENA_UNIT]
-        for r in keys(relationshipMap)
+        for r in relationshipIds
             i, j = relationshipMap[r]
             if howrecents[i] == 0 && howrecents[j] < windowSize
                 counts[unit][i][j] += 1
@@ -121,11 +145,11 @@ function ENAModel(
         end
     end
 
-    ## Overwrite the unit model's placeholders
+    ## Overwrite the accum model's placeholders
     for unitRow in eachrow(accumModel)
         unit = unitRow[:ENA_UNIT]
         vector = [counts[unit][i][j] for (i,j) in values(relationshipMap)]
-        for (k, r) in enumerate(keys(relationshipMap))
+        for (k, r) in enumerate(relationshipIds)
             unitRow[r] = vector[k]
         end
     end
@@ -137,7 +161,7 @@ function ENAModel(
     ## Maybe drop rows with empty values
     if dropEmpty
         nonZeroRows = map(eachrow(accumModel)) do unitRow
-            return !all(iszero.(values(unitRow[networkModel[!, :relationship]])))
+            return !all(iszero.(values(unitRow[relationshipIds])))
         end
 
         accumModel = accumModel[nonZeroRows, :]
@@ -145,7 +169,7 @@ function ENAModel(
 
     # ## Normalize each accumulated dimension, if requested
     # if dimensionNormalize
-    #     for r in keys(relationshipMap)
+    #     for r in relationshipIds
     #         s = sum(accumModel[!, r])
     #         if s != 0
     #             accumModel[!, r] /= s
@@ -156,24 +180,24 @@ function ENAModel(
     ## Normalize each unit, if requested
     if sphereNormalize
         for unitRow in eachrow(accumModel)
-            vector = Vector{Float64}(unitRow[collect(keys(relationshipMap))])
+            vector = Vector{Float64}(unitRow[relationshipIds])
             s = sqrt(sum(vector .^ 2))
             if s != 0
-                unitRow[collect(keys(relationshipMap))] = vector / s
+                unitRow[relationshipIds] = vector / s
             end
         end
     end
 
     ## If we didn't sphere normalize, then still scale it down make plots easier to read
     if !sphereNormalize
-        s = maximum(maximum(accumModel[!, r]) for r in keys(relationshipMap))
-        for r in keys(relationshipMap)
+        s = maximum(maximum(accumModel[!, r]) for r in relationshipIds)
+        for r in relationshipIds
             accumModel[!, r] /= s
         end
     end
 
     # Now that we have all the data counted, divvy and copy it between accumModel, centroidModel, and metadata
-    modelColumns = [:pos_x, :pos_y, networkModel[!, :relationship]...]
+    modelColumns = [:pos_x, :pos_y, relationshipIds...]
     nonModelColumns = setdiff(Symbol.(names(accumModel)), modelColumns)
     metadata = accumModel[!, nonModelColumns]
     centroidModel = copy(accumModel[!, [:ENA_UNIT, modelColumns...]])
@@ -205,7 +229,7 @@ function ENAModel(
     ## Regression model for placing the code dots into the approximated high-dimensional space
     X = Matrix{Float64}(rand(nrow(accumModel), nrow(codeModel)) / 1000000000)
     for (i, unitRow) in enumerate(eachrow(accumModel))
-        for r in keys(relationshipMap)
+        for r in relationshipIds
             a, b = relationshipMap[r]
             X[i, a] += unitRow[r] / 2
             X[i, b] += unitRow[r] / 2
@@ -231,7 +255,7 @@ function ENAModel(
                 sum(
                     codeModel[relationshipMap[k][1], r] * accumModel[i, k] +
                     codeModel[relationshipMap[k][2], r] * accumModel[i, k]
-                    for k in keys(relationshipMap)
+                    for k in relationshipIds
                 ) / 2
         end
     end
@@ -239,18 +263,18 @@ function ENAModel(
     # Rotation step
     ## Use the given rotation method, probably one of the out-of-the-box ENARotations, but could be anything user defined
     ## But first, maybe deflate the rotation model
-    rotationModel = centroidModel
-    if rotateOn == :accumModel
-        rotationModel = accumModel
-    elseif rotateOn == :codeModel
-        rotationModel = codeModel
+    subspaceModel = accumModel
+    if rotateOn == :centroidModel
+        subspaceModel = centroidModel
+    # elseif rotateOn == :codeModel
+        # subspaceModel = codeModel
     end
 
     if deflateEmpty
-        deflatedModel = copy(rotationModel)
+        deflatedModel = copy(subspaceModel)
         zAxis = map(eachrow(networkModel)) do networkRow
             r = networkRow[:relationship]
-            return sum(rotationModel[!, r])
+            return sum(subspaceModel[!, r])
         end
 
         s = sqrt(sum(zAxis .^ 2))
@@ -258,9 +282,9 @@ function ENAModel(
             zAxis /= s
         end
 
-        deflatedModel[!, :pos_z] = Matrix{Float64}(rotationModel[!, networkModel[!, :relationship]]) * Vector{Float64}(zAxis)
-        for r in networkModel[!, :relationship]
-            rAxis = map(networkModel[!, :relationship]) do rp
+        deflatedModel[!, :pos_z] = Matrix{Float64}(subspaceModel[!, relationshipIds]) * Vector{Float64}(zAxis)
+        for r in relationshipIds
+            rAxis = map(relationshipIds) do rp
                 if r == rp
                     return 1
                 else
@@ -269,17 +293,17 @@ function ENAModel(
             end
 
             scalar = dot(rAxis, zAxis) / dot(zAxis, zAxis)
-            deflatedModel[!, r] = rotationModel[!, r] .- (scalar * deflatedModel[!, :pos_z])
+            deflatedModel[!, r] = subspaceModel[!, r] .- (scalar * deflatedModel[!, :pos_z])
         end
 
-        rotationModel = deflatedModel
+        subspaceModel = deflatedModel
     end
 
-    if subspace >= 2
-        deflatedModel = copy(rotationModel)
-        pcaModel = projection(help_deflating_svd(networkModel, rotationModel))
-        for r in networkModel[!, :relationship]
-            rAxis = map(networkModel[!, :relationship]) do rp
+    if subspaces >= 2
+        deflatedModel = copy(subspaceModel)
+        pcaModel = projection(help_deflating_svd(networkModel, subspaceModel))
+        for r in relationshipIds
+            rAxis = map(relationshipIds) do rp
                 if r == rp
                     return 1
                 else
@@ -287,32 +311,32 @@ function ENAModel(
                 end
             end
 
-            rAxisNew = rAxis * 0
+            # rAxisNew = rAxis * 0
             deflatedModel[!, r] = deflatedModel[!, r] * 0
-            for i in 1:min(subspace, size(pcaModel, 2))
+            for i in 1:min(subspaces, size(pcaModel, 2))
                 zAxis = pcaModel[:, i]
-                deflatedModel[!, :pos_z] = Matrix{Float64}(rotationModel[!, networkModel[!, :relationship]]) * Vector{Float64}(zAxis)
+                deflatedModel[!, :pos_z] = Matrix{Float64}(subspaceModel[!, relationshipIds]) * Vector{Float64}(zAxis)
 
                 scalar = dot(rAxis, zAxis) / dot(zAxis, zAxis)
                 deflatedModel[!, r] = deflatedModel[!, r] + scalar * deflatedModel[!, :pos_z]
             end
         end
 
-        rotationModel = deflatedModel
+        subspaceModel = deflatedModel
     end
 
-    rotate!(rotateBy, networkModel, rotationModel, metadata)
+    rotate!(rotateBy, networkModel, codeModel, metadata, subspaceModel)
 
     # Layout step
     ## Project the pos_x and pos_y for the original units onto the plane, now that we have the rotation
     ## This is really only for testing the goodness of fit
-    accumModel[!, :pos_x] = Matrix{Float64}(accumModel[!, networkModel[!, :relationship]]) * Vector{Float64}(networkModel[!, :weight_x])
-    accumModel[!, :pos_y] = Matrix{Float64}(accumModel[!, networkModel[!, :relationship]]) * Vector{Float64}(networkModel[!, :weight_y])
+    accumModel[!, :pos_x] = Matrix{Float64}(accumModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_x])
+    accumModel[!, :pos_y] = Matrix{Float64}(accumModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_y])
 
     ## Same for the refit units
     ## These are what are really drawn (unlike in rENA, where accumModel is what is drawn)
-    centroidModel[!, :pos_x] = Matrix{Float64}(centroidModel[!, networkModel[!, :relationship]]) * Vector{Float64}(networkModel[!, :weight_x])
-    centroidModel[!, :pos_y] = Matrix{Float64}(centroidModel[!, networkModel[!, :relationship]]) * Vector{Float64}(networkModel[!, :weight_y])
+    centroidModel[!, :pos_x] = Matrix{Float64}(centroidModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_x])
+    centroidModel[!, :pos_y] = Matrix{Float64}(centroidModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_y])
 
     ## Same for the codes
     ## These aren't used to compute what's really drawn, they are labels floating around
@@ -320,8 +344,8 @@ function ENAModel(
     ## center of mass. If we *were* to use these to compute what's really drawn,
     ## it should actually give us the same result as the projection we used for centroidRow's above,
     ## since that's the property we defined the refit space to have. (ignoring the intercept)
-    codeModel[!, :pos_x] = Matrix{Float64}(codeModel[!, networkModel[!, :relationship]]) * Vector{Float64}(networkModel[!, :weight_x])
-    codeModel[!, :pos_y] = Matrix{Float64}(codeModel[!, networkModel[!, :relationship]]) * Vector{Float64}(networkModel[!, :weight_y])
+    codeModel[!, :pos_x] = Matrix{Float64}(codeModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_x])
+    codeModel[!, :pos_y] = Matrix{Float64}(codeModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_y])
 
     ## Maybe translate everything so overall mean lies at the origin
     if meanCenter

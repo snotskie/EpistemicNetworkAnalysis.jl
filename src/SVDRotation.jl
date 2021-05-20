@@ -9,10 +9,10 @@ function SVDRotation(dim1::Integer=1)
 end
 
 # Implement rotation
-function rotate!(rotation::AbstractSVDRotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame)
+function rotate!(rotation::AbstractSVDRotation, networkModel::DataFrame, codeModel::DataFrame, metadata::DataFrame, subspaceModel::DataFrame)
 
     ## Run an ortho svd and use those values as the axis weights
-    pcaModel = projection(help_deflating_svd(networkModel, unitModel))
+    pcaModel = projection(help_deflating_svd(networkModel, subspaceModel))
     networkModel[!, :weight_x] = pcaModel[:, rotation.dim1]
     networkModel[!, :weight_y] = pcaModel[:, rotation.dim2]
 end

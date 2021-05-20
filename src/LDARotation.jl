@@ -9,18 +9,18 @@ function LDARotation(groupVar::Symbol)
 end
 
 # Implement rotation
-function rotate!(rotation::AbstractLDARotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame)
+function rotate!(rotation::AbstractLDARotation, networkModel::DataFrame, codeModel::DataFrame, metadata::DataFrame, subspaceModel::DataFrame)
 
     # Check assumptions
-    if nrow(unitModel) != nrow(metadata)
-        error("Cannot perform LDA rotation when rotateOn=:codeModel")
-    end
+    # if nrow(subspaceModel) != nrow(metadata)
+    #     error("Cannot perform LDA rotation when rotateOn=:codeModel")
+    # end
 
     # Prepare the data
     groups = sort(unique(metadata[!, rotation.groupVar]))
     groupMap = Dict(group => i for (i, group) in enumerate(groups))
     nc = length(groups)
-    X = Matrix{Float64}(transpose(Matrix{Float64}(unitModel[!, networkModel[!, :relationship]])))
+    X = Matrix{Float64}(transpose(Matrix{Float64}(subspaceModel[!, networkModel[!, :relationship]])))
     for j in 1:size(X, 2)
         X[:, j] = X[:, j] .- mean(X[:, j])
     end
@@ -32,7 +32,7 @@ function rotate!(rotation::AbstractLDARotation, networkModel::DataFrame, unitMod
     ## Run the LDA
     ldaModel = projection(fit(MulticlassLDA, nc, X, y))
     networkModel[!, :weight_x] = ldaModel[:, rotation.dim1]
-    help_one_vector(networkModel, unitModel)
+    help_one_vector(networkModel, subspaceModel)
 
     # if size(ldaModel, 2) >= 2
     #     networkModel[!, :weight_x] = ldaModel[:, rotation.dim1]
@@ -51,7 +51,7 @@ function rotate!(rotation::AbstractLDARotation, networkModel::DataFrame, unitMod
     # else
     #     ## Try to use MR1's x-axis as my approximate y-axis
     #     groups = unique(metadata[!, rotation.groupVar])
-    #     rotate!(MeansRotation(rotation.groupVar, groups[1], groups[2]), networkModel, unitModel, metadata)
+    #     rotate!(MeansRotation(rotation.groupVar, groups[1], groups[2]), networkModel, subspaceModel, metadata)
     #     networkModel[!, :weight_y] = networkModel[!, :weight_x]
     #     networkModel[!, :weight_x] = ldaModel[:, 1]
     #     help_two_vectors(networkModel)
@@ -91,12 +91,12 @@ end
 #     groups = sort(unique(ena.metadata[!, ena.rotation.groupVar]))
 #     groupMap = Dict(group => i for (i, group) in enumerate(groups))
 #     nc = length(groups)
-#     unitModel = ena.centroidModel
+#     subspaceModel = ena.centroidModel
 #     if ena.rotateOn == :accumModel
-#         unitModel = ena.accumModel
+#         subspaceModel = ena.accumModel
 #     end
 
-#     X = Matrix{Float64}(transpose(Matrix{Float64}(unitModel[!, ena.networkModel[!, :relationship]])))
+#     X = Matrix{Float64}(transpose(Matrix{Float64}(subspaceModel[!, ena.networkModel[!, :relationship]])))
 #     for j in 1:size(X, 2)
 #         X[:, j] = X[:, j] .- mean(X[:, j])
 #     end

@@ -1,5 +1,5 @@
-function help_deflating_svd(networkModel::DataFrame, unitModel::DataFrame, controlModel::Union{Nothing,DataFrame}=nothing)
-    X = Matrix{Float64}(unitModel[!, networkModel[!, :relationship]])
+function help_deflating_svd(networkModel::DataFrame, subspaceModel::DataFrame, controlModel::Union{Nothing,DataFrame}=nothing)
+    X = Matrix{Float64}(subspaceModel[!, networkModel[!, :relationship]])
     for i in 1:size(X)[2]
         xcol = X[:, i]
         xcol = xcol .- mean(xcol) # mean center
@@ -26,7 +26,7 @@ function help_deflating_svd(networkModel::DataFrame, unitModel::DataFrame, contr
     return pcaModel
 end
 
-function help_one_vector(networkModel::DataFrame, unitModel::DataFrame)
+function help_one_vector(networkModel::DataFrame, subspaceModel::DataFrame)
     ## Normalize the axis weights
     s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
     if s != 0
@@ -34,11 +34,11 @@ function help_one_vector(networkModel::DataFrame, unitModel::DataFrame)
     end
 
     ## Find the first svd dim of the data orthogonal to the x weights, use these as the y weights
-    xAxis = Matrix{Float64}(unitModel[!, networkModel[!, :relationship]]) *
+    xAxis = Matrix{Float64}(subspaceModel[!, networkModel[!, :relationship]]) *
             Matrix{Float64}(networkModel[!, [:weight_x]])
     xAxis = xAxis .- mean(xAxis)
     controlModel = DataFrame(xAxis)
-    pcaModel = projection(help_deflating_svd(networkModel, unitModel, controlModel))
+    pcaModel = projection(help_deflating_svd(networkModel, subspaceModel, controlModel))
     networkModel[!, :weight_y] = pcaModel[:, 1]
 end
 

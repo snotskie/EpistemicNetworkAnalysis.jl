@@ -10,17 +10,17 @@ struct Formula2Rotation{T <: RegressionModel, U <: RegressionModel} <: AbstractF
 end
 
 # Implement rotation
-function rotate!(rotation::AbstractFormula2Rotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame)
+function rotate!(rotation::AbstractFormula2Rotation, networkModel::DataFrame, codeModel::DataFrame, metadata::DataFrame, subspaceModel::DataFrame)
 
     # Check assumptions
-    if nrow(unitModel) != nrow(metadata)
-        error("Cannot perform a Formula-based rotation when rotateOn=:codeModel")
-    end
+    # if nrow(subspaceModel) != nrow(metadata)
+    #     error("Cannot perform a Formula-based rotation when rotateOn=:codeModel")
+    # end
 
     ## TODO check assumptions about f1 and f2
 
     ## Collect data we need into one data frame
-    regressionData = hcat(unitModel, metadata, makeunique=true)
+    regressionData = innerjoin(subspaceModel, metadata, on=:ENA_UNIT)
 
     ## Bugfix
     rhs1 = rotation.f1.rhs

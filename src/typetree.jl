@@ -68,7 +68,11 @@ end
 
 # Default Functions
 ## Rotations
-function rotate!(rotation::AbstractENARotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame)
+# function rotate!(rotation::AbstractENARotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame)
+#     error("Unimplemented")
+# end
+
+function rotate!(rotation::AbstractENAModel, networkModel::DataFrame, codeModel::DataFrame, metadata::DataFrame, subspaceModel::DataFrame)
     error("Unimplemented")
 end
 

@@ -32,10 +32,10 @@ include("./MeansRotation.jl")
 include("./Means2Rotation.jl")
 include("./ENAModel.jl")
 include("./BiplotModel.jl")
-include("./CopyRotation.jl")
-include("./CodeNetworkRotation.jl")
-include("./DifferenceRotation.jl")
-include("./DirectionRotation.jl")
+# include("./CopyRotation.jl")
+# include("./CodeNetworkRotation.jl")
+# include("./DifferenceRotation.jl")
+# include("./DirectionRotation.jl")
 include("./ena_dataset.jl")
 
 # Exports
@@ -58,40 +58,40 @@ export ena_dataset
 # data[!, :_1] = zeros(nrow(data))
 # data[!, :_2] = zeros(nrow(data))
 # data[!, :_3] = [row[:Condition] == "FirstGame" ? 1 : 0 for row in eachrow(data)]
-# # codes = [
-# #     :Data,
-# #     :Technical_Constraints,
-# #     :Performance_Parameters,
-# #     :Client_and_Consultant_Requests,
-# #     :Design_Reasoning,
-# #     :Collaboration,
-# #     # :_1,
-# #     # :_2,
-# #     # :_3,
-# #     # :_
-# # ]
-
-# # conversations = [:Condition, :GameHalf, :GroupName]
-# # units = [:Condition, :GameHalf, :UserName]
-# # Data
-# data = ena_dataset("shakespeare.data")
-
-# # Config
 # codes = [
-#     :Love,
-#     :Beauty,
-#     :Death,
-#     :Fear,
-#     :Friendship,
-#     :Hate,
-#     :Honor,
-#     :Men,
-#     :Women,
-#     :Pride
+#     :Data,
+#     :Technical_Constraints,
+#     :Performance_Parameters,
+#     :Client_and_Consultant_Requests,
+#     :Design_Reasoning,
+#     :Collaboration,
+#     # :_1,
+#     # :_2,
+#     # :_3,
+#     # :_
 # ]
 
-# conversations = [:Play, :Act, :Scene]
-# units = [:Play, :Act, :Speaker]
+# conversations = [:Condition, :GameHalf, :GroupName]
+# units = [:Condition, :GameHalf, :UserName]
+# # Data
+# # data = ena_dataset("shakespeare.data")
+
+# # # Config
+# # codes = [
+# #     :Love,
+# #     :Beauty,
+# #     :Death,
+# #     :Fear,
+# #     :Friendship,
+# #     :Hate,
+# #     :Honor,
+# #     :Men,
+# #     :Women,
+# #     :Pride
+# # ]
+
+# # conversations = [:Play, :Act, :Scene]
+# # units = [:Play, :Act, :Speaker]
 
 # using Random
 # Random.seed!(4321)
@@ -114,9 +114,9 @@ export ena_dataset
 #     end
 # end
 
-# # rotation = SVDRotation()
+# rotation = SVDRotation()
 # # rotation = SVDRotation(5)
-# rotation = LDARotation(:Play)
+# # rotation = LDARotation(:Play)
 # # rotation = LDARotation(:GameHalf)
 # # rotation = LDARotation(:RNDGroup)
 # # rotation = LDARotation(:RND3Group)
@@ -173,7 +173,7 @@ export ena_dataset
 # # #     # meanCenter=false
 # # # )
 
-# # display(myENA)
+# display(myENA)
 # savefig(plot(myENA, showWarps=false, weakLinks=true), "~/Downloads/temp.png")
 # end # let
 

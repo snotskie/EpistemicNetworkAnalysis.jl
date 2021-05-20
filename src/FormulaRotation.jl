@@ -6,17 +6,17 @@ struct FormulaRotation{T <: RegressionModel} <: AbstractFormulaRotation
 end
 
 # Implement rotation
-function rotate!(rotation::AbstractFormulaRotation, networkModel::DataFrame, unitModel::DataFrame, metadata::DataFrame)
+function rotate!(rotation::AbstractFormulaRotation, networkModel::DataFrame, codeModel::DataFrame, metadata::DataFrame, subspaceModel::DataFrame)
 
     # Check assumptions
-    if nrow(unitModel) != nrow(metadata)
-        error("Cannot perform a Formula-based rotation when rotateOn=:codeModel")
-    end
+    # if nrow(subspaceModel) != nrow(metadata)
+    #     error("Cannot perform a Formula-based rotation when rotateOn=:codeModel")
+    # end
 
     ## TODO check assumptions about f1
 
     ## Grab the data we need as one data frame
-    regressionData = hcat(unitModel, metadata, makeunique=true)
+    regressionData = innerjoin(subspaceModel, metadata, on=:ENA_UNIT)
 
     ## Bugfix
     rhs = rotation.f1.rhs
@@ -77,7 +77,7 @@ function rotate!(rotation::AbstractFormulaRotation, networkModel::DataFrame, uni
         end
     end
 
-    help_one_vector(networkModel, unitModel)
+    help_one_vector(networkModel, subspaceModel)
 end
 
 ## Units - we can color them by the coef variable, if a simple term
