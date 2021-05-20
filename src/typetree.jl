@@ -1,13 +1,13 @@
 # Rotations
 abstract type AbstractENARotation
     # fields: (none)
-    # plot accepts: flipX, flipY, xlabel, ylabel
+    # plot accepts: flipX, flipY, xlabel, ylabel, groupVar
     # test reports: variance_x, variance_y
 end
 
 abstract type AbstractSVDRotation <: AbstractENARotation
     # fields: (inherit)
-    # plot accepts: (inherit), groupVar
+    # plot accepts: (inherit)
 end
 
 abstract type AbstractLDARotation <: AbstractENARotation
@@ -35,25 +35,30 @@ abstract type AbstractMeans2Rotation <: AbstractFormula2Rotation
     # plot accepts: (inherit)
 end
 
-abstract type AbstractCopyRotation <: AbstractENARotation
-    # fields: (inherit), ena
-    # plot accepts: (inherit), groupVar
-end
-
-abstract type AbstractCodeNetworkRotation <: AbstractENARotation
-    # fields: (inherit), alg, f
+abstract type AbstractThematicRotation <: AbstractENARotation
+    # fields: (inherit), controlThemes, treatmentThemes
     # plot accepts: (inherit)
 end
 
-abstract type AbstractDifferenceRotation <: AbstractENARotation
-    # fields: (inherit), i, j
-    # plot accepts: (inherit)
-end
+# abstract type AbstractCopyRotation <: AbstractENARotation
+#     # fields: (inherit), ena
+#     # plot accepts: (inherit), groupVar
+# end
 
-abstract type AbstractDirectionRotation <: AbstractENARotation
-    # fields: (inherit), i
-    # plot accepts: (inherit)
-end
+# abstract type AbstractCodeNetworkRotation <: AbstractENARotation
+#     # fields: (inherit), alg, f
+#     # plot accepts: (inherit)
+# end
+
+# abstract type AbstractDifferenceRotation <: AbstractENARotation
+#     # fields: (inherit), i, j
+#     # plot accepts: (inherit)
+# end
+
+# abstract type AbstractDirectionRotation <: AbstractENARotation
+#     # fields: (inherit), i
+#     # plot accepts: (inherit)
+# end
 
 # Accumulation Models
 abstract type AbstractENAModel{T<:AbstractENARotation}

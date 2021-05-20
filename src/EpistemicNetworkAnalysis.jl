@@ -30,6 +30,7 @@ include("./FormulaRotation.jl")
 include("./Formula2Rotation.jl")
 include("./MeansRotation.jl")
 include("./Means2Rotation.jl")
+include("./ThematicRotation.jl")
 include("./ENAModel.jl")
 include("./BiplotModel.jl")
 # include("./CopyRotation.jl")
@@ -48,6 +49,7 @@ export MeansRotation
 export Means2Rotation
 export FormulaRotation
 export Formula2Rotation
+export ThematicRotation
 export ena_dataset
 
 
@@ -114,7 +116,7 @@ export ena_dataset
 #     end
 # end
 
-# rotation = SVDRotation()
+# # rotation = SVDRotation()
 # # rotation = SVDRotation(5)
 # # rotation = LDARotation(:Play)
 # # rotation = LDARotation(:GameHalf)
@@ -122,7 +124,7 @@ export ena_dataset
 # # rotation = LDARotation(:RND3Group)
 # # rotation = LDARotation(:GroupName)
 # # rotation = LDARotation(:GroupName, 2)
-# # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
+# rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
 # # rotation = MeansRotation(:Collaboration, 0, 1)
 # # rotation = MeansRotation(:Condition, "SecondGame", "FirstGame")
 # # rotation = MeansRotation(:GameHalf, "First", "Second")
@@ -143,6 +145,8 @@ export ena_dataset
 # # someData = someData[someData[!, :GameHalf] .== "Second", :]
 # # rotation = DifferenceRotation(1, 4)
 # # rotation = DirectionRotation(6)
+# # rotation = ThematicRotation([:Technical_Constraints], [:Performance_Parameters])
+# rotation = ThematicRotation([:Technical_Constraints, :Collaboration], [:Design_Reasoning, :Performance_Parameters, :Data])
 # myENA = ENAModel(
 # # myENA = BiplotModel(
 #     data, codes, conversations, units,
@@ -153,7 +157,7 @@ export ena_dataset
 #     # dimensionNormalize=true,
 #     # rotateOn=:accumModel,
 #     # rotateOn=:codeModel,
-#     # rotateOn=:centroidModel,
+#     rotateOn=:centroidModel,
 #     # deflateEmpty=true,
 #     # meanCenter=false
 # )
@@ -174,7 +178,7 @@ export ena_dataset
 # # # )
 
 # display(myENA)
-# savefig(plot(myENA, showWarps=false, weakLinks=true), "~/Downloads/temp.png")
+# savefig(plot(myENA, showWarps=false, weakLinks=true, groupBy=:Condition), "~/Downloads/temp.png")
 # end # let
 
 
