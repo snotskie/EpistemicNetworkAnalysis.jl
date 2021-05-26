@@ -55,46 +55,46 @@ export ena_dataset
 
 # @warn "Running EpistemicNetworkAnalysis.jl as main. Performing kitchen sink operation."
 # let
-# # data = ena_dataset("RS.data")
-# # data[!, :_] = ones(nrow(data))
-# # data[!, :_1] = zeros(nrow(data))
-# # data[!, :_2] = zeros(nrow(data))
-# # data[!, :_3] = [row[:Condition] == "FirstGame" ? 1 : 0 for row in eachrow(data)]
-# # codes = [
-# #     :Data,
-# #     :Technical_Constraints,
-# #     :Performance_Parameters,
-# #     :Client_and_Consultant_Requests,
-# #     :Design_Reasoning,
-# #     :Collaboration,
-# #     # :_1,
-# #     # :_2,
-# #     # :_3,
-# #     # :_
-# # ]
-
-# # conversations = [:Condition, :GameHalf, :GroupName]
-# # units = [:Condition, :GameHalf, :UserName]
-
-# # Data
-# data = ena_dataset("shakespeare.data")
-
-# # Config
+# data = ena_dataset("RS.data")
+# data[!, :_] = ones(nrow(data))
+# data[!, :_1] = zeros(nrow(data))
+# data[!, :_2] = zeros(nrow(data))
+# data[!, :_3] = [row[:Condition] == "FirstGame" ? 1 : 0 for row in eachrow(data)]
 # codes = [
-#     :Love,
-#     :Beauty,
-#     :Death,
-#     :Fear,
-#     :Friendship,
-#     :Hate,
-#     :Honor,
-#     :Men,
-#     :Women,
-#     :Pride
+#     :Data,
+#     :Technical_Constraints,
+#     :Performance_Parameters,
+#     :Client_and_Consultant_Requests,
+#     :Design_Reasoning,
+#     :Collaboration,
+#     # :_1,
+#     # :_2,
+#     # :_3,
+#     # :_
 # ]
 
-# conversations = [:Play, :Act, :Scene]
-# units = [:Play, :Act, :Speaker]
+# conversations = [:Condition, :GameHalf, :GroupName]
+# units = [:Condition, :GameHalf, :UserName]
+
+# # # Data
+# # data = ena_dataset("shakespeare.data")
+
+# # # Config
+# # codes = [
+# #     :Love,
+# #     :Beauty,
+# #     :Death,
+# #     :Fear,
+# #     :Friendship,
+# #     :Hate,
+# #     :Honor,
+# #     :Men,
+# #     :Women,
+# #     :Pride
+# # ]
+
+# # conversations = [:Play, :Act, :Scene]
+# # units = [:Play, :Act, :Speaker]
 
 # using Random
 # Random.seed!(4321)
@@ -142,6 +142,16 @@ export ena_dataset
 # #     LassoModel, 2, @formula(col ~ 0 + RND), nothing
 # # )
 
+# using Statistics
+# using GLM
+# # data[!, :CONFIDENCE_Pre_MC] = data[!, :CONFIDENCE_Pre] .- mean(data[!, :CONFIDENCE_Pre])
+# # data[!, :CONFIDENCE_Post_MC] = data[!, :CONFIDENCE_Post] .- mean(data[!, :CONFIDENCE_Post])
+
+# rotation = Formula2Rotation(
+#     LinearModel, 2, @formula(y ~ 1 + CONFIDENCE_Pre + CONFIDENCE_Post), nothing,
+#     LinearModel, 3, @formula(y ~ 1 + CONFIDENCE_Pre + CONFIDENCE_Post), nothing
+# )
+
 # # someData = data[data[!, :Condition] .== "FirstGame", :]
 # # someData = someData[someData[!, :GameHalf] .== "Second", :]
 # # rotation = DifferenceRotation(1, 4)
@@ -150,7 +160,7 @@ export ena_dataset
 # # rotation = ThematicRotation([:Client_and_Consultant_Requests, :Collaboration], [:Design_Reasoning, :Performance_Parameters, :Data])
 # # rotation = ThematicRotation([:Men], [:Women])
 # # rotation = ThematicRotation([:Honor], [:Women])
-# rotation = ThematicRotation([:Men, :Honor], [:Women, :Hate, :Love])
+# # rotation = ThematicRotation([:Men, :Honor], [:Women, :Hate, :Love])
 # myENA = ENAModel(
 # # myENA = BiplotModel(
 #     data, codes, conversations, units,
@@ -182,7 +192,7 @@ export ena_dataset
 # # # )
 
 # display(myENA)
-# savefig(plot(myENA, showWarps=false, weakLinks=true, groupBy=:Play), "~/Downloads/temp.png")
+# savefig(plot(myENA), "~/Downloads/temp.png")
 # end # let
 
 

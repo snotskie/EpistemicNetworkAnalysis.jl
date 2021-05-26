@@ -49,7 +49,7 @@ ena = ENAModel(data, codes, conversations, units, rotateBy=rotation)
 display(ena)
 
 # 5. Plot the results
-plot(ena)
+display(plot(ena))
 
 # 6. Export results to CSV
 using CSV
