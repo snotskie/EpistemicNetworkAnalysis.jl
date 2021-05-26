@@ -25,7 +25,7 @@ struct ThematicRotation <: AbstractThematicRotation
     treatmentMean = combine(codeModel[treatmentRows, :], (r => mean => r for r in networkModel[!, :relationship])...)
     controlVec = Vector{Float64}(controlMean[1, networkModel[!, :relationship]])
     treatmentVec = Vector{Float64}(treatmentMean[1, networkModel[!, :relationship]])
-    networkModel[!, :weight_x] .= treatmentVec - controlVec
+    networkModel[!, :weight_x] .= treatmentVec .- controlVec
     help_one_vector(networkModel, subspaceModel)
  end
  

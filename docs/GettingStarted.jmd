@@ -1,7 +1,7 @@
 ---
 title: Getting Started
 author: Mariah A. Knowles
-date: March, 17th 2021
+date: May, 26th 2021
 ---
 
 First, install Julia and an IDE. I recommend [Julia in Visual Studio Code](https://www.julia-vscode.org/).
@@ -10,6 +10,8 @@ Second, install the Julia ENA package by running the following in Julia:
 
 ```{julia; eval=false}
 using Pkg
+Pkg.add("CSV")
+Pkg.add("DataFrames")
 Pkg.add(url="https://github.com/snotskie/EpistemicNetworkAnalysis.jl")
 ```
 
@@ -48,6 +50,13 @@ display(ena)
 
 # 5. Plot the results
 plot(ena)
+
+# 6. Export results to CSV
+using CSV
+using DataFrames
+CSV.write("model.csv", innerjoin(ena.metadata, ena.accumModel, on=:ENA_UNIT))
+CSV.write("nodes.csv", ena.codeModel)
+CSV.write("edges.csv", ena.networkModel)
 ```
 
 And that's it!

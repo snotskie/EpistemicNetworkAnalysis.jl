@@ -37,7 +37,7 @@ function help_one_vector(networkModel::DataFrame, subspaceModel::DataFrame)
     xAxis = Matrix{Float64}(subspaceModel[!, networkModel[!, :relationship]]) *
             Matrix{Float64}(networkModel[!, [:weight_x]])
     xAxis = xAxis .- mean(xAxis)
-    controlModel = DataFrame(xAxis)
+    controlModel = DataFrame(xAxis, :auto)
     pcaModel = projection(help_deflating_svd(networkModel, subspaceModel, controlModel))
     networkModel[!, :weight_y] = pcaModel[:, 1]
 end

@@ -1,7 +1,7 @@
 ---
 title: Rotations
 author: Mariah A. Knowles
-date: March, 17th 2021
+date: May, 26th 2021
 ---
 
 ## Family Tree
@@ -97,8 +97,6 @@ plot(ena)
 
 However, the LDA rotation tends to find a rotation along which the accumulation and centroid spaces do not have high correlations. This hinders interpretability of the axes in terms of the plotted network positions. It also tends to find a rotation with very low variances explained. This hinders interpretability of the plots in terms of any original qualitative story.
 
-*Interpretation: TODO*
-
 LDA can also be used to visually spread many groups.
 
 ```julia
@@ -162,6 +160,21 @@ plot(ena)
 *Interpretation: Those that had low confidence before and after their game made more connections to Technical Constraints. Those that had high confidence before and after made more connections to Performance Parameters. Those that increased in confidence during the game had more connections between the remaining codes except for Design Reasoning. Because Design Reasoning is very near the origin, there might be no effect between it and a student's confidence.*
 
 While the formula rotations allow you to fully customize the rotation, it is still in the air what the best way to visualize the rotations should be. Unlike in a means rotation where the confidence intervals give some indication to the strength of the rotation, that cue is missing in formula rotations.
+
+
+## ThematicRotation
+
+Seventh, an experimental new rotation in the Julia implementation, one can choose to show an axis based on *a priori* thematic assumptions. This can be useful when one wants to test a hypothesis that some thick thematic distinction is sufficient to distinguish between two or more groups.
+
+```julia
+myRotation = ThematicRotation([:Collaboration, :Technical_Constraints], [:Design_Reasoning, :Performance_Parameters])
+ena = ENAModel(data, codes, conversations, units, rotateBy=myRotation)
+plot(ena, groupBy=:Condition)
+```
+
+*Interpretation: TODO*
+
+The first parameter to the `ThematicRotation` constructor is a list of codes for which we want to weighted mid point of their connections to be on the left, and similarly for the second parameter on the right.
 
 ## Plotting
 
