@@ -11,6 +11,7 @@ ALPHA
 If you use this Julia implementation of ENA in your research, please cite it and the Julia language:
 
 > Bezanson, J., Edelman, A., Karpinski S., and Shah V. B. (2017). Julia: A Fresh Approach to Numerical Computing. SIAM Review, 59: 65-98.
+> 
 > Knowles, M. A. (2021). EpistemicNetworkAnalysis.jl (Version 0.1.0) \[Software\] Available from https://github.com/snotskie/EpistemicNetworkAnalysis.jl
 
 ## Getting Started
