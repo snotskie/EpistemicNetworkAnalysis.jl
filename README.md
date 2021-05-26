@@ -8,7 +8,7 @@ ALPHA
 
 ## Recommended Citation
 
-If you use this Julia implementation of ENA in your research, please cite it, the Julia language, and the R version it is based on, as shown below, and describe it as "...an experimental port of ENA from the original R to Julia (Bezanson et al, 2017; Knowles, 2021; Marquart et al 2019)."
+If you use this Julia implementation of ENA in your research, please cite it, the Julia language, and the R version it is based on, as shown below; describe it as "...an experimental port of ENA from the original R to Julia (Bezanson et al, 2017; Knowles, 2021; Marquart et al 2019)"; and justify your choice of Julia over R. For example, your research team may be more familiar with Julia or you may need interoperability with other existing Julia libraries.
 
 > Bezanson, J., Edelman, A., Karpinski S., & Shah V. B. (2017). Julia: A Fresh Approach to Numerical Computing. SIAM Review, 59: 65-98.
 > 
