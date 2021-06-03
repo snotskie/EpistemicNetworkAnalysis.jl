@@ -248,7 +248,7 @@ function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1
     codeWidths *= GLOBAL_MAX_CODE_SIZE / maximum(codeWidths)
     x = ena.codeModel[!, :pos_x] * (flipX ? -1 : 1)
     y = ena.codeModel[!, :pos_y] * (flipY ? -1 : 1)
-    labels = map(label->text(label, :top, 8), ena.codeModel[!, :code])
+    labels = map(label->text(label, :top, default(:xtickfontsize)), ena.codeModel[!, :code])
     plot!(p, x, y,
         label=nothing,
         seriestype=:scatter,
@@ -361,7 +361,7 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel, targetCol::Symbol;
     ### And plot the codes and we're done
     x = ena.codeModel[codeVisible, :pos_x] * (flipX ? -1 : 1)
     y = ena.codeModel[codeVisible, :pos_y] * (flipY ? -1 : 1)
-    labels = map(label->text(label, :top, 8), ena.codeModel[codeVisible, :code])
+    labels = map(label->text(label, :top, default(:xtickfontsize)), ena.codeModel[codeVisible, :code])
     plot!(p, x, y,
         label=nothing,
         seriestype=:scatter,
@@ -489,7 +489,7 @@ function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, neg
     ### And plot the codes and we're done
     x = ena.codeModel[codeVisible, :pos_x] * (flipX ? -1 : 1)
     y = ena.codeModel[codeVisible, :pos_y] * (flipY ? -1 : 1)
-    labels = map(label->text(label, :top, 8), ena.codeModel[codeVisible, :code])
+    labels = map(label->text(label, :top, default(:xtickfontsize)), ena.codeModel[codeVisible, :code])
     plot!(p, x, y,
         label=nothing,
         seriestype=:scatter,
