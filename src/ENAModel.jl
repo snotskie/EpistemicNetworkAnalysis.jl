@@ -21,7 +21,8 @@ function ENAModel(
         data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
         # optional
         windowSize::Int=4, rotateBy::AbstractENARotation=SVDRotation(), rotateOn::Symbol=:accumModel,
-        sphereNormalize::Bool=true, dropEmpty::Bool=false, deflateEmpty::Bool=false, meanCenter::Bool=true, subspaces::Int=0,
+        sphereNormalize::Bool=true, dropEmpty::Bool=false, recenterEmpty::Bool=false,
+        deflateEmpty::Bool=false, meanCenter::Bool=true, subspaces::Int=0,
         subsetFilter::Function=x->true, relationshipFilter::Function=(i,j,ci,cj)->(i<j)
     )
 
@@ -30,14 +31,16 @@ function ENAModel(
         error("The windowSize must be positive")
     elseif !sphereNormalize && deflateEmpty
         error("When sphereNormalize=false, deflateEmpty=true has no interpretive validity")
+    elseif dropEmpty && recenterEmpty
+        error("When dropEmpty=true, recenterEmpty=true has no interpretive validity")
     elseif length(codes) < 3
         error("There must be at least 3 codes in the model")
     elseif length(conversations) < 1
         error("Need at least one column to define conversations")
     elseif length(units) < 1
         error("Need at least one column to define units")
-    elseif !(rotateOn in [:centroidModel, :accumModel, :codeModel])
-        error("rotateOn must be one of :centroidModel, :accumModel, or :codeModel")
+    elseif !(rotateOn in [:centroidModel, :accumModel])
+        error("rotateOn must be either :centroidModel or :accumModel")
     end
 
     # Preparing model structures
@@ -158,24 +161,36 @@ function ENAModel(
     ## User-defined unit subsetting - we kept all the data in the count model up to this point so the user can define filters as they please
     filter!(subsetFilter, accumModel)
 
-    ## Maybe drop rows with empty values
+    ## Maybe drop rows with empty values or resposition them
     if dropEmpty
+        ### Find values to keep
         nonZeroRows = map(eachrow(accumModel)) do unitRow
             return !all(iszero.(values(unitRow[relationshipIds])))
         end
 
+        ### reassign
         accumModel = accumModel[nonZeroRows, :]
-    end
+    elseif recenterEmpty
+        ### Find values that actually have value
+        nonZeroRows = map(eachrow(accumModel)) do unitRow
+            return !all(iszero.(values(unitRow[relationshipIds])))
+        end
 
-    # ## Normalize each accumulated dimension, if requested
-    # if dimensionNormalize
-    #     for r in relationshipIds
-    #         s = sum(accumModel[!, r])
-    #         if s != 0
-    #             accumModel[!, r] /= s
-    #         end
-    #     end
-    # end
+        ### Count them and find the mean point
+        N = sum(nonZeroRows)
+        meanPoint = map(relationshipIds) do r
+            return sum(accumModel[!, r]) / N
+        end
+
+        ### For all rows, if they are empty, replace with the mean point
+        for unitRow in eachrow(accumModel)
+            if all(iszero.(values(unitRow[relationshipIds])))
+                for (k, r) in enumerate(relationshipIds)
+                    unitRow[r] = meanPoint[k]
+                end
+            end
+        end
+    end
 
     ## Normalize each unit, if requested
     if sphereNormalize
@@ -266,8 +281,6 @@ function ENAModel(
     subspaceModel = accumModel
     if rotateOn == :centroidModel
         subspaceModel = centroidModel
-    # elseif rotateOn == :codeModel
-        # subspaceModel = codeModel
     end
 
     if deflateEmpty

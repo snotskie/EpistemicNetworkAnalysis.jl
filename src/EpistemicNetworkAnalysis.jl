@@ -52,147 +52,49 @@ export Formula2Rotation
 export ThematicRotation
 export ena_dataset
 
-
+# # changes should be adding an elseif at line 167 of ENAModel.jl and a param recenterEmpty::Bool=true, also need to swap the comments at lines 332 and 337
 # @warn "Running EpistemicNetworkAnalysis.jl as main. Performing kitchen sink operation."
 # let
-# data = ena_dataset("RS.data")
-# data[!, :_] = ones(nrow(data))
-# data[!, :_1] = zeros(nrow(data))
-# data[!, :_2] = zeros(nrow(data))
-# data[!, :_3] = [row[:Condition] == "FirstGame" ? 1 : 0 for row in eachrow(data)]
+
+# data = ena_dataset("shakespeare.data")
+# conversations = [:Play, :Act, :Scene]
+# units = [:Play, :Speaker]
 # codes = [
-#     :Data,
-#     :Technical_Constraints,
-#     :Performance_Parameters,
-#     :Client_and_Consultant_Requests,
-#     :Design_Reasoning,
-#     :Collaboration,
-#     # :_1,
-#     # :_2,
-#     # :_3,
-#     # :_
+#     :Love,
+#     :Death,
+#     :Honor,
+#     :Men,
+#     :Women,
+#     # :Beauty,
+#     # :Fear,
+#     # :Friendship,
+#     # :Hate,
+#     # :Pride
 # ]
 
-# conversations = [:Condition, :GameHalf, :GroupName]
-# units = [:Condition, :GameHalf, :UserName]
-
-# # # Data
-# # data = ena_dataset("shakespeare.data")
-
-# # # Config
+# # data = ena_dataset("RS.data")
+# # conversations = [:Condition, :GameHalf, :GroupName]
+# # units = [:Condition, :GameHalf, :UserName]
 # # codes = [
-# #     :Love,
-# #     :Beauty,
-# #     :Death,
-# #     :Fear,
-# #     :Friendship,
-# #     :Hate,
-# #     :Honor,
-# #     :Men,
-# #     :Women,
-# #     :Pride
+# #     :Data,
+# #     :Technical_Constraints,
+# #     :Performance_Parameters,
+# #     :Client_and_Consultant_Requests,
+# #     :Design_Reasoning,
+# #     :Collaboration,
 # # ]
 
-# # conversations = [:Play, :Act, :Scene]
-# # units = [:Play, :Act, :Speaker]
-
-# using Random
-# Random.seed!(4321)
-# data[!, :RND] = rand(nrow(data))
-# data[!, :RNDGroup] = map(data[!, :RND]) do x
-#     if x <= 0.5
-#         return "First"
-#     else
-#         return "Second"
-#     end
-# end
-
-# data[!, :RND3Group] = map(data[!, :RND]) do x
-#     if x <= 1/3
-#         return "First"
-#     elseif x <= 2/3
-#         return "Second"
-#     else
-#         return "Third"
-#     end
-# end
-
-# # rotation = SVDRotation()
-# # rotation = SVDRotation(5)
-# # rotation = LDARotation(:Play)
-# # rotation = LDARotation(:GameHalf)
-# # rotation = LDARotation(:RNDGroup)
-# # rotation = LDARotation(:RND3Group)
-# # rotation = LDARotation(:GroupName)
-# # rotation = LDARotation(:GroupName, 2)
-# # rotation = MeansRotation(:Condition, "FirstGame", "SecondGame")
-# # rotation = MeansRotation(:Collaboration, 0, 1)
-# # rotation = MeansRotation(:Condition, "SecondGame", "FirstGame")
-# # rotation = MeansRotation(:GameHalf, "First", "Second")
-# # rotation = MeansRotation(:RNDGroup, "First", "Second")
-# # rotation = Means2Rotation(:Condition, "SecondGame", "FirstGame",
-# #                           :GameHalf, "First", "Second")
-# # rotation = FormulaRotation(
-# #     LinearModel, 2, @formula(col ~ 1 + RND), nothing
-# # )
-# # using NetworkLayout
-# # rotation = CodeNetworkRotation(NetworkLayout.Stress)
-# # using Lasso
-# # rotation = FormulaRotation(
-# #     LassoModel, 2, @formula(col ~ 0 + RND), nothing
-# # )
-
-# using Statistics
-# using GLM
-# # data[!, :CONFIDENCE_Pre_MC] = data[!, :CONFIDENCE_Pre] .- mean(data[!, :CONFIDENCE_Pre])
-# # data[!, :CONFIDENCE_Post_MC] = data[!, :CONFIDENCE_Post] .- mean(data[!, :CONFIDENCE_Post])
-
-# rotation = Formula2Rotation(
-#     LinearModel, 2, @formula(y ~ 1 + CONFIDENCE_Pre + CONFIDENCE_Post), nothing,
-#     LinearModel, 3, @formula(y ~ 1 + CONFIDENCE_Pre + CONFIDENCE_Post), nothing
-# )
-
-# # someData = data[data[!, :Condition] .== "FirstGame", :]
-# # someData = someData[someData[!, :GameHalf] .== "Second", :]
-# # rotation = DifferenceRotation(1, 4)
-# # rotation = DirectionRotation(6)
-# # rotation = ThematicRotation([:Technical_Constraints], [:Performance_Parameters])
-# # rotation = ThematicRotation([:Client_and_Consultant_Requests, :Collaboration], [:Design_Reasoning, :Performance_Parameters, :Data])
-# # rotation = ThematicRotation([:Men], [:Women])
-# # rotation = ThematicRotation([:Honor], [:Women])
-# # rotation = ThematicRotation([:Men, :Honor], [:Women, :Hate, :Love])
 # myENA = ENAModel(
-# # myENA = BiplotModel(
 #     data, codes, conversations, units,
-#     rotateBy=rotation,
-#     # subspace = 6,
-#     # subsetFilter=(x->x[:RND] < 1),
-#     # subsetFilter=(x->x[:GroupName] in ["1", "2", "3"] && x[:Condition] == "FirstGame"),
-#     # dimensionNormalize=true,
-#     # rotateOn=:accumModel,
-#     # rotateOn=:codeModel,
-#     rotateOn=:centroidModel,
-#     # deflateEmpty=true,
+#     windowSize=4,
+#     rotateBy=MeansRotation(:Play, "Hamlet", "Romeo and Juliet"),
+#     recenterEmpty=true,
+#     # dropEmpty=true,
 #     # meanCenter=false
 # )
 
-# # println(std(myENA.accumModel[!, :pos_x]))
-# # println(median(myENA.accumModel[!, :pos_x]))
-# # println(median(myENA.accumModel[myENA.metadata[!, :Condition] .== "FirstGame", :pos_x]))
-# # println(median(myENA.accumModel[myENA.metadata[!, :Condition] .== "SecondGame", :pos_x]))
-
-# # # myENA = ENAModel(
-# # # # myENA = BiplotModel(
-# # #     data, codes, conversations, units,
-# # #     rotateBy=CopyRotation(myENA),
-# # #     rotateOn=:accumModel,
-# # #     # rotateOn=:codeModel,
-# # #     # deflateEmpty=true,
-# # #     # meanCenter=false
-# # # )
-
 # display(myENA)
-# savefig(plot(myENA), "~/Downloads/temp.png")
+# savefig(plot(myENA, flipX=true, flipY=true), "~/Downloads/temp.png")
 # end # let
 
 
