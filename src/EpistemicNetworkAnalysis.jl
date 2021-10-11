@@ -52,12 +52,11 @@ export Formula2Rotation
 export ThematicRotation
 export ena_dataset
 
-# # changes should be adding an elseif at line 167 of ENAModel.jl and a param recenterEmpty::Bool=true, also need to swap the comments at lines 332 and 337
 # @warn "Running EpistemicNetworkAnalysis.jl as main. Performing kitchen sink operation."
 # let
 
 # data = ena_dataset("shakespeare.data")
-# conversations = [:Play, :Act, :Scene]
+# conversations = [:Play, :Act]
 # units = [:Play, :Speaker]
 # codes = [
 #     :Love,
@@ -87,14 +86,14 @@ export ena_dataset
 # myENA = ENAModel(
 #     data, codes, conversations, units,
 #     windowSize=4,
-#     rotateBy=MeansRotation(:Play, "Hamlet", "Romeo and Juliet"),
+#     rotateBy=MeansRotation(:Play, "Romeo and Juliet", "Hamlet"),
 #     recenterEmpty=true,
 #     # dropEmpty=true,
 #     # meanCenter=false
 # )
 
 # display(myENA)
-# savefig(plot(myENA, flipX=true, flipY=true), "~/Downloads/temp.png")
+# savefig(plot(myENA, flipY=true, showCodeLabels=false), "~/Downloads/temp.png")
 # end # let
 
 

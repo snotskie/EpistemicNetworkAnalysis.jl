@@ -199,7 +199,7 @@ end
 ### Helper - Draw the lines
 function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
     color::Colorant=colorant"#aaa",
-    flipX::Bool=false, flipY::Bool=false, showWarps::Bool=false,
+    flipX::Bool=false, flipY::Bool=false, showWarps::Bool=false, showCodeLabels::Bool=true,
     kwargs...)
 
     #### Find the true weight on each line
@@ -248,21 +248,33 @@ function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1
     codeWidths *= GLOBAL_MAX_CODE_SIZE / maximum(codeWidths)
     x = ena.codeModel[!, :pos_x] * (flipX ? -1 : 1)
     y = ena.codeModel[!, :pos_y] * (flipY ? -1 : 1)
-    labels = map(label->text(label, :top, default(:xtickfontsize)), ena.codeModel[!, :code])
-    plot!(p, x, y,
-        label=nothing,
-        seriestype=:scatter,
-        series_annotations=labels,
-        markershape=:circle,
-        markersize=codeWidths,
-        markercolor=:black,
-        markerstrokewidth=0)
+    if showCodeLabels
+        labels = map(label->text(label, :top, default(:xtickfontsize)), ena.codeModel[!, :code])
+        plot!(p, x, y,
+            label=nothing,
+            seriestype=:scatter,
+            series_annotations=labels,
+            markershape=:circle,
+            markersize=codeWidths,
+            markercolor=:black,
+            markerstrokewidth=0)
+    else
+        plot!(p, x, y,
+            label=nothing,
+            seriestype=:scatter,
+            # series_annotations=labels,
+            markershape=:circle,
+            markersize=codeWidths,
+            markercolor=:black,
+            markerstrokewidth=0)
+    end
 end
 
 ### Helper - Draw the predictive lines
 function plot_predictive!(p::Plot, ena::AbstractENAModel, targetCol::Symbol;
     negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
     flipX::Bool=false, flipY::Bool=false, weakLinks::Bool=true, showWarps::Bool=false,
+    showCodeLabels::Bool=true,
     kwargs...)
 
     ### Grab the data we need as one data frame
@@ -361,21 +373,33 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel, targetCol::Symbol;
     ### And plot the codes and we're done
     x = ena.codeModel[codeVisible, :pos_x] * (flipX ? -1 : 1)
     y = ena.codeModel[codeVisible, :pos_y] * (flipY ? -1 : 1)
-    labels = map(label->text(label, :top, default(:xtickfontsize)), ena.codeModel[codeVisible, :code])
-    plot!(p, x, y,
-        label=nothing,
-        seriestype=:scatter,
-        series_annotations=labels,
-        markershape=:circle,
-        markersize=codeWidths,
-        markercolor=:black,
-        markerstrokewidth=0)
+    if showCodeLabels
+        labels = map(label->text(label, :top, default(:xtickfontsize)), ena.codeModel[codeVisible, :code])
+        plot!(p, x, y,
+            label=nothing,
+            seriestype=:scatter,
+            series_annotations=labels,
+            markershape=:circle,
+            markersize=codeWidths,
+            markercolor=:black,
+            markerstrokewidth=0)
+    else
+        plot!(p, x, y,
+            label=nothing,
+            seriestype=:scatter,
+            # series_annotations=labels,
+            markershape=:circle,
+            markersize=codeWidths,
+            markercolor=:black,
+            markerstrokewidth=0)
+    end
 end
 
 ### Helper - Draw the subtraction lines (nearly identical to plot_predictive)
 function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, negGroup::Any, posGroup::Any;
     negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
     flipX::Bool=false, flipY::Bool=false, weakLinks::Bool=true, showWarps::Bool=false,
+    showCodeLabels::Bool=true,
     kwargs...)
 
     ### Grab the data we need as one data frame
@@ -489,15 +513,26 @@ function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, neg
     ### And plot the codes and we're done
     x = ena.codeModel[codeVisible, :pos_x] * (flipX ? -1 : 1)
     y = ena.codeModel[codeVisible, :pos_y] * (flipY ? -1 : 1)
-    labels = map(label->text(label, :top, default(:xtickfontsize)), ena.codeModel[codeVisible, :code])
-    plot!(p, x, y,
-        label=nothing,
-        seriestype=:scatter,
-        series_annotations=labels,
-        markershape=:circle,
-        markersize=codeWidths,
-        markercolor=:black,
-        markerstrokewidth=0)
+    if showCodeLabels
+        labels = map(label->text(label, :top, default(:xtickfontsize)), ena.codeModel[codeVisible, :code])
+        plot!(p, x, y,
+            label=nothing,
+            seriestype=:scatter,
+            series_annotations=labels,
+            markershape=:circle,
+            markersize=codeWidths,
+            markercolor=:black,
+            markerstrokewidth=0)
+    else
+        plot!(p, x, y,
+            label=nothing,
+            seriestype=:scatter,
+            # series_annotations=labels,
+            markershape=:circle,
+            markersize=codeWidths,
+            markercolor=:black,
+            markerstrokewidth=0)
+    end
 
 
     # ### Placeholder, let's compute code weights as we visit each line
