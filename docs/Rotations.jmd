@@ -19,18 +19,17 @@ For example:
 ```julia
 using EpistemicNetworkAnalysis
 
-data = ena_dataset("RS.data")
+data = ena_dataset("shakespeare.data")
 codes = [
-    :Data,
-    :Technical_Constraints,
-    :Performance_Parameters,
-    :Client_and_Consultant_Requests,
-    :Design_Reasoning,
-    :Collaboration
+    :Love,
+    :Death,
+    :Honor,
+    :Men,
+    :Women
 ]
 
-conversations = [:Condition, :GameHalf, :GroupName]
-units = [:Condition, :GameHalf, :UserName]
+conversations = [:Play, :Act, :Scene]
+units = [:Play, :Speaker]
 
 myRotation = SVDRotation()
 
