@@ -32,11 +32,7 @@ include("./MeansRotation.jl")
 include("./Means2Rotation.jl")
 include("./ThematicRotation.jl")
 include("./ENAModel.jl")
-include("./BiplotModel.jl")
 # include("./CopyRotation.jl")
-# include("./CodeNetworkRotation.jl")
-# include("./DifferenceRotation.jl")
-# include("./DirectionRotation.jl")
 include("./ena_dataset.jl")
 
 # Exports
@@ -71,29 +67,17 @@ export ena_dataset
 #     # :Pride
 # ]
 
-# # data = ena_dataset("RS.data")
-# # conversations = [:Condition, :GameHalf, :GroupName]
-# # units = [:Condition, :GameHalf, :UserName]
-# # codes = [
-# #     :Data,
-# #     :Technical_Constraints,
-# #     :Performance_Parameters,
-# #     :Client_and_Consultant_Requests,
-# #     :Design_Reasoning,
-# #     :Collaboration,
-# # ]
-
 # myENA = ENAModel(
 #     data, codes, conversations, units,
 #     windowSize=4,
 #     rotateBy=MeansRotation(:Play, "Romeo and Juliet", "Hamlet"),
-#     recenterEmpty=true,
-#     # dropEmpty=true,
-#     # meanCenter=false
+#     # fitNodesToCircle=true
 # )
 
 # display(myENA)
-# savefig(plot(myENA, flipY=true, showCodeLabels=false), "~/Downloads/temp.png")
+# p = plot(myENA, flipY=true)
+# savefig(p, "~/Downloads/temp.svg")
+# display(p)
 # end # let
 
 

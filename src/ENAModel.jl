@@ -4,7 +4,6 @@ struct ENAModel{T} <: AbstractENAModel{T}
     conversations::Array{Symbol,1}
     units::Array{Symbol,1}
     rotation::T
-    rotateOn::Symbol
     accumModel::DataFrame # all the unit-level data we compute
     centroidModel::DataFrame # accumModel with re-approximated relationship columns
     metadata::DataFrame
@@ -20,9 +19,9 @@ function ENAModel(
         # required
         data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
         # optional
-        windowSize::Int=4, rotateBy::AbstractENARotation=SVDRotation(), rotateOn::Symbol=:accumModel,
+        windowSize::Int=4, rotateBy::AbstractENARotation=SVDRotation(),
         sphereNormalize::Bool=true, dropEmpty::Bool=false, recenterEmpty::Bool=false,
-        deflateEmpty::Bool=false, meanCenter::Bool=true, subspaces::Int=0,
+        deflateEmpty::Bool=false, meanCenter::Bool=true, subspaces::Int=0, fitNodesToCircle=false,
         subsetFilter::Function=x->true, relationshipFilter::Function=(i,j,ci,cj)->(i<j)
     )
 
@@ -39,8 +38,6 @@ function ENAModel(
         error("Need at least one column to define conversations")
     elseif length(units) < 1
         error("Need at least one column to define units")
-    elseif !(rotateOn in [:centroidModel, :accumModel])
-        error("rotateOn must be either :centroidModel or :accumModel")
     end
 
     # Preparing model structures
@@ -261,28 +258,10 @@ function ENAModel(
         codeModel[:, r] = r_coefs[1:end]
     end
 
-    ## Refit the units: in high-d space, the refit units are as close as possible to their center of mass wrt the network
-    ## This is by-definition the refit space
-    for networkRow in eachrow(networkModel)
-        r = networkRow[:relationship]
-        for (i, unitRow) in enumerate(eachrow(centroidModel))
-            unitRow[r] =
-                sum(
-                    codeModel[relationshipMap[k][1], r] * accumModel[i, k] +
-                    codeModel[relationshipMap[k][2], r] * accumModel[i, k]
-                    for k in relationshipIds
-                ) / 2
-        end
-    end
-
     # Rotation step
     ## Use the given rotation method, probably one of the out-of-the-box ENARotations, but could be anything user defined
     ## But first, maybe deflate the rotation model
     subspaceModel = accumModel
-    if rotateOn == :centroidModel
-        subspaceModel = centroidModel
-    end
-
     if deflateEmpty
         deflatedModel = copy(subspaceModel)
         zAxis = map(eachrow(networkModel)) do networkRow
@@ -342,14 +321,9 @@ function ENAModel(
 
     # Layout step
     ## Project the pos_x and pos_y for the original units onto the plane, now that we have the rotation
-    ## This is really only for testing the goodness of fit
+    ## These are what are really drawn (unlike in rENA, where accumModel is what is drawn)
     accumModel[!, :pos_x] = Matrix{Float64}(accumModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_x])
     accumModel[!, :pos_y] = Matrix{Float64}(accumModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_y])
-
-    ## Same for the refit units
-    ## These are what are really drawn (unlike in rENA, where accumModel is what is drawn)
-    centroidModel[!, :pos_x] = Matrix{Float64}(centroidModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_x])
-    centroidModel[!, :pos_y] = Matrix{Float64}(centroidModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_y])
 
     ## Same for the codes
     ## These aren't used to compute what's really drawn, they are labels floating around
@@ -359,6 +333,38 @@ function ENAModel(
     ## since that's the property we defined the refit space to have. (ignoring the intercept)
     codeModel[!, :pos_x] = Matrix{Float64}(codeModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_x])
     codeModel[!, :pos_y] = Matrix{Float64}(codeModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_y])
+
+    # Centroid placement step
+    ## If requested, refit the nodes onto a unit circle. This lowers the goodness of fit, but improves readablity
+    if fitNodesToCircle
+        for codeRow in eachrow(codeModel)
+            vector = Vector{Float64}(codeRow[[:pos_x, :pos_y]])
+            s = sqrt(sum(vector .^ 2))
+            if s != 0
+                codeRow[[:pos_x, :pos_y]] = vector / s
+                codeRow[relationshipIds] = Vector{Float64}(codeRow[relationshipIds]) / s
+            end
+        end
+    end
+
+    ## Refit the units: in high-d space, the refit units are as close as possible to their center of mass wrt the network
+    ## This is by-definition the refit space
+    for networkRow in eachrow(networkModel)
+        r = networkRow[:relationship]
+        for (i, unitRow) in enumerate(eachrow(centroidModel))
+            unitRow[r] =
+                sum(
+                    codeModel[relationshipMap[k][1], r] * accumModel[i, k] +
+                    codeModel[relationshipMap[k][2], r] * accumModel[i, k]
+                    for k in relationshipIds
+                ) / 2
+        end
+    end
+
+    ## Same for the refit units
+    ## This is really only for testing the goodness of fit
+    centroidModel[!, :pos_x] = Matrix{Float64}(centroidModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_x])
+    centroidModel[!, :pos_y] = Matrix{Float64}(centroidModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_y])
 
     ## Maybe translate everything so overall mean lies at the origin
     if meanCenter
@@ -388,7 +394,7 @@ And this can cause problems with ENA's optimization algorithm fitting the codes 
 
     # Done!
     return ENAModel(
-        codes, conversations, units, rotateBy, rotateOn,
+        codes, conversations, units, rotateBy,
         accumModel, centroidModel, metadata, codeModel, networkModel,
         relationshipMap,
         windowSize

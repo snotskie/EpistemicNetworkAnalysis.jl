@@ -108,11 +108,7 @@ function test(ena::AbstractENAModel)
     pearson_y = cor(centroidDiffsY, accumDiffsY)
 
     ### Find the percent variance explained by the x and y axis of the entire high dimensional space
-    unitModel = ena.centroidModel
-    if ena.rotateOn == :accumModel
-        unitModel = ena.accumModel
-    end
-
+    unitModel = ena.accumModel
     total_variance = sum(var.(eachcol(unitModel[!, ena.networkModel[!, :relationship]])))
     variance_x = var(unitModel[!, :pos_x]) / total_variance
     variance_y = var(unitModel[!, :pos_y]) / total_variance
