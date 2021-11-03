@@ -32,12 +32,13 @@ include("./MeansRotation.jl")
 include("./Means2Rotation.jl")
 include("./ThematicRotation.jl")
 include("./ENAModel.jl")
+include("./DirectedENAModel.jl")
 # include("./CopyRotation.jl")
 include("./ena_dataset.jl")
 
 # Exports
 export ENAModel
-export BiplotModel
+export DirectedENAModel
 export plot
 export SVDRotation
 export LDARotation
@@ -67,7 +68,7 @@ export ena_dataset
 #     # :Pride
 # ]
 
-# myENA = ENAModel(
+# myENA = DirectedENAModel(
 #     data, codes, conversations, units,
 #     windowSize=4,
 #     rotateBy=MeansRotation(:Play, "Romeo and Juliet", "Hamlet"),
@@ -78,6 +79,11 @@ export ena_dataset
 # p = plot(myENA, flipY=true)
 # savefig(p, "~/Downloads/temp.svg")
 # display(p)
+
+# x_men = Matrix{Float64}(myENA.accumModel[myENA.accumModel[!, :pos_x] .< 0, [:Death_Men, :Honor_Men, :Women_Men, :Love_Men]])
+# men_x = Matrix{Float64}(myENA.accumModel[myENA.accumModel[!, :pos_x] .< 0, [:Men_Death, :Men_Honor, :Men_Women, :Men_Love]])
+# display(x_men - men_x)
+# println(mean(x_men - men_x))
 # end # let
 
 

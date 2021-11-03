@@ -66,10 +66,15 @@ abstract type AbstractENAModel{T<:AbstractENARotation}
     # test reports: coregistration
 end
 
-abstract type AbstractBiplotModel{T} <: AbstractENAModel{T}
+abstract type AbstractDirectedENAModel{T<:AbstractENARotation} <: AbstractENAModel{T}
     # fields: units, conversations, codes, rotation, accumModel, centroidModel, metadata, codeModel, networkModel, relationshipMap
     # test reports: coregistration
 end
+
+# abstract type AbstractBiplotModel{T} <: AbstractENAModel{T}
+#     # fields: units, conversations, codes, rotation, accumModel, centroidModel, metadata, codeModel, networkModel, relationshipMap
+#     # test reports: coregistration
+# end
 
 # Default Functions
 ## Rotations
@@ -126,6 +131,11 @@ end
 
 ## Text display
 function Base.display(ena::AbstractENAModel) # TODO should this be print, display, or show?
+
+    ### Show plotted points
+    println("Units (plotted points):")
+    show(ena.accumModel, allrows=true)
+    println()
 
     ### Show centroids
     println("Units (centroids):")
