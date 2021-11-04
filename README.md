@@ -18,4 +18,17 @@ If you use this Julia implementation of ENA in your research, please cite it, th
 
 ## Getting Started
 
-[Getting Started](https://htmlpreview.github.io/?https://github.com/snotskie/EpistemicNetworkAnalysis.jl/blob/master/docs/GettingStarted.html)
+Dive in with examples by launching this project on binder! Click here: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/snotskie/EpistemicNetworkAnalysis.jl/HEAD)
+
+## Documentation
+
+TODO
+
+## Installation
+
+To install this package locally, run the following in Julia:
+
+```julia
+using Pkg
+Pkg.add(url="https://github.com/snotskie/EpistemicNetworkAnalysis.jl")
+```
