@@ -21,13 +21,13 @@ function DirectedENAModel(
         # optional
         windowSize::Int=4, rotateBy::AbstractENARotation=SVDRotation(),
         sphereNormalize::Bool=true, dropEmpty::Bool=false, recenterEmpty::Bool=false,
-        deflateEmpty::Bool=false, subspaces::Int=0, fitNodesToCircle=false,
+        deflateEmpty::Bool=false, meanCenter::Bool=true, subspaces::Int=0, fitNodesToCircle=false,
         subsetFilter::Function=x->true, relationshipFilter::Function=(i,j,ci,cj)->(i!=j)
     )
 
     # Checking that the options are sane
-    if windowSize < 1
-        error("The windowSize must be positive")
+    if windowSize < 2
+        error("The windowSize must be greater than 1")
     elseif !sphereNormalize && deflateEmpty
         error("When sphereNormalize=false, deflateEmpty=true has no interpretive validity")
     elseif dropEmpty && recenterEmpty
@@ -372,18 +372,17 @@ function DirectedENAModel(
     centroidModel[!, :pos_x] = Matrix{Float64}(centroidModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_x])
     centroidModel[!, :pos_y] = Matrix{Float64}(centroidModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_y])
 
-    # NOTE meanCenter is meaningless in dENA, since the logic of the centroids assumes that the origin is zero
-    # ## Maybe translate everything so overall mean lies at the origin
-    # if meanCenter
-    #     mu_x = mean(centroidModel[!, :pos_x])
-    #     mu_y = mean(centroidModel[!, :pos_y])
-    #     centroidModel[!, :pos_x] = centroidModel[!, :pos_x] .- mu_x
-    #     centroidModel[!, :pos_y] = centroidModel[!, :pos_y] .- mu_y
-    #     mu_x = mean(accumModel[!, :pos_x])
-    #     mu_y = mean(accumModel[!, :pos_y])
-    #     accumModel[!, :pos_x] = accumModel[!, :pos_x] .- mu_x
-    #     accumModel[!, :pos_y] = accumModel[!, :pos_y] .- mu_y
-    # end
+    ## Maybe translate everything so overall mean lies at the origin
+    if meanCenter
+        mu_x = mean(centroidModel[!, :pos_x])
+        mu_y = mean(centroidModel[!, :pos_y])
+        centroidModel[!, :pos_x] = centroidModel[!, :pos_x] .- mu_x
+        centroidModel[!, :pos_y] = centroidModel[!, :pos_y] .- mu_y
+        mu_x = mean(accumModel[!, :pos_x])
+        mu_y = mean(accumModel[!, :pos_y])
+        accumModel[!, :pos_x] = accumModel[!, :pos_x] .- mu_x
+        accumModel[!, :pos_y] = accumModel[!, :pos_y] .- mu_y
+    end
 
     # Testing step
     ## Test that the angle between the dimensions is 90 degrees
@@ -406,4 +405,26 @@ And this can cause problems with ENA's optimization algorithm fitting the codes 
         relationshipMap,
         windowSize
     )
+end
+
+# Override plotting pieces
+## Base - Inject a groupBy and some labels when none are given
+function plot(ena::AbstractDirectedENAModel{T};
+    showArrows=nothing, reverseLineSort=nothing,
+    kwargs...) where T <: AbstractMeansRotation
+
+    if isnothing(showArrows)
+        showArrows = true
+    else
+        showArrows = false
+    end
+
+    if isnothing(reverseLineSort)
+        reverseLineSort = true
+    else
+        reverseLineSort = false
+    end
+
+    return invoke(plot, Tuple{AbstractENAModel{<:T}}, ena;
+                  showArrows=showArrows, reverseLineSort=reverseLineSort, kwargs...)
 end

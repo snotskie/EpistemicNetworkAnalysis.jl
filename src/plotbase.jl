@@ -200,6 +200,7 @@ end
 function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
     color::Colorant=colorant"#aaa",
     flipX::Bool=false, flipY::Bool=false, showWarps::Bool=false, showCodeLabels::Bool=true,
+    showArrows::Bool=false,
     kwargs...)
 
     #### Find the true weight on each line
@@ -235,11 +236,17 @@ function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1
         end
 
         points = hcat(pointA, pointT, pointT, pointT, pointB)
+        # arrows = nothing
+        # if showArrows
+        #     arrows = true #lineWidths[i] #arrow(:closed, :head, lineWidths[i], lineWidths[i])
+        # end
+
         plot!(p,
             points[1, :],
             points[2, :],
             label=nothing,
             seriestype=:curves,
+            arrows=showArrows,
             linewidth=lineWidths[i],
             linecolor=color)
     end
@@ -274,7 +281,7 @@ end
 function plot_predictive!(p::Plot, ena::AbstractENAModel, targetCol::Symbol;
     negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
     flipX::Bool=false, flipY::Bool=false, weakLinks::Bool=true, showWarps::Bool=false,
-    showCodeLabels::Bool=true,
+    showCodeLabels::Bool=true, showArrows::Bool=false, reverseLineSort::Bool=false,
     kwargs...)
 
     ### Grab the data we need as one data frame
@@ -337,7 +344,7 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel, targetCol::Symbol;
 
     ### For each line...
     networkData = hcat(ena.networkModel, DataFrame(:width => lineWidths, :color => lineColors, :pearson => last.(lineData)))
-    for networkRow in sort(eachrow(networkData), by=row->row[:width])
+    for networkRow in sort(eachrow(networkData), by=row->row[:width], rev=reverseLineSort)
 
         ### ...contribute to the code weights...
         j, k = ena.relationshipMap[networkRow[:relationship]]
@@ -362,6 +369,7 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel, targetCol::Symbol;
                 points[2, :],
                 label=nothing,
                 seriestype=:curves,
+                arrows=showArrows,
                 linewidth=networkRow[:width],
                 linecolor=networkRow[:color])
         end
@@ -399,7 +407,7 @@ end
 function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, negGroup::Any, posGroup::Any;
     negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
     flipX::Bool=false, flipY::Bool=false, weakLinks::Bool=true, showWarps::Bool=false,
-    showCodeLabels::Bool=true,
+    showCodeLabels::Bool=true, showArrows::Bool=false, reverseLineSort::Bool=false,
     kwargs...)
 
     ### Grab the data we need as one data frame
@@ -477,7 +485,7 @@ function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, neg
 
     ### For each line...
     networkData = hcat(ena.networkModel, DataFrame(:width => lineWidths, :color => lineColors, :pearson => last.(lineData)))
-    for networkRow in sort(eachrow(networkData), by=row->row[:width])
+    for networkRow in sort(eachrow(networkData), by=row->row[:width], rev=reverseLineSort)
 
         ### ...contribute to the code weights...
         j, k = ena.relationshipMap[networkRow[:relationship]]
@@ -502,6 +510,7 @@ function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, neg
                 points[2, :],
                 label=nothing,
                 seriestype=:curves,
+                arrows=showArrows,
                 linewidth=networkRow[:width],
                 linecolor=networkRow[:color])
         end
@@ -540,7 +549,7 @@ function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, neg
 
     # ### For each line...
     # networkData = hcat(ena.networkModel, DataFrame(:width => lineWidths, :color => lineColors))
-    # for networkRow in sort(eachrow(networkData), by=row->row[:width])
+    # for networkRow in sort(eachrow(networkData), by=row->row[:width], rev=reverseLineSort)
 
     #     ### ...contribute to the code weights...
     #     j, k = ena.relationshipMap[networkRow[:relationship]]

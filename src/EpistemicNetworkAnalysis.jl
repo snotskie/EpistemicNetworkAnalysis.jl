@@ -80,10 +80,6 @@ export ena_dataset
 # savefig(p, "~/Downloads/temp.svg")
 # display(p)
 
-# x_men = Matrix{Float64}(myENA.accumModel[myENA.accumModel[!, :pos_x] .< 0, [:Death_Men, :Honor_Men, :Women_Men, :Love_Men]])
-# men_x = Matrix{Float64}(myENA.accumModel[myENA.accumModel[!, :pos_x] .< 0, [:Men_Death, :Men_Honor, :Men_Women, :Men_Love]])
-# display(x_men - men_x)
-# println(mean(x_men - men_x))
 # end # let
 
 
