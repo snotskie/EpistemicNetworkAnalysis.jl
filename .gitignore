@@ -1,0 +1,5 @@
+.bash*
+.profile
+.jupyter*
+.config
+.ipynb*
