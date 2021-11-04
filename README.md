@@ -31,4 +31,5 @@ To install this package locally, run the following in Julia:
 ```julia
 using Pkg
 Pkg.add(url="https://github.com/snotskie/EpistemicNetworkAnalysis.jl")
+using EpistemicNetworkAnalysis
 ```
