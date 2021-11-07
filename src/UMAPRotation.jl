@@ -18,9 +18,6 @@ function rotate!(rotation::UMAPRotation, networkModel::DataFrame, codeModel::Dat
     allCols = setdiff(Symbol.(names(subspaceModel)), [:ENA_UNIT])
     relCols = networkModel[!, :relationship]
     conCols = setdiff(allCols, relCols)
-    display(allCols)
-    display(relCols)
-    display(conCols)
     weight = 1 / length(allCols)
     for col in conCols
         colVals = Vector{Float64}(subspaceModel[!, col])
@@ -57,7 +54,7 @@ function rotate!(rotation::UMAPRotation, networkModel::DataFrame, codeModel::Dat
 #     ## Done! Copy into the model we actually care about
 #     model = UMAP_(graph, hcat(embedding...), X, knns, dists)
     
-    model = UMAP_(accumX; n_neighbors=knn, min_dist=0.0000000001)
+    model = UMAP_(X, 2; n_neighbors=35, min_dist=0.0000000001)
     
     subspaceModel[!, :pos_x] = model.embedding[1, :]
     subspaceModel[!, :pos_y] = model.embedding[2, :]
