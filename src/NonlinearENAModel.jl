@@ -1,4 +1,4 @@
-struct ENAModel{T} <: AbstractLinearENAModel{T}
+struct NonlinearENAModel{T} <: AbstractNonlinearENAModel{T}
     # Inherits:
     codes::Array{Symbol,1}
     conversations::Array{Symbol,1}
@@ -15,14 +15,14 @@ struct ENAModel{T} <: AbstractLinearENAModel{T}
     windowSize::Int
 end
 
-function ENAModel(
+function NonlinearENAModel(
         # required
         data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
         # optional
-        windowSize::Int=4, rotateBy::AbstractLinearENARotation=SVDRotation(),
+        continuous::Array{Symbol,1}=[], windowSize::Int=4, rotateBy::AbstractNonlinearENARotation=UMAPRotation(),
         sphereNormalize::Bool=true, dropEmpty::Bool=false, recenterEmpty::Bool=false,
-        deflateEmpty::Bool=false, meanCenter::Bool=true, subspaces::Int=0, fitNodesToCircle=false,
-        subsetFilter::Function=x->true, relationshipFilter::Function=(i,j,ci,cj)->(i<j)
+        deflateEmpty::Bool=false, subspaces::Int=0,
+        subsetFilter::Function=x->true, relationshipFilter::Function=(i,j,ci,cj)->(i<j),
     )
 
     # Checking that the options are sane
@@ -92,8 +92,8 @@ function ENAModel(
         response=[i for (i, j) in values(relationshipMap)],
         referent=[j for (i, j) in values(relationshipMap)],
         density=Real[0 for r in relationshipIds], # how thick to make the line
-        weight_x=Real[0 for r in relationshipIds], # the weight I contribute to dim_x's
-        weight_y=Real[0 for r in relationshipIds] # the weight I contribute to dim_y's
+        weight_x=Real[0 for r in relationshipIds], # where i'm expected to be along the x
+        weight_y=Real[0 for r in relationshipIds] # where i'm expected to be along the y
     )
     
     ## Code model placeholders
@@ -104,12 +104,12 @@ function ENAModel(
         pos_y=Real[0 for c in codes] # where to plot this code on the fitted plot's y-axis
     )
 
-    emptyValues2 = DataFrame(Dict(
-        r => Real[0 for c in codes] # my position on the approximated x-axis if we use a relationship as the x-axis
-        for r in relationshipIds
-    ))
+#     emptyValues2 = DataFrame(Dict(
+#         r => Real[0 for c in codes] # my position on the approximated x-axis if we use a relationship as the x-axis
+#         for r in relationshipIds
+#     ))
 
-    codeModel = hcat(codeModel, emptyValues2)
+#     codeModel = hcat(codeModel, emptyValues2)
 
     # Accumulation step
     ## Raw counts for all the units
@@ -209,13 +209,13 @@ function ENAModel(
     end
 
     # Now that we have all the data counted, divvy and copy it between accumModel, centroidModel, and metadata
-    modelColumns = [:pos_x, :pos_y, relationshipIds...]
+    modelColumns = [:pos_x, :pos_y, relationshipIds..., continuous...]
     nonModelColumns = setdiff(Symbol.(names(accumModel)), modelColumns)
     metadata = accumModel[!, nonModelColumns]
-    centroidModel = copy(accumModel[!, [:ENA_UNIT, modelColumns...]])
+    centroidModel = copy(accumModel[!, [:ENA_UNIT, :pos_x, :pos_y]])
     accumModel = accumModel[!, [:ENA_UNIT, modelColumns...]]
 
-    # Compute the position of the codes in the approximated high-dimensional space
+    # Compute the densities of the network components
     ## Compute the density of each network row line
     for networkRow in eachrow(networkModel)
         r = networkRow[:relationship]
@@ -238,27 +238,7 @@ function ENAModel(
     s = maximum(codeModel[!, :density])
     codeModel[!, :density] /= s
 
-    ## Regression model for placing the code dots into the approximated high-dimensional space
-    X = Matrix{Float64}(rand(nrow(accumModel), nrow(codeModel)) / 1000000000)
-    for (i, unitRow) in enumerate(eachrow(accumModel))
-        for r in relationshipIds
-            a, b = relationshipMap[r]
-            X[i, a] += unitRow[r] / 2
-            X[i, b] += unitRow[r] / 2
-        end
-    end
-
-    X = (transpose(X) * X)^-1 * transpose(X)
-
-    ## Fit each dimension of the original high-dimensional space
-    for networkRow in eachrow(networkModel)
-        r = networkRow[:relationship]
-        y = Vector{Float64}(accumModel[:, r])
-        r_coefs = X * y
-        codeModel[:, r] = r_coefs[1:end]
-    end
-
-    # Rotation step
+    # Rotation and Layout Step
     ## Use the given rotation method, probably one of the out-of-the-box ENARotations, but could be anything user defined
     ## But first, maybe deflate the rotation model
     subspaceModel = accumModel
@@ -317,40 +297,48 @@ function ENAModel(
         subspaceModel = deflatedModel
     end
 
+    ## Now run the rotation, which in nonlinear ENA also embeds the units into a lower dimensional space
     rotate!(rotateBy, networkModel, codeModel, metadata, subspaceModel)
-
-    # Layout step
-    ## Project the pos_x and pos_y for the original units onto the plane, now that we have the rotation
-    ## These are what are really drawn (unlike in rENA, where accumModel is what is drawn)
-    accumModel[!, :pos_x] = Matrix{Float64}(accumModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_x])
-    accumModel[!, :pos_y] = Matrix{Float64}(accumModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_y])
-
-    ## Same for the codes
-    ## These aren't used to compute what's really drawn, they are labels floating around
-    ## in the same high-d space as what is really drawn, that we interpret in terms of the
-    ## center of mass. If we *were* to use these to compute what's really drawn,
-    ## it should actually give us the same result as the projection we used for centroidRow's above,
-    ## since that's the property we defined the refit space to have. (ignoring the intercept)
-    codeModel[!, :pos_x] = Matrix{Float64}(codeModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_x])
-    codeModel[!, :pos_y] = Matrix{Float64}(codeModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_y])
-
-    # Centroid placement step
-    ## If requested, refit the nodes onto a unit circle. This lowers the goodness of fit, but improves readablity
-    if fitNodesToCircle
-        for codeRow in eachrow(codeModel)
-            vector = Vector{Float64}(codeRow[[:pos_x, :pos_y]])
-            s = sqrt(sum(vector .^ 2))
-            if s != 0
-                codeRow[[:pos_x, :pos_y]] = vector / s
-                codeRow[relationshipIds] = Vector{Float64}(codeRow[relationshipIds]) / s
-            end
+    accumModel[!, [:pos_x, :pos_y]] = subspaceModel[!, [:pos_x, :pos_y]]
+    
+    ## Regression model for placing the code dots into the lower dimensional space
+    X = Matrix{Float64}(rand(nrow(accumModel), nrow(codeModel)) / 1000000000)
+    for (i, unitRow) in enumerate(eachrow(accumModel))
+        for r in relationshipIds
+            a, b = relationshipMap[r]
+            X[i, a] += unitRow[r] / 2
+            X[i, b] += unitRow[r] / 2
         end
     end
 
+    X = (transpose(X) * X)^-1 * transpose(X)
+
+    ## Fit each dimension of the lower dimensional space
+    for r in [:pos_x, :pos_y]
+        y = Vector{Float64}(accumModel[:, r])
+        r_coefs = X * y
+        codeModel[:, r] = r_coefs[1:end]
+    end
+
+#     # Layout step
+#     ## Project the pos_x and pos_y for the original units onto the plane, now that we have the rotation
+#     ## These are what are really drawn (unlike in rENA, where accumModel is what is drawn)
+#     accumModel[!, :pos_x] = Matrix{Float64}(accumModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_x])
+#     accumModel[!, :pos_y] = Matrix{Float64}(accumModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_y])
+
+#     ## Same for the codes
+#     ## These aren't used to compute what's really drawn, they are labels floating around
+#     ## in the same high-d space as what is really drawn, that we interpret in terms of the
+#     ## center of mass. If we *were* to use these to compute what's really drawn,
+#     ## it should actually give us the same result as the projection we used for centroidRow's above,
+#     ## since that's the property we defined the refit space to have. (ignoring the intercept)
+#     codeModel[!, :pos_x] = Matrix{Float64}(codeModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_x])
+#     codeModel[!, :pos_y] = Matrix{Float64}(codeModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_y])
+
+    # Centroid placement step
     ## Refit the units: in high-d space, the refit units are as close as possible to their center of mass wrt the network
-    ## This is by-definition the refit space
-    for networkRow in eachrow(networkModel)
-        r = networkRow[:relationship]
+    ## This is by-definition the refit space, and this is really only for testing the goodness of fit
+    for r in [:pos_x, :pos_y]
         for (i, unitRow) in enumerate(eachrow(centroidModel))
             unitRow[r] =
                 sum(
@@ -361,39 +349,34 @@ function ENAModel(
         end
     end
 
-    ## Same for the refit units
-    ## This is really only for testing the goodness of fit
-    centroidModel[!, :pos_x] = Matrix{Float64}(centroidModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_x])
-    centroidModel[!, :pos_y] = Matrix{Float64}(centroidModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_y])
-
     ## Maybe translate everything so overall mean lies at the origin
-    if meanCenter
-        mu_x = mean(centroidModel[!, :pos_x])
-        mu_y = mean(centroidModel[!, :pos_y])
-        centroidModel[!, :pos_x] = centroidModel[!, :pos_x] .- mu_x
-        centroidModel[!, :pos_y] = centroidModel[!, :pos_y] .- mu_y
-        mu_x = mean(accumModel[!, :pos_x])
-        mu_y = mean(accumModel[!, :pos_y])
-        accumModel[!, :pos_x] = accumModel[!, :pos_x] .- mu_x
-        accumModel[!, :pos_y] = accumModel[!, :pos_y] .- mu_y
-    end
+    # if meanCenter
+    #     mu_x = mean(centroidModel[!, :pos_x])
+    #     mu_y = mean(centroidModel[!, :pos_y])
+    #     centroidModel[!, :pos_x] = centroidModel[!, :pos_x] .- mu_x
+    #     centroidModel[!, :pos_y] = centroidModel[!, :pos_y] .- mu_y
+    #     mu_x = mean(accumModel[!, :pos_x])
+    #     mu_y = mean(accumModel[!, :pos_y])
+    #     accumModel[!, :pos_x] = accumModel[!, :pos_x] .- mu_x
+    #     accumModel[!, :pos_y] = accumModel[!, :pos_y] .- mu_y
+    # end
 
-    # Testing step
-    ## Test that the angle between the dimensions is 90 degrees
-    theta = dot(networkModel[!, :weight_x], networkModel[!, :weight_y])
-    theta /= sqrt(dot(networkModel[!, :weight_x], networkModel[!, :weight_x]))
-    theta /= sqrt(dot(networkModel[!, :weight_y], networkModel[!, :weight_y]))
-    angle = acos(theta) * 180 / pi
-    if abs(angle-90) > 0.0001 # allow for a little approximation error
-        @warn """The angle between the axes of this model is $(angle) degrees, when it should be 90.
-This can lead to strange visual effects when plotting on orthogonal axes.
-This can undermine interpreting betweenness between units.
-This can undermind interpreting variance explained by the axes.
-And this can cause problems with ENA's optimization algorithm fitting the codes and the lines."""
-    end
+#     # Testing step
+#     ## Test that the angle between the dimensions is 90 degrees
+#     theta = dot(networkModel[!, :weight_x], networkModel[!, :weight_y])
+#     theta /= sqrt(dot(networkModel[!, :weight_x], networkModel[!, :weight_x]))
+#     theta /= sqrt(dot(networkModel[!, :weight_y], networkModel[!, :weight_y]))
+#     angle = acos(theta) * 180 / pi
+#     if abs(angle-90) > 0.0001 # allow for a little approximation error
+#         @warn """The angle between the axes of this model is $(angle) degrees, when it should be 90.
+# This can lead to strange visual effects when plotting on orthogonal axes.
+# This can undermine interpreting betweenness between units.
+# This can undermind interpreting variance explained by the axes.
+# And this can cause problems with ENA's optimization algorithm fitting the codes and the lines."""
+#     end
 
     # Done!
-    return ENAModel(
+    return NonlinearENAModel(
         codes, conversations, units, rotateBy,
         accumModel, centroidModel, metadata, codeModel, networkModel,
         relationshipMap,

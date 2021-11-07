@@ -54,6 +54,6 @@ function plot(ena::AbstractENAModel{<:AbstractThematicRotation};
         ylabel = "SVD"
     end
 
-    return invoke(plot, Tuple{AbstractENAModel{<:AbstractENARotation}}, ena;
+    return invoke(plot, Tuple{AbstractENAModel{<:AbstractLinearENARotation}}, ena;
                 xlabel=xlabel, ylabel=ylabel, kwargs...)
 end

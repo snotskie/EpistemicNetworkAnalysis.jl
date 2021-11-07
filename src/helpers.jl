@@ -91,7 +91,7 @@ function help_plot_ci(p, xs, ys, color, shape, label)
     if length(xs) > 0
         x = mean(xs)
         y = mean(ys)
-        Plots.plot!(p, [x], [y], 
+        Plots.plot!(p, [x], [y],
             label=label,
             seriestype=:scatter,
             markersize=4,
@@ -102,26 +102,26 @@ function help_plot_ci(p, xs, ys, color, shape, label)
 
     if length(xs) > 1
         ci_x = collect(confint(OneSampleTTest(xs)))
-        ci_y = collect(confint(OneSampleTTest(ys)))    
-        Plots.plot!(p, [ci_x[1], ci_x[2]], [ci_y[1], ci_y[1]], 
+        ci_y = collect(confint(OneSampleTTest(ys)))
+        Plots.plot!(p, [ci_x[1], ci_x[2]], [ci_y[1], ci_y[1]],
             label=nothing,
             seriestype=:line,
             linewidth=1,
             linecolor=color)
 
-        Plots.plot!(p, [ci_x[1], ci_x[2]], [ci_y[2], ci_y[2]], 
+        Plots.plot!(p, [ci_x[1], ci_x[2]], [ci_y[2], ci_y[2]],
             label=nothing,
             seriestype=:line,
             linewidth=1,
             linecolor=color)
 
-        Plots.plot!(p, [ci_x[1], ci_x[1]], [ci_y[1], ci_y[2]], 
+        Plots.plot!(p, [ci_x[1], ci_x[1]], [ci_y[1], ci_y[2]],
             label=nothing,
             seriestype=:line,
             linewidth=1,
             linecolor=color)
 
-        Plots.plot!(p, [ci_x[2], ci_x[2]], [ci_y[1], ci_y[2]], 
+        Plots.plot!(p, [ci_x[2], ci_x[2]], [ci_y[1], ci_y[2]],
             label=nothing,
             seriestype=:line,
             linewidth=1,
@@ -134,4 +134,20 @@ function help_nonlinear_gradient(lo, mid, hi; grains=100, curve=1.5)
         [weighted_color_mean((100-i)^curve/grains^curve, lo, mid) for i in 1:grains],
         [weighted_color_mean(1-i^curve/grains^curve, mid, hi) for i in 1:grains]
     )
+end
+
+function derivedAnyCode!(data, newCol, oldCols...)
+    data[!, newCol] = ones(nrow(data))
+    for col in oldCols
+        data[!, newCol] = data[!, newCol] .* (1 .- data[!, col])
+    end
+
+    data[!, newCol] = 1 .- data[!, newCol]
+end
+
+function derivedAllCode!(data, newCol, oldCols...)
+    data[!, newCol] = ones(nrow(data))
+    for col in oldCols
+        data[!, newCol] = data[!, newCol] .* data[!, col]
+    end
 end

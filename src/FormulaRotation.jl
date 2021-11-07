@@ -89,7 +89,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractFormulaRotation}, 
 
     ### Punt to the parent when we have a groupBy
     if !isnothing(groupBy)
-        return invoke(plot_units!, Tuple{Plot, AbstractENAModel{<:AbstractENARotation}, Array{Bool,1}},
+        return invoke(plot_units!, Tuple{Plot, AbstractENAModel{<:AbstractLinearENARotation}, Array{Bool,1}},
             p, ena, displayRows; flipX=flipX, flipY=flipY, minLabel=minLabel, maxLabel=maxLabel, negColor=negColor,
             posColor=posColor, groupBy=groupBy, kwargs...)
     end

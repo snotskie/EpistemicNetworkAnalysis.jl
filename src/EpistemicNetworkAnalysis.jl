@@ -20,6 +20,11 @@ using MultivariateStats
 using HypothesisTests
 using GLM
 
+## Nonlinear
+using Random
+using Distances
+using UMAP
+
 # Includes
 include("./helpers.jl")
 include("./typetree.jl")
@@ -31,14 +36,17 @@ include("./Formula2Rotation.jl")
 include("./MeansRotation.jl")
 include("./Means2Rotation.jl")
 include("./ThematicRotation.jl")
+include("./UMAPRotation.jl")
 include("./ENAModel.jl")
 include("./DirectedENAModel.jl")
+include("./NonlinearENAModel.jl")
 # include("./CopyRotation.jl")
 include("./ena_dataset.jl")
 
 # Exports
 export ENAModel
 export DirectedENAModel
+export NonlinearENAModel
 export plot
 export SVDRotation
 export LDARotation
@@ -48,6 +56,8 @@ export FormulaRotation
 export Formula2Rotation
 export ThematicRotation
 export ena_dataset
+export derivedAnyCode!
+export derivedAllCode!
 
 # @warn "Running EpistemicNetworkAnalysis.jl as main. Performing kitchen sink operation."
 # let

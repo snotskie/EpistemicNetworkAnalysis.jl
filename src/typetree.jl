@@ -5,17 +5,29 @@ abstract type AbstractENARotation
     # test reports: variance_x, variance_y
 end
 
-abstract type AbstractSVDRotation <: AbstractENARotation
+abstract type AbstractLinearENARotation <: AbstractENARotation
+    # fields: (none)
+    # plot accepts: flipX, flipY, xlabel, ylabel, groupVar
+    # test reports: variance_x, variance_y
+end
+
+abstract type AbstractNonlinearENARotation <: AbstractENARotation
+    # fields: (none)
+    # plot accepts: flipX, flipY, xlabel, ylabel, groupVar
+    # test reports: variance_x, variance_y
+end
+
+abstract type AbstractSVDRotation <: AbstractLinearENARotation
     # fields: (inherit)
     # plot accepts: (inherit)
 end
 
-abstract type AbstractLDARotation <: AbstractENARotation
+abstract type AbstractLDARotation <: AbstractLinearENARotation
     # fields: (inherit), groupVar
     # plot accepts: (inherit)
 end
 
-abstract type AbstractFormulaRotation <: AbstractENARotation
+abstract type AbstractFormulaRotation <: AbstractLinearENARotation
     # fields: (inherit), regression_model, coefindex, f1, contrasts
     # plot accepts: (inherit), minLabel, maxLabel, minColor, maxColor
 end
@@ -35,27 +47,32 @@ abstract type AbstractMeans2Rotation <: AbstractFormula2Rotation
     # plot accepts: (inherit)
 end
 
-abstract type AbstractThematicRotation <: AbstractENARotation
+abstract type AbstractThematicRotation <: AbstractLinearENARotation
     # fields: (inherit), controlThemes, treatmentThemes
     # plot accepts: (inherit)
 end
 
-# abstract type AbstractCopyRotation <: AbstractENARotation
+abstract type AbstractUMAPRotation <: AbstractNonlinearENARotation
+    # fields: (inherit), controlThemes, treatmentThemes
+    # plot accepts: (inherit)
+end
+
+# abstract type AbstractCopyRotation <: AbstractLinearENARotation
 #     # fields: (inherit), ena
 #     # plot accepts: (inherit), groupVar
 # end
 
-# abstract type AbstractCodeNetworkRotation <: AbstractENARotation
+# abstract type AbstractCodeNetworkRotation <: AbstractLinearENARotation
 #     # fields: (inherit), alg, f
 #     # plot accepts: (inherit)
 # end
 
-# abstract type AbstractDifferenceRotation <: AbstractENARotation
+# abstract type AbstractDifferenceRotation <: AbstractLinearENARotation
 #     # fields: (inherit), i, j
 #     # plot accepts: (inherit)
 # end
 
-# abstract type AbstractDirectionRotation <: AbstractENARotation
+# abstract type AbstractDirectionRotation <: AbstractLinearENARotation
 #     # fields: (inherit), i
 #     # plot accepts: (inherit)
 # end
@@ -66,7 +83,17 @@ abstract type AbstractENAModel{T<:AbstractENARotation}
     # test reports: coregistration
 end
 
-abstract type AbstractDirectedENAModel{T<:AbstractENARotation} <: AbstractENAModel{T}
+abstract type AbstractLinearENAModel{T<:AbstractLinearENARotation} <: AbstractENAModel{T}
+    # fields: units, conversations, codes, rotation, accumModel, centroidModel, metadata, codeModel, networkModel, relationshipMap
+    # test reports: coregistration
+end
+
+abstract type AbstractDirectedENAModel{T<:AbstractLinearENARotation} <: AbstractLinearENAModel{T}
+    # fields: units, conversations, codes, rotation, accumModel, centroidModel, metadata, codeModel, networkModel, relationshipMap
+    # test reports: coregistration
+end
+
+abstract type AbstractNonlinearENAModel{T<:AbstractNonlinearENARotation} <: AbstractENAModel{T}
     # fields: units, conversations, codes, rotation, accumModel, centroidModel, metadata, codeModel, networkModel, relationshipMap
     # test reports: coregistration
 end

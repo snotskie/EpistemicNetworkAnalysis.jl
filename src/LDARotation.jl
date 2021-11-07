@@ -79,7 +79,7 @@ function plot(ena::AbstractENAModel{<:AbstractLDARotation};
         ylabel = "SVD"
     end
 
-    return invoke(plot, Tuple{AbstractENAModel{<:AbstractENARotation}}, ena;
+    return invoke(plot, Tuple{AbstractENAModel{<:AbstractLinearENARotation}}, ena;
                   negColor=negColor, posColor=posColor, extraColors=extraColors,
                   groupBy=groupBy, xlabel=xlabel, ylabel=ylabel, kwargs...)
 end
