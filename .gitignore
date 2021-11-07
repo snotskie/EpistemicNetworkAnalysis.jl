@@ -3,3 +3,4 @@
 .jupyter*
 .config
 .ipynb*
+Manifest.toml
