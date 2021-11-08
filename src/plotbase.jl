@@ -148,8 +148,11 @@ function plot(ena::AbstractENAModel;
     for p in ps
         xticks!(p, ticks)
         yticks!(p, ticks)
-        xlims!(p, -lims, lims)
-        ylims!(p, -lims, lims)
+        if lims > 0
+            xlims!(p, -lims, lims)
+            ylims!(p, -lims, lims)
+        end
+        
         if !isnan(results[:variance_x])
             xlabel!(p, "$xlabel ($(round(Int, results[:variance_x]*100))%)")
         else
