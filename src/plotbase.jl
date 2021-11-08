@@ -178,13 +178,27 @@ end
 
 ### Helper - Draw the dots
 function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
-    color::Colorant=colorant"black",
+    color::Colorant=colorant"black", spectralColorBy::Union{Symbol,Nothing}=nothing,
     flipX::Bool=false, flipY::Bool=false,
     unitLabel::String="Units",
     kwargs...)
 
     #### Get the x/y positions
     xs, ys = help_xs_and_ys(ena, displayRows, flipX, flipY)
+    
+    if !isnothing(spectralColorBy)
+        if spectralColorBy in Symbol.(names(ena.accumModel))
+            colVals = Vector{Float64}(ena.accumModel[displayRows, spectralColorBy])
+            colVals = colVals .- minimum(colVals)
+            colVals /= maximum(colVals)
+            color = [HSL(colVal*240, 1, 0.5) for colVal in colVals]
+        elseif spectralColorBy in Symbol.(names(ena.metadata))
+            colVals = Vector{Float64}(ena.metadata[displayRows, spectralColorBy])
+            colVals = colVals .- minimum(colVals)
+            colVals /= maximum(colVals)
+            color = [HSL(colVal*240, 1, 0.5) for colVal in colVals]
+        end
+    end
 
     #### Draw them in black by default
     plot!(p, xs, ys,

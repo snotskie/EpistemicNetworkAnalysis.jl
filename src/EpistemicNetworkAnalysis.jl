@@ -55,6 +55,7 @@ export Means2Rotation
 export FormulaRotation
 export Formula2Rotation
 export ThematicRotation
+export UMAPRotation
 export ena_dataset
 export derivedAnyCode!
 export derivedAllCode!
