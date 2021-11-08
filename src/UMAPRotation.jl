@@ -2,16 +2,17 @@ struct UMAPRotation <: AbstractUMAPRotation
     randomState::Int
     numNeighbors::Int
     minDistance::Float64
+    weight::Float64
 end
 
 # Simplified constructor
-function UMAPRotation(; numNeighbors=35, minDistance=0.0000000001, randomState=42)
+function UMAPRotation(; numNeighbors=35, minDistance=0.0000000001, randomState=42, weight=1)
     
     if randomState == 42
         @warn "The UMAP algorithm, which is being used in your nonlinear ENA model, is non-deterministic. The random state has been set to 42 to help reproducibility, but the onus is still on the researcher to demonstrate that their results reflect the data, not the particular random state chosen."
     end
     
-    return UMAPRotation(randomState, numNeighbors, minDistance)
+    return UMAPRotation(randomState, numNeighbors, minDistance, weight)
 end
 
 # Implement rotate
@@ -34,7 +35,7 @@ function rotate!(rotation::UMAPRotation, networkModel::DataFrame, codeModel::Dat
     
     # Run Model
     X = Matrix{Float64}(transpose(Matrix{Float64}(subspaceModel[!, allCols])))
-    weights = ones(length(allCols))
+    weights = [(col in relCols ? 1 : rotation.weight) for col in allCols]
     metric = WeightedEuclidean(weights/sum(weights))
     model = UMAP_(X, 2; n_neighbors=rotation.numNeighbors, min_dist=rotation.minDistance, metric=metric)
     subspaceModel[!, :pos_x] = model.embedding[1, :]
