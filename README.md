@@ -22,7 +22,7 @@ Dive in with examples by launching this project on binder! Click here: [![Binder
 
 ## Documentation
 
-TODO
+See latest docs here: [https://snotskie.github.io/EpistemicNetworkAnalysis.jl/latest/](https://snotskie.github.io/EpistemicNetworkAnalysis.jl/latest/)
 
 ## Installation
 
