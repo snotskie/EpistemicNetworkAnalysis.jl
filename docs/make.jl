@@ -12,3 +12,5 @@ makedocs(
         "Home" => "index.md"
     ]
 )
+
+mv("build", "latest", force=true)
