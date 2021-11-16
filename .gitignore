@@ -7,4 +7,5 @@
 .config
 .local
 .gitconfig
+.ipython
 Manifest.toml
