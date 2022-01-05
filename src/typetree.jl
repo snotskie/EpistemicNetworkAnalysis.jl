@@ -88,7 +88,7 @@ abstract type AbstractLinearENAModel{T<:AbstractLinearENARotation} <: AbstractEN
     # test reports: coregistration
 end
 
-abstract type AbstractDirectedENAModel{T<:AbstractLinearENARotation} <: AbstractLinearENAModel{T}
+abstract type AbstractDigraphENAModel{T<:AbstractLinearENARotation} <: AbstractLinearENAModel{T}
     # fields: units, conversations, codes, rotation, accumModel, centroidModel, metadata, codeModel, networkModel, relationshipMap
     # test reports: coregistration
 end

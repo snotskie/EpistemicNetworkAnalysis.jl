@@ -38,14 +38,14 @@ include("./Means2Rotation.jl")
 include("./ThematicRotation.jl")
 include("./UMAPRotation.jl")
 include("./ENAModel.jl")
-include("./DirectedENAModel.jl")
+include("./DigraphENAModel.jl")
 include("./NonlinearENAModel.jl")
 # include("./CopyRotation.jl")
 include("./ena_dataset.jl")
 
 # Exports
 export ENAModel
-export DirectedENAModel
+export DigraphENAModel
 export NonlinearENAModel
 export plot
 export SVDRotation

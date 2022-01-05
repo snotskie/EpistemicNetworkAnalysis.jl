@@ -1,4 +1,4 @@
-struct DirectedENAModel{T} <: AbstractDirectedENAModel{T}
+struct DigraphENAModel{T} <: AbstractDigraphENAModel{T}
     # Inherits:
     codes::Array{Symbol,1}
     conversations::Array{Symbol,1}
@@ -15,7 +15,7 @@ struct DirectedENAModel{T} <: AbstractDirectedENAModel{T}
     windowSize::Int
 end
 
-function DirectedENAModel(
+function DigraphENAModel(
         # required
         data::DataFrame, codes::Array{Symbol,1}, conversations::Array{Symbol,1}, units::Array{Symbol,1};
         # optional
@@ -399,7 +399,7 @@ And this can cause problems with ENA's optimization algorithm fitting the codes 
     end
 
     # Done!
-    return DirectedENAModel(
+    return DigraphENAModel(
         codes, conversations, units, rotateBy,
         accumModel, centroidModel, metadata, codeModel, networkModel,
         relationshipMap,
@@ -409,7 +409,7 @@ end
 
 # Override plotting pieces
 ## Base - Inject a groupBy and some labels when none are given
-function plot(ena::AbstractDirectedENAModel{T};
+function plot(ena::AbstractDigraphENAModel{T};
     showArrows=nothing, reverseLineSort=nothing,
     kwargs...) where T <: AbstractMeansRotation
 
