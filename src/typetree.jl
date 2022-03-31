@@ -27,6 +27,11 @@ abstract type AbstractLDARotation <: AbstractLinearENARotation
     # plot accepts: (inherit)
 end
 
+abstract type AbstractMulticlassRotation <: AbstractLinearENARotation
+    # fields: (inherit), groupVar
+    # plot accepts: (inherit)
+end
+
 abstract type AbstractFormulaRotation <: AbstractLinearENARotation
     # fields: (inherit), regression_model, coefindex, f1, contrasts
     # plot accepts: (inherit), minLabel, maxLabel, minColor, maxColor

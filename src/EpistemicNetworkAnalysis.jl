@@ -31,6 +31,7 @@ include("./typetree.jl")
 include("./plotbase.jl")
 include("./SVDRotation.jl")
 include("./LDARotation.jl")
+include("./MulticlassRotation.jl")
 include("./FormulaRotation.jl")
 include("./Formula2Rotation.jl")
 include("./MeansRotation.jl")
@@ -50,6 +51,7 @@ export NonlinearENAModel
 export plot
 export SVDRotation
 export LDARotation
+export MulticlassRotation
 export MeansRotation
 export Means2Rotation
 export FormulaRotation
