@@ -64,6 +64,11 @@ function help_two_vectors(networkModel::DataFrame)
     theta = dot(before, after)
     theta /= sqrt(dot(before, before))
     theta /= sqrt(dot(after, after))
+    if theta > 1 # bugfix for rounding error
+        theta = 1
+    elseif theta < -1
+        theta = -1
+    end
     angle = acos(theta) * 180 / pi
     if abs(angle) > 5
         @warn """The angle between the y-axis and the direction of the requested effect is larger than 5 degrees ($angle degrees).
