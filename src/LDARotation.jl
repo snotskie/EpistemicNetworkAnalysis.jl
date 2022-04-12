@@ -1,11 +1,12 @@
 struct LDARotation <: AbstractLDARotation
     groupVar::Symbol
     dim1::Integer
+    dim2::Integer
 end
 
 # Simplified constructor
-function LDARotation(groupVar::Symbol)
-    return LDARotation(groupVar, 1)
+function LDARotation(groupVar::Symbol, dim1::Integer=1)
+    return LDARotation(groupVar, dim1, dim1+1)
 end
 
 # Implement rotation
@@ -32,7 +33,12 @@ function rotate!(rotation::AbstractLDARotation, networkModel::DataFrame, codeMod
     ## Run the LDA
     ldaModel = projection(fit(MulticlassLDA, nc, X, y))
     networkModel[!, :weight_x] = ldaModel[:, rotation.dim1]
-    help_one_vector(networkModel, subspaceModel)
+    if rotation.dim2 == 0
+        help_one_vector(networkModel, subspaceModel)
+    else
+        networkModel[!, :weight_y] = ldaModel[:, rotation.dim2]
+        help_two_vectors(networkModel)
+    end
 
     # if size(ldaModel, 2) >= 2
     #     networkModel[!, :weight_x] = ldaModel[:, rotation.dim1]
@@ -76,7 +82,11 @@ function plot(ena::AbstractENAModel{<:AbstractLDARotation};
     end
 
     if isnothing(ylabel)
-        ylabel = "SVD"
+        if ena.rotation.dim2 == 0
+            ylabel = "SVD"
+        else
+            ylabel = string("LDA", ena.rotation.dim2)
+        end
     end
 
     return invoke(plot, Tuple{AbstractENAModel{<:AbstractLinearENARotation}}, ena;
