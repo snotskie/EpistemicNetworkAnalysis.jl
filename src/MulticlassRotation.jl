@@ -1,11 +1,12 @@
 struct MulticlassRotation <: AbstractMulticlassRotation
     groupVar::Symbol
     dim1::Integer
+    dim2::Integer
 end
 
 # Simplified constructor
-function MulticlassRotation(groupVar::Symbol)
-    return MulticlassRotation(groupVar, 1)
+function MulticlassRotation(groupVar::Symbol, dim1::Integer=1)
+    return MulticlassRotation(groupVar, dim1, dim1+1)
 end
 
 # Implement rotation
@@ -56,7 +57,15 @@ function rotate!(rotation::AbstractMulticlassRotation, networkModel::DataFrame, 
     R = real.(vecs[:, end-rotation.dim1+1]) # vecs are stored column-major, not row major
     R /= sqrt(sum(R .^ 2))
     networkModel[!, :weight_x] .= R
-    help_one_vector(networkModel, subspaceModel)
+    if rotation.dim2 == 0
+        help_one_vector(networkModel, subspaceModel)
+    else
+        R = real.(vecs[:, end-rotation.dim2+1]) # vecs are stored column-major, not row major
+        R /= sqrt(sum(R .^ 2))
+        networkModel[!, :weight_y] .= R
+        help_two_vectors(networkModel)
+    end
+        
 end
 
 # Override plotting pieces
@@ -77,7 +86,11 @@ function plot(ena::AbstractENAModel{<:AbstractMulticlassRotation};
     end
 
     if isnothing(ylabel)
-        ylabel = "SVD"
+        if ena.rotation.dim2 == 0
+            ylabel = "SVD"
+        else
+            ylabel = string("MCR", ena.rotation.dim2)
+        end
     end
 
     return invoke(plot, Tuple{AbstractENAModel{<:AbstractLinearENARotation}}, ena;
