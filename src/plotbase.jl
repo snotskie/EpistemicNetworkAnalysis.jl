@@ -192,13 +192,15 @@ function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
     if !isnothing(spectralColorBy)
         if spectralColorBy in Symbol.(names(ena.accumModel))
             colVals = Vector{Float64}(ena.accumModel[displayRows, spectralColorBy])
-            colVals = colVals .- minimum(colVals)
-            colVals /= maximum(colVals)
+            allColVals = colVals = Vector{Float64}(ena.accumModel[!, spectralColorBy])
+            colVals = colVals .- minimum(allColVals)
+            colVals /= maximum(allColVals)
             color = [HSL(colVal*240, 1, 0.5) for colVal in colVals]
         elseif spectralColorBy in Symbol.(names(ena.metadata))
             colVals = Vector{Float64}(ena.metadata[displayRows, spectralColorBy])
-            colVals = colVals .- minimum(colVals)
-            colVals /= maximum(colVals)
+            allColVals = Vector{Float64}(ena.metadata[!, spectralColorBy])
+            colVals = colVals .- minimum(allColVals)
+            colVals /= maximum(allColVals)
             color = [HSL(colVal*240, 1, 0.5) for colVal in colVals]
         end
     end
