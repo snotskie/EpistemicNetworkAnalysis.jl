@@ -190,7 +190,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
     xs, ys = help_xs_and_ys(ena, displayRows, flipX, flipY)
         
     #### Optional: illustrate a trajectory by a continuous, non-repeating value
-    if !isnothing(showTrajectoryBy)
+    if !isnothing(showTrajectoryBy) && count(displayRows) > 3
         smoothingData = innerjoin(ena.accumModel[displayRows, :], ena.metadata[displayRows, :], on=:ENA_UNIT)
         if showTrajectoryBy in Symbol.(names(smoothingData))
             smoothingData = sort(smoothingData, showTrajectoryBy)
