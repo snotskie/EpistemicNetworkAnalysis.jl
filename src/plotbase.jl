@@ -182,13 +182,23 @@ end
 ### Helper - Draw the dots
 function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
     color::Colorant=colorant"black", spectralColorBy::Union{Symbol,Nothing}=nothing,
-    flipX::Bool=false, flipY::Bool=false,
+    flipX::Bool=false, flipY::Bool=false, showTrajectoryBy::Union{Symbol,Nothing}=nothing,
     unitLabel::String="Units",
     kwargs...)
 
     #### Get the x/y positions
     xs, ys = help_xs_and_ys(ena, displayRows, flipX, flipY)
+        
+    #### Optional: illustrate a trajectory by a continuous, non-repeating value
+    if !isnothing(showTrajectoryBy)
+        if showTrajectoryBy in Symbol.(names(ena.accumModel))
+            # TODO
+        elseif showTrajectoryBy in Symbol.(names(ena.metadata))
+            # TODO
+        end
+    end
     
+    #### Optional: color code by a continuous value
     if !isnothing(spectralColorBy)
         if spectralColorBy in Symbol.(names(ena.accumModel))
             colVals = Vector{Float64}(ena.accumModel[displayRows, spectralColorBy])
