@@ -8,6 +8,7 @@ import Plots.plot
 import Plots.plot!
 import Plots.Plot
 using Colors
+using Dierckx
 
 ## Data
 using DataFrames
