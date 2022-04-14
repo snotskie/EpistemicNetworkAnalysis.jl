@@ -191,11 +191,19 @@ function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
         
     #### Optional: illustrate a trajectory by a continuous, non-repeating value
     if !isnothing(showTrajectoryBy)
-        if showTrajectoryBy in Symbol.(names(ena.accumModel))
-            # TODO
-        elseif showTrajectoryBy in Symbol.(names(ena.metadata))
-            # TODO
-        end
+        smoothingData = innerjoin(ena.accumModel[displayRows, :], ena.metadata[displayRows, :], on=:ENA_UNIT)
+        if showTrajectoryBy in Symbol.(names(smoothingData))
+            smoothingData = sort(smoothingData, showTrajectoryBy)
+            ts = smoothingData[!, showTrajectoryBy]
+            xs = smoothingData[!, :pos_x]
+            ys = smoothingData[!, :pos_y]
+            xspline = Spline1D(ts, xs, k=3, bc="nearest")
+            yspline = Spline1D(ts, ys, k=3, bc="nearest")
+            smooth_ts = range(ts[1], stop=ts[end], length=100)
+            smooth_xs = xspline(smooth_ts)
+            smooth_ys = yspline(smooth_ts)
+            plot!(p, smooth_xs, smooth_ys, linecolor=color)
+        end 
     end
     
     #### Optional: color code by a continuous value
@@ -215,7 +223,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
         end
     end
 
-    #### Draw them in black by default
+    #### Draw the units, in black by default
     plot!(p, xs, ys,
         label=unitLabel,
         seriestype=:scatter,
