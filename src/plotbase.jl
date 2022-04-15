@@ -202,7 +202,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
             smooth_ts = range(ts[1], stop=ts[end], length=100)
             smooth_xs = xspline(smooth_ts)
             smooth_ys = yspline(smooth_ts)
-            plot!(p, smooth_xs, smooth_ys, linecolor=color, arrows=true)
+            plot!(p, smooth_xs, smooth_ys, linecolor=color)
         end 
     end
     
