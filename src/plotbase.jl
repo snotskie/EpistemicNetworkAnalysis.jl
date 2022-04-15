@@ -190,7 +190,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
     xs, ys = help_xs_and_ys(ena, displayRows, flipX, flipY)
         
     #### Optional: illustrate a trajectory by a continuous, non-repeating value
-    if !isnothing(showTrajectoryBy) && count(displayRows) > 2
+    if !isnothing(showTrajectoryBy) && count(displayRows) > 3
         smoothingData = innerjoin(ena.accumModel[displayRows, :], ena.metadata[displayRows, :], on=:ENA_UNIT)
         if showTrajectoryBy in Symbol.(names(smoothingData))
             smoothingData = sort(smoothingData, showTrajectoryBy)
@@ -198,9 +198,9 @@ function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
             # xs = smoothingData[!, :pos_x]
             # ys = smoothingData[!, :pos_y]
             ps = transpose(Matrix{Float64}(smoothingData[!, [:pos_x, :pos_y]]))
-            # xspline = Spline1D(ts, xs, k=2, bc="nearest")
-            # yspline = Spline1D(ts, ys, k=2, bc="nearest")
-            bspline = ParametricSpline(ts, ps, k=2, bc="nearest")
+            # xspline = Spline1D(ts, xs, k=3, bc="nearest")
+            # yspline = Spline1D(ts, ys, k=3, bc="nearest")
+            bspline = ParametricSpline(ts, ps, k=3, bc="nearest")
             smooth_ts = range(ts[1], stop=ts[end], length=500)
             smooth_ps = transpose(bspline(smooth_ts))
             # smooth_xs = xspline(smooth_ts)
