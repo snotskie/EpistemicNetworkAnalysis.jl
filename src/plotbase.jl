@@ -199,7 +199,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
             ys = smoothingData[!, :pos_y]
             xspline = Spline1D(ts, xs, k=3, bc="nearest")
             yspline = Spline1D(ts, ys, k=3, bc="nearest")
-            smooth_ts = range(ts[1], stop=ts[end], length=100)
+            smooth_ts = range(ts[1], stop=ts[end], length=500)
             smooth_xs = xspline(smooth_ts)
             smooth_ys = yspline(smooth_ts)
             plot!(p, smooth_xs, smooth_ys, linecolor=color)
