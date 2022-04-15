@@ -197,7 +197,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
             ts = smoothingData[!, showTrajectoryBy]
             # xs = smoothingData[!, :pos_x]
             # ys = smoothingData[!, :pos_y]
-            ps = transpose(smoothingData[!, [:pos_x, :pos_y]])
+            ps = transpose(Matrix{Float64}(smoothingData[!, [:pos_x, :pos_y]]))
             # xspline = Spline1D(ts, xs, k=3, bc="nearest")
             # yspline = Spline1D(ts, ys, k=3, bc="nearest")
             bspline = ParametricSpline(ts, ps)
