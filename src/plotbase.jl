@@ -202,7 +202,7 @@ function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
             # yspline = Spline1D(ts, ys, k=3, bc="nearest")
             bspline = ParametricSpline(ts, ps)
             smooth_ts = range(ts[1], stop=ts[end], length=500)
-            smooth_ps = transpose(spline(smooth_ts))
+            smooth_ps = transpose(bspline(smooth_ts))
             # smooth_xs = xspline(smooth_ts)
             # smooth_ys = yspline(smooth_ts)
             # plot!(p, smooth_xs, smooth_ys, linecolor=color)
