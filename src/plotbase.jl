@@ -195,14 +195,18 @@ function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
         if showTrajectoryBy in Symbol.(names(smoothingData))
             smoothingData = sort(smoothingData, showTrajectoryBy)
             ts = smoothingData[!, showTrajectoryBy]
-            xs = smoothingData[!, :pos_x]
-            ys = smoothingData[!, :pos_y]
-            xspline = Spline1D(ts, xs, k=3, bc="nearest")
-            yspline = Spline1D(ts, ys, k=3, bc="nearest")
+            # xs = smoothingData[!, :pos_x]
+            # ys = smoothingData[!, :pos_y]
+            ps = transpose(smoothingData[!, [:pos_x, :pos_y]])
+            # xspline = Spline1D(ts, xs, k=3, bc="nearest")
+            # yspline = Spline1D(ts, ys, k=3, bc="nearest")
+            bspline = ParametricSpline(ts, ps)
             smooth_ts = range(ts[1], stop=ts[end], length=500)
-            smooth_xs = xspline(smooth_ts)
-            smooth_ys = yspline(smooth_ts)
-            plot!(p, smooth_xs, smooth_ys, linecolor=color)
+            smooth_ps = transpose(spline(smooth_ts))
+            # smooth_xs = xspline(smooth_ts)
+            # smooth_ys = yspline(smooth_ts)
+            # plot!(p, smooth_xs, smooth_ys, linecolor=color)
+            plot!(p, smooth_ps[:, 1], smooth_ps[:, 2], linecolor=color)
         end 
     end
     
