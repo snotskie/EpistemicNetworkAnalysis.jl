@@ -193,6 +193,13 @@ function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
     if !isnothing(showTrajectoryBy) && count(displayRows) > 3
         smoothingData = innerjoin(ena.accumModel[displayRows, :], ena.metadata[displayRows, :], on=:ENA_UNIT)
         if showTrajectoryBy in Symbol.(names(smoothingData))
+            smoothingData = combine(
+                groupby(smoothingData, showTrajectoryBy),
+                showTrajectoryBy => mean => showTrajectoryBy,
+                :pos_x => mean => :pos_x,
+                :pos_y => mean => :pos_y
+            )
+            
             smoothingData = sort(smoothingData, showTrajectoryBy)
             ts = smoothingData[!, showTrajectoryBy]
             # xs = smoothingData[!, :pos_x]
