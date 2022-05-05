@@ -314,7 +314,7 @@ function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1
                 bspline = ParametricSpline(ts, ps, k=3, bc="nearest")
                 smooth_ts = range(ts[1], stop=ts[end], length=500)
                 smooth_ps = transpose(bspline(smooth_ts))
-                plot!(p, smooth_ps[:, 1] * (flipX ? -1 : 1), smooth_ps[:, 2] * (flipY ? -1 : 1), linecolor=:black, arrow=true)
+                plot!(p, smooth_ps[:, 1] * (flipX ? -1 : 1), smooth_ps[:, 2] * (flipY ? -1 : 1), linecolor=:black, arrow=:closed)
             end
         end 
     end
