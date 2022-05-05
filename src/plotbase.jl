@@ -182,35 +182,12 @@ end
 ### Helper - Draw the dots
 function plot_units!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
     color::Colorant=colorant"black", spectralColorBy::Union{Symbol,Nothing}=nothing,
-    flipX::Bool=false, flipY::Bool=false, showTrajectoryBy::Union{Symbol,Nothing}=nothing,
+    flipX::Bool=false, flipY::Bool=false,
     unitLabel::String="Units",
     kwargs...)
 
     #### Get the x/y positions
     xs, ys = help_xs_and_ys(ena, displayRows, flipX, flipY)
-        
-    #### Optional: illustrate a trajectory by a continuous, non-repeating value
-    if !isnothing(showTrajectoryBy)
-        smoothingData = innerjoin(ena.accumModel[displayRows, :], ena.metadata[displayRows, :], on=:ENA_UNIT)
-        if showTrajectoryBy in Symbol.(names(smoothingData))
-            smoothingData = combine(
-                groupby(smoothingData, showTrajectoryBy),
-                showTrajectoryBy => mean => showTrajectoryBy,
-                :pos_x => mean => :pos_x,
-                :pos_y => mean => :pos_y
-            )
-                
-            if nrow(smoothingData) > 3
-                smoothingData = sort(smoothingData, showTrajectoryBy)
-                ts = smoothingData[!, showTrajectoryBy]
-                ps = transpose(Matrix{Float64}(smoothingData[!, [:pos_x, :pos_y]]))
-                bspline = ParametricSpline(ts, ps, k=3, bc="nearest")
-                smooth_ts = range(ts[1], stop=ts[end], length=500)
-                smooth_ps = transpose(bspline(smooth_ts))
-                plot!(p, smooth_ps[:, 1], smooth_ps[:, 2], linecolor=color)
-            end
-        end 
-    end
     
     #### Optional: color code by a continuous value
     if !isnothing(spectralColorBy)
@@ -243,7 +220,7 @@ end
 function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
     color::Colorant=colorant"#aaa",
     flipX::Bool=false, flipY::Bool=false, showWarps::Bool=false, showCodeLabels::Bool=true,
-    showArrows::Bool=false,
+    showArrows::Bool=false, showTrajectoryBy::Union{Symbol,Nothing}=nothing,
     kwargs...)
 
     #### Find the true weight on each line
@@ -317,6 +294,29 @@ function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1
             markersize=codeWidths,
             markercolor=:black,
             markerstrokewidth=0)
+    end
+
+    #### Optional: illustrate a trajectory by a continuous, non-repeating value
+    if !isnothing(showTrajectoryBy)
+        smoothingData = innerjoin(ena.accumModel[displayRows, :], ena.metadata[displayRows, :], on=:ENA_UNIT)
+        if showTrajectoryBy in Symbol.(names(smoothingData))
+            smoothingData = combine(
+                groupby(smoothingData, showTrajectoryBy),
+                showTrajectoryBy => mean => showTrajectoryBy,
+                :pos_x => mean => :pos_x,
+                :pos_y => mean => :pos_y
+            )
+                
+            if nrow(smoothingData) > 3
+                smoothingData = sort(smoothingData, showTrajectoryBy)
+                ts = smoothingData[!, showTrajectoryBy]
+                ps = transpose(Matrix{Float64}(smoothingData[!, [:pos_x, :pos_y]]))
+                bspline = ParametricSpline(ts, ps, k=3, bc="nearest")
+                smooth_ts = range(ts[1], stop=ts[end], length=500)
+                smooth_ps = transpose(bspline(smooth_ts))
+                plot!(p, smooth_ps[:, 1] * (flipX ? -1 : 1), smooth_ps[:, 2] * (flipY ? -1 : 1), linecolor=:black, arrow=true)
+            end
+        end 
     end
 end
 
