@@ -220,7 +220,7 @@ end
 function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1};
     color::Colorant=colorant"#aaa",
     flipX::Bool=false, flipY::Bool=false, showWarps::Bool=false, showCodeLabels::Bool=true,
-    showArrows::Bool=false, showTrajectoryBy::Union{Symbol,Nothing}=nothing,
+    showArrows::Bool=false, showTrajectoryBy::Union{Symbol,Nothing}=nothing, showNetworkLines::Bool=true,
     kwargs...)
 
     #### Find the true weight on each line
@@ -248,27 +248,29 @@ function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1
         codeWidths[k] += lineWidths[i]
 
         #### and plot that line
-        pointA = [ena.codeModel[j, :pos_x] * (flipX ? -1 : 1), ena.codeModel[j, :pos_y] * (flipY ? -1 : 1)]
-        pointB = [ena.codeModel[k, :pos_x] * (flipX ? -1 : 1), ena.codeModel[k, :pos_y] * (flipY ? -1 : 1)]
-        pointT = (pointA+pointB)/2
-        if showWarps
-            pointT = [networkRow[:weight_x] * (flipX ? -1 : 1), networkRow[:weight_y] * (flipY ? -1 : 1)]
+        if showNetworkLines
+            pointA = [ena.codeModel[j, :pos_x] * (flipX ? -1 : 1), ena.codeModel[j, :pos_y] * (flipY ? -1 : 1)]
+            pointB = [ena.codeModel[k, :pos_x] * (flipX ? -1 : 1), ena.codeModel[k, :pos_y] * (flipY ? -1 : 1)]
+            pointT = (pointA+pointB)/2
+            if showWarps
+                pointT = [networkRow[:weight_x] * (flipX ? -1 : 1), networkRow[:weight_y] * (flipY ? -1 : 1)]
+            end
+
+            points = hcat(pointA, pointT, pointT, pointT, pointB)
+            # arrows = nothing
+            # if showArrows
+            #     arrows = true #lineWidths[i] #arrow(:closed, :head, lineWidths[i], lineWidths[i])
+            # end
+
+            plot!(p,
+                points[1, :],
+                points[2, :],
+                label=nothing,
+                seriestype=:curves,
+                arrows=showArrows,
+                linewidth=lineWidths[i],
+                linecolor=color)
         end
-
-        points = hcat(pointA, pointT, pointT, pointT, pointB)
-        # arrows = nothing
-        # if showArrows
-        #     arrows = true #lineWidths[i] #arrow(:closed, :head, lineWidths[i], lineWidths[i])
-        # end
-
-        plot!(p,
-            points[1, :],
-            points[2, :],
-            label=nothing,
-            seriestype=:curves,
-            arrows=showArrows,
-            linewidth=lineWidths[i],
-            linecolor=color)
     end
 
     #### Rescale and draw the codes
