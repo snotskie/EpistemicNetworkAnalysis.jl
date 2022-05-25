@@ -85,3 +85,19 @@ function plot_units!(p::Plot, ena::AbstractENAModel{<:AbstractMeansRotation}, di
     invoke(plot_units!, Tuple{Plot, AbstractENAModel{<:AbstractFormulaRotation}, Array{Bool,1}},
         p, ena, displayRows; flipX=flipX, flipY=flipY, minLabel=minLabel, maxLabel=maxLabel, kwargs...)
 end
+
+function test(ena::AbstractENAModel{<:AbstractMeansRotation})
+    results = invoke(test, Tuple{AbstractENAModel{<:AbstractFormulaRotation}}, ena)
+    controlRows = ena.metadata[!, ena.rotation.groupVar] .== ena.rotation.controlGroup
+    treatmentRows = ena.metadata[!, ena.rotation.groupVar] .== ena.rotation.treatmentGroup
+    controlVals = ena.accumModel[controlRows, :pos_x]
+    treatmentVals = ena.accumModel[treatmentRows, :pos_x]
+    mwut = MannWhitneyUTest(controlVals, treatmentVals)
+    results[:mann_whitney_u] = mwut.U
+    results[:mann_whitney_pvalue] = pvalue(mwut)
+    results[:n_control] = length(controlVals)
+    results[:n_treatment] = length(treatmentVals)
+    results[:mdn_control] = median(controlVals)
+    results[:mdn_treatment] = median(treatmentVals)
+    return results
+end
