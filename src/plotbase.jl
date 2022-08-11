@@ -82,7 +82,7 @@ function plot(ena::AbstractENAModel;
                     plot_extras!(p, ena, groupRows; color=extraColors[g], kwargs...)
                 end
                 
-                if showCIs
+                if showMeans
                     plot_cis!(p, ena, groupRows, group; color=extraColors[g], kwargs...)
                     plot_cis!(ps[1], ena, groupRows, group; color=extraColors[g], kwargs...)
                 end
