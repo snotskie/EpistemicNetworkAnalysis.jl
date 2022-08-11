@@ -21,7 +21,7 @@ function plot(ena::AbstractENAModel;
     extraColors::Array{<:Colorant,1}=DEFAULT_EXTRA_COLORS,
     flipX=false, flipY=false,
     singleUnit=nothing, groupBy=nothing,
-    showExtras::Bool=false, showNetworks::Bool=true, showUnits::Bool=true, showCIs::Bool=true,
+    showExtras::Bool=false, showNetworks::Bool=true, showUnits::Bool=true, showMeans::Bool=true,
     kwargs...)
 
     #### Combine the kwargs to make them easier to pass without needing
@@ -110,7 +110,7 @@ function plot(ena::AbstractENAModel;
                         plot_units!(p, ena, negGroupRows; color=extraColors[i], kwargs...)
                     end
 
-                    if showCIs
+                    if showMeans
                         plot_cis!(p, ena, posGroupRows, posGroup; color=extraColors[j], kwargs...)
                         plot_cis!(p, ena, negGroupRows, negGroup; color=extraColors[i], kwargs...)
                     end
@@ -640,8 +640,9 @@ end
 function plot_cis!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1}, groupName::Any;
     color::Colorant=colorant"black",
     flipX::Bool=false, flipY::Bool=false,
+    showCIs::Bool=true,
     kwargs...)
 
     xs, ys = help_xs_and_ys(ena, displayRows, flipX, flipY)
-    help_plot_ci(p, xs, ys, color, :square, "$(groupName) Mean")
+    help_plot_ci(p, xs, ys, color, :square, "$(groupName) Mean", showCIs)
 end
