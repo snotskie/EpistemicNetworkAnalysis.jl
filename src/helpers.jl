@@ -92,7 +92,7 @@ function help_xs_and_ys(ena, displayRows, flipX::Bool, flipY::Bool)
     return (xs, ys)
 end
 
-function help_plot_ci(p, xs, ys, color, shape, label)
+function help_plot_ci(p, xs, ys, color, shape, label, showCIs::Bool=true)
     if length(xs) > 0
         x = mean(xs)
         y = mean(ys)
@@ -105,7 +105,7 @@ function help_plot_ci(p, xs, ys, color, shape, label)
             markerstrokecolor=color)
     end
 
-    if length(xs) > 1
+    if length(xs) > 1 && showCIs
         ci_x = collect(confint(OneSampleTTest(xs)))
         ci_y = collect(confint(OneSampleTTest(ys)))
         Plots.plot!(p, [ci_x[1], ci_x[2]], [ci_y[1], ci_y[1]],
