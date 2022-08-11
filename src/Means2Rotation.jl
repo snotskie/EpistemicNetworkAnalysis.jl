@@ -125,6 +125,7 @@ end
 function plot_cis!(p::Plot, ena::AbstractENAModel{<:AbstractMeans2Rotation}, displayRows::Array{Bool,1}, groupName::Any;
     color::Colorant=colorant"black",
     flipX::Bool=false, flipY::Bool=false,
+    showCIs::Bool=true,
     kwargs...)
 
     #### Partition by the second group var
@@ -149,8 +150,8 @@ function plot_cis!(p::Plot, ena::AbstractENAModel{<:AbstractMeans2Rotation}, dis
 
     #### Show them as up/down triangles
     xs, ys = help_xs_and_ys(ena, controlDisplayRows2, flipX, flipY)
-    help_plot_ci(p, xs, ys, color, :dtriangle, "$(groupName) Mean where $(ena.rotation.groupVar2) = $(ena.rotation.controlGroup2)")
+    help_plot_ci(p, xs, ys, color, :dtriangle, "$(groupName) Mean where $(ena.rotation.groupVar2) = $(ena.rotation.controlGroup2)", showCIs)
 
     xs, ys = help_xs_and_ys(ena, treatmentDisplayRows2, flipX, flipY)
-    help_plot_ci(p, xs, ys, color, :utriangle, "$(groupName) Mean where $(ena.rotation.groupVar2) = $(ena.rotation.treatmentGroup2)")
+    help_plot_ci(p, xs, ys, color, :utriangle, "$(groupName) Mean where $(ena.rotation.groupVar2) = $(ena.rotation.treatmentGroup2)", showCIs)
 end
