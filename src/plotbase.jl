@@ -251,6 +251,10 @@ function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1
         if showNetworkLines
             pointA = [ena.codeModel[j, :pos_x] * (flipX ? -1 : 1), ena.codeModel[j, :pos_y] * (flipY ? -1 : 1)]
             pointB = [ena.codeModel[k, :pos_x] * (flipX ? -1 : 1), ena.codeModel[k, :pos_y] * (flipY ? -1 : 1)]
+            if j == k
+                pointB = [0.0, 0.0]
+            end
+            
             pointT = (pointA+pointB)/2
             if showWarps
                 pointT = [networkRow[:weight_x] * (flipX ? -1 : 1), networkRow[:weight_y] * (flipY ? -1 : 1)]
@@ -403,6 +407,10 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel, targetCol::Symbol;
             codeVisible[k] = true
             pointA = [ena.codeModel[j, :pos_x] * (flipX ? -1 : 1), ena.codeModel[j, :pos_y] * (flipY ? -1 : 1)]
             pointB = [ena.codeModel[k, :pos_x] * (flipX ? -1 : 1), ena.codeModel[k, :pos_y] * (flipY ? -1 : 1)]
+            if j == k
+                pointB = [0.0, 0.0]
+            end
+            
             pointT = (pointA+pointB)/2
             if showWarps
                 pointT = [networkRow[:weight_x] * (flipX ? -1 : 1), networkRow[:weight_y] * (flipY ? -1 : 1)]
@@ -544,6 +552,10 @@ function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, neg
             codeVisible[k] = true
             pointA = [ena.codeModel[j, :pos_x] * (flipX ? -1 : 1), ena.codeModel[j, :pos_y] * (flipY ? -1 : 1)]
             pointB = [ena.codeModel[k, :pos_x] * (flipX ? -1 : 1), ena.codeModel[k, :pos_y] * (flipY ? -1 : 1)]
+            if j == k
+                pointB = [0.0, 0.0]
+            end
+            
             pointT = (pointA+pointB)/2
             if showWarps
                 pointT = [networkRow[:weight_x] * (flipX ? -1 : 1), networkRow[:weight_y] * (flipY ? -1 : 1)]
