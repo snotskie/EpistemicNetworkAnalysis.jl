@@ -141,6 +141,14 @@ function help_nonlinear_gradient(lo, mid, hi; grains=100, curve=1.5)
     )
 end
 
+function help_font_angle(x, y)
+    if x < 0
+        return atan(-y, -x) * 180 / pi
+    else
+        return atan(y, x) * 180 / pi
+    end
+end
+
 function derivedAnyCode!(data, newCol, oldCols...)
     data[!, newCol] = ones(nrow(data))
     for col in oldCols

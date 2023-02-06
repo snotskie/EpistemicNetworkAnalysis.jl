@@ -282,7 +282,7 @@ function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1
     x = ena.codeModel[!, :pos_x] * (flipX ? -1 : 1)
     y = ena.codeModel[!, :pos_y] * (flipY ? -1 : 1)
     if showCodeLabels
-        labels = map(label->text(label, :top, default(:xtickfontsize)), ena.codeModel[!, :code])
+        labels = map((label, xi, yi)->text(label, :top, default(:xtickfontsize), rotation=help_font_angle(xi, yi)), ena.codeModel[!, :code], x, y)
         plot!(p, x, y,
             label=nothing,
             seriestype=:scatter,
@@ -435,7 +435,7 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel, targetCol::Symbol;
     x = ena.codeModel[codeVisible, :pos_x] * (flipX ? -1 : 1)
     y = ena.codeModel[codeVisible, :pos_y] * (flipY ? -1 : 1)
     if showCodeLabels
-        labels = map(label->text(label, :top, default(:xtickfontsize)), ena.codeModel[codeVisible, :code])
+        labels = map((label, xi, yi)->text(label, :top, default(:xtickfontsize), rotation=help_font_angle(xi, yi)), ena.codeModel[codeVisible, :code], x, y)
         plot!(p, x, y,
             label=nothing,
             seriestype=:scatter,
@@ -580,7 +580,7 @@ function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, neg
     x = ena.codeModel[codeVisible, :pos_x] * (flipX ? -1 : 1)
     y = ena.codeModel[codeVisible, :pos_y] * (flipY ? -1 : 1)
     if showCodeLabels
-        labels = map(label->text(label, :top, default(:xtickfontsize)), ena.codeModel[codeVisible, :code])
+        labels = map((label, xi, yi)->text(label, :top, default(:xtickfontsize), rotation=help_font_angle(xi, yi)), ena.codeModel[codeVisible, :code], x, y)
         plot!(p, x, y,
             label=nothing,
             seriestype=:scatter,
