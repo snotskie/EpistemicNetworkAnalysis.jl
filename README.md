@@ -16,15 +16,9 @@ If you use this Julia implementation of ENA in your research, please cite it, th
 > 
 > Marquart, C. L., Swiecki, Z., Collier, W., Eagan, B., Woodward, R., & Shaffer, D. W. (2019). rENA: Epistemic Network Analysis (Version 0.2.0.1) \[Software\] Available from https://cran.r-project.org/web/packages/rENA/index.html
 
-## Getting Started
-
-Dive in with examples by launching this project on binder! Click here: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/snotskie/EpistemicNetworkAnalysis.jl/HEAD)
-
-## Documentation
-
-See latest docs here: [https://snotskie.github.io/EpistemicNetworkAnalysis.jl/latest/](https://snotskie.github.io/EpistemicNetworkAnalysis.jl/latest/)
-
 ## Installation
+
+### Minimal Installation
 
 To install this package locally, run the following in Julia:
 
@@ -33,3 +27,108 @@ using Pkg
 Pkg.add(url="https://github.com/snotskie/EpistemicNetworkAnalysis.jl")
 using EpistemicNetworkAnalysis
 ```
+
+You may also want to install the following packages too:
+
+```julia
+Pkg.add([
+    "CSV",
+    "DataFrames",
+    "Plots",
+    "Statistics"
+])
+```
+
+### Maximal Installation
+
+Assuming you have Python installed, but nothing else, to install this package and configure everything to work in Jupyter, from the command line run:
+
+```sh
+JILL_INSTALL_DIR=$HOME/.opt/julias # edit if you want your julia binaries installed elsewhere
+export JILL_INSTALL_DIR
+python3 -m pip install jill jupyter
+python3 -m jill install --confirm 1.8
+PATH=$HOME/.local/bin:$PATH
+export PATH
+julia-1.8 -e 'using Pkg; Pkg.add(url="https://github.com/snotskie/EpistemicNetworkAnalysis.jl")'
+julia-1.8 -e 'using Pkg; Pkg.add(["DataFrames", "Plots", "CSV", "Statistics", "IJulia"])'
+```
+
+Then launch Jupyter with:
+
+```sh
+python3 -m jupyter notebook
+```
+
+## Getting Started
+
+To test your installation of this package, in Julia run:
+
+```julia
+using EpistemicNetworkAnalysis
+
+data = ena_dataset("shakespeare.data")
+
+conversations = [:Play, :Act]
+units = [:Play, :Speaker]
+codes = [
+    :Love,
+    :Death,
+    :Honor,
+    :Men,
+    :Women
+]
+
+rotation = MeansRotation(:Play, "Romeo and Juliet", "Hamlet")
+
+myENA = ENAModel(
+    data, codes, conversations, units,
+    rotateBy=rotation
+)
+
+p = plot(myENA)
+display(p)
+```
+
+## Usage
+
+### Loading Data
+
+There are two built-in datasets for running examples:
+
+```julia
+data = ena_dataset("shakespeare.data")
+data = ena_dataset("transitions.data")
+```
+
+To load your own data, do:
+
+```julia
+using CSV
+using DataFrames
+
+filename = "example.csv" # the name of the file to load
+missingtext = "#N/A" # the text used to represent missing values in your CSV file
+data = DataFrame(CSV.File(filename, missingstring=missingtext))
+```
+
+### ENA Model
+
+TODO
+
+### Rotations
+
+TODO
+
+### Digraph ENA Model
+
+TODO
+
+### Nonlinear ENA Model
+
+TODO
+
+### Plotting
+
+TODO
+
