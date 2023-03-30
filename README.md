@@ -198,15 +198,21 @@ See the Rotations section for more detail.
 
 TODO
 
+### Plotting
+
+TODO
+
 ### Digraph ENA Model
 
-TODO
+By default, `ENAModel` is configured for undirected data: the order of which code response to which other code does not matter.
+
+For seeing the directional effects, consider using a `DigraphENAModel` instead. This alternative has the same configuration options as `ENAModel`. The difference is how it embeds and visualizes the network so as to get a quick overview of how directed connections between codes "drive" the space. 
+
+```julia
+myENA = DigraphENAModel(data, codes, conversations, units)
+```
 
 ### Nonlinear ENA Model
-
-TODO
-
-### Plotting
 
 TODO
 
