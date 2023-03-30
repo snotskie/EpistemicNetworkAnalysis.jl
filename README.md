@@ -230,7 +230,36 @@ rotation = Formula2Rotation(
 
 ### Plotting
 
-TODO
+By default, `plot` selects the best (in my opinion) plotting options based on the combination of ENA model type and rotation type you have selected. Also be default, it shows all possible subplots (that I could think of) that could be helpful in your analysis.
+
+To select just a single subplot, do something like:
+
+```julia
+p = plot(myENA)
+p1 = plot(p.subplots[1], size=(600,600)) # 1 = the first subplot, usually labeled (a)
+p2 = plot(p.subplots[2], size=(600,600)) # 2 = the second subplot, usually labeled (b)
+```
+
+Common plot options you may want to change are:
+
+```julia
+p = plot(
+    myENA,
+    groupBy=:Play, # column to group the data by
+    spectralColorBy=:Age, # color-code the units by their numeric value in this column
+    leg=:topleft, # legend position, or false to disable it
+    xlabel="X", # x-axis label
+    ylabel="Y", # y-axis label
+    flipX=false, # flip the x-axis?
+    flipY=false, # flip the y-axis?
+    showNetworks=true, # show the codes and their connections?
+    showUnits=true, # show the units?
+    showMeans=true, # show the means and their confidence intervals?
+    rotateCodeLabels=false, # rotate the code labels
+    weakLinks=true, # show all connections between codes, even the weak ones?
+    showWarps=false # show a bend in each connection, to show its true loading
+)
+```
 
 ### Exporting Data
 
