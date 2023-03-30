@@ -114,6 +114,8 @@ data = DataFrame(CSV.File(filename, missingstring=missingtext))
 
 ### ENA Model
 
+The workhorse of this package is the `ENAModel` type, which is highly configurable.
+
 ```julia
 function mySubsetFilter(unit)
     if 1 <= unit[:Act] <= 3 # select only acts between 1 and 3
