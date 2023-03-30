@@ -114,7 +114,85 @@ data = DataFrame(CSV.File(filename, missingstring=missingtext))
 
 ### ENA Model
 
-TODO
+```julia
+function mySubsetFilter(unit)
+    if 1 <= unit[:Act] <= 3 # select only acts between 1 and 3
+        return true
+    else
+        return false
+    end
+end
+
+function myRelationshipFilter(i, j, ci, cj)
+    if ci == :Love && cj == :Death
+        return false # don't connect love and death
+    elseif cj == :Honor && ci == :Women
+        return false # don't connect honor and women
+    else
+        return i < j # connect everything else, just one direction for each pair of codes
+    end
+end
+
+myENA = ENAModel(
+    data, codes, conversations, units,
+    windowSize=4,
+    sphereNormalize=true,
+    dropEmpty=false,
+    meanCenter=true,
+    deflateEmpty=false,
+    subspaces=0,
+    fitNodesToCircle=false,
+    subsetFilter=mySubsetFilter,
+    relationshipFilter=myRelationshipFilter,
+    rotateBy=rotation
+)
+```
+
+#### Required Parameters
+
+The `ENAModel` constructor has four required parameters:
+
+1. A DataFrame containing the data to be analyzed
+2. An array of symbols specifying the column names of the qualitative codes to include in the model. The order of the array makes no difference.
+3. An array of symbols used to divide the rows into units of analysis. The order makes no difference.
+4. Similarly, an array of symbols used to divide the rows into conversations. The order makes no difference.
+
+#### Optional Parameters
+
+The `ENAModel` constructor has multiple optional named parameters that are primitive types:
+
+- `windowSize`, an integer used to specify the size of the sliding stanza window. By default, this is 4. To specify an infinite stanza window, use a very large integer value.
+- `sphereNormalize`, a boolean that tells the model whether to normalize units to the sphere. By default, this is true.
+- `dropEmpty`, a boolean that tells the model whether to drop units with empty networks. By default, this is false.
+- `meanCenter`, a boolean that tells the model whether to center the units such that the mean lies at the origin. By default, this is true. When `dropEmpty=true` and `meanCenter=false`, the zero-network will lie at the origin instead.
+- `recenterEmpty`, a boolean that tells the model whether to recenter units with empty networks at the mean. By default, this is false.
+- `deflateEmpty`, a boolean that tells the model whether to deflate the "umbrella handle" from the high dimensional space used for rotation. By default, this is `false`. When it is true, the variance that runs from the zero-network to the mean-network is removed. When `deflateEmpty=true`, changing the value of `meanCenter` will have no effect.
+- `subspaces`, an integer `N >= 2` that tells the model whether to project the high dimensional space used for rotation to the subspace formed by the first `N` SVD dimensions. By default, this is `0`, meaning to use the entire high dimensional space for rotation.
+- `fitNodesToCircle`, a boolean that tells the model whether to degrade the optimized positions of the code positions by forcing them to the unit circle instead, which sacrifices accuracy of the model in favor of readability
+
+#### Subset Filtering
+
+The `ENAModel` constructor takes another optional named parameter, `subsetFilter`.
+
+This parameter is a lambda function that is used by the model to remove units from the model after accumulation.
+
+By default, a lambda is used that keeps all units.
+
+#### Relationship Filtering
+
+The `ENAModel` constructor takes another optional named parameter, `relationshipFilter`.
+
+This parameter is a lambda funciton that is used by the model to decide which pairs of codes to include as relationships in the model.
+
+By default, a lambda is used that keeps all pairs of codes where the first code occurs before the second code in the `codes` parameter.
+
+Because `ENAModel` is undirected, one should avoid including both orderings of any pair of codes in the list of relationships, for example `X_Y` and `Y_X`.
+
+#### Rotation Parameter
+
+Finally, the `ENAModel` constructor has one more optional named parameter, `rotateBy`.
+
+See the Rotations section for more detail.
 
 ### Rotations
 
