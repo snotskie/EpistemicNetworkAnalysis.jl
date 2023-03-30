@@ -202,6 +202,26 @@ TODO
 
 TODO
 
+### Exporting Data
+
+To export results, you can save the `accumModel`, `codeModel`, and `networkModel` fields of your ENA model object to a CSV.
+
+```julia
+using CSV
+CSV.write(myENA.accumModel)
+CSV.write(myENA.codeModel)
+CSV.write(myENA.networkModel)
+```
+
+You can also save your plot results using `savefig`, which supports multiple file types.
+
+```julia
+using Plots
+savefig(p, "my-output.png")
+savefig(p, "my-output.jpeg")
+savefig(p, "my-output.svg")
+```
+
 ### Digraph ENA Model
 
 By default, `ENAModel` is configured for undirected data: the order of which code response to which other code does not matter.
