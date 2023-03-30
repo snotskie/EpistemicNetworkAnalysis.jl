@@ -196,7 +196,37 @@ See the Rotations section for more detail.
 
 ### Rotations
 
-TODO
+This implementation of ENA offers a range of rotation (dimension reduction) options.
+
+```julia
+rotation = SVDRotation() # default: maximize overall variance
+rotation = MeansRotation(:Play, "Romeo and Juliet", "Hamlet") # maximize variance between the two plays
+rotation = MulticlassRotation(:Play) # maximize variance between all the plays, however many there are
+rotation = MulticlassRotation(:Play, 3, 4) # show the 3rd and 4th dimensions of the above
+rotation = LDARotation(:Play) # maximize discrimination between all the plays
+rotation = LDARotation(:Play, 3, 4) # show the 3rd and 4th dimensions of the above
+rotation = ThematicRotation([:Love, :Death], [:Men, :Women]) # maximize variance between Love+Death on the left vs. Men+Women on the right
+
+# A more complex option
+using GLM
+rotation = FormulaRotation(
+    LinearModel, # the type of regression model to use
+    2, # the coefficient index of interest below (2 = Age)
+    @formula(col ~ 1 + Age), # the regression formula
+    nothing # nothing, or a dictionary of contrasts
+)
+
+# 2-axis alternatives to some of the above options
+rotation = Means2Rotation(
+    :Play, "Romeo and Juliet", "Hamlet", # maximize variance between these plays on the x axis
+    :Act, 1, 5 # maximize variance between these acts on the y axis
+)
+
+rotation = Formula2Rotation(
+    LinearModel, 2, @formula(col ~ 1 + Age + Height), nothing, # regression for the x axis
+    LinearModel, 3, @formula(col ~ 1 + Age + Height), nothing # regression for the y axis
+)
+```
 
 ### Plotting
 
