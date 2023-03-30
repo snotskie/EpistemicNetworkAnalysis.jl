@@ -232,7 +232,7 @@ rotation = Formula2Rotation(
 
 ### Plotting
 
-By default, `plot` selects the best (in my opinion) plotting options based on the combination of ENA model type and rotation type you have selected. Also be default, it shows all possible subplots (that I could think of) that could be helpful in your analysis.
+By default, `plot` selects the best (in my opinion) plotting options based on the combination of ENA model type and rotation type you have selected. Also by default, it shows all possible subplots (that I could think of) that could be helpful in your analysis.
 
 To select just a single subplot, do something like:
 
@@ -288,7 +288,7 @@ savefig(p, "my-output.svg")
 
 By default, `ENAModel` is configured for undirected data: the order of which code response to which other code does not matter.
 
-For seeing the directional effects, consider using a `DigraphENAModel` instead. This alternative has the same configuration options as `ENAModel`. The difference is how it embeds and visualizes the network so as to get a quick overview of how directed connections between codes "drive" the space. 
+For seeing directional effects, consider using a `DigraphENAModel` instead. This alternative has the same configuration options as `ENAModel`. The difference is how it embeds and visualizes the network so as to get a quick overview of how directed connections between codes "drive" the space. 
 
 ```julia
 myENA = DigraphENAModel(data, codes, conversations, units)
