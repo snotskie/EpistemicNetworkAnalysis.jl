@@ -1,18 +1,14 @@
-# HERE
-
-function defaultmodelkwargs( # DONE
+function defaultmodelkwargs(
         T::Type{M{R}};
-        windowSize::Int=4,
-        rotateBy::AbstractLinearENARotation=SVDRotation(),
+        unitFilter::Function=x->true,
+        edgeFilter::Function=x->true,
+        windowSize::Real=Inf,
         sphereNormalize::Bool=true,
         dropEmpty::Bool=false,
         recenterEmpty::Bool=false,
         deflateEmpty::Bool=false,
-        meanCenter::Bool=true,
-        subspaces::Int=0,
         fitNodesToCircle::Bool=false,
-        subsetFilter::Function=x->true,
-        relationshipFilter::Function=(i,j,ci,cj)->(i<j),
+        rotateBy::AbstractLinearENARotation=SVDRotation(),
         kwargs...
     ) where {M<:AbstractLinearENAModel,R<:AbstractLinearENARotation}
 
@@ -23,37 +19,130 @@ function defaultmodelkwargs( # DONE
         recenterEmpty=recenterEmpty,
         deflateEmpty=deflateEmpty,
         meanCenter=meanCenter,
-        subspaces=subspaces,
         fitNodesToCircle=fitNodesToCircle,
-        subsetFilter=subsetFilter,
-        relationshipFilter=relationshipFilter
+        unitFilter=unitFilter,
+        edgeFilter=edgeFilter
     )
 
     return merge(defaults, kwargs)
 end
 
-function populateENAdfs(
+function populateENAfields(
         T::Type{M{R}},
         data::DataFrame,
         codes::Array{Symbol,1},
         conversations::Array{Symbol,1},
         units::Array{Symbol,1},
         rotation::R;
-        kwargs...
+        config...
     ) where {M<:AbstractLinearENAModel,R<:AbstractLinearENARotation}
 
-    # TODO
-    # points::DataFrame,
-    # metadata::DataFrame,
-    # accum::DataFrame,
-    # accumHat::DataFrame,
-    # edges::DataFrame,
-    # nodes::DataFrame,
-    # embedding::DataFrame,
-    # config::DataFrame = populateENAdfs(
-    #     T, data, codes, conversations, units,
-    #     rotation, kwargs...
-    # )
+    # edges: empty starting point
+    edges = DataFrame(
+        edge=Symbol[],
+        kind=Symbol[],
+        i=Int[],
+        j=Int[],
+        ground=Symbol[],
+        response=Symbol[]
+    )
+
+    # edges: fill in all possible combinations
+    for (i, ground) in enumerate(codes)
+        for (j, response) in enumerate(codes)
+            if i == j
+                newEdge = similar(edges, 1)
+                newEdge[1, :edge] = ground
+                newEdge[1, :kind] = :count
+                newEdge[1, :i] = i
+                newEdge[1, :j] = j
+                newEdge[1, :ground] = ground
+                newEdge[1, :response] = response
+                append!(edges, newEdge)
+            else
+                ukey = Symbol(string(code1, "_", code2))
+                dkey = Symbol(string(code1, "_to_", code2))
+                newEdges = similar(edges, 2)
+                newEdges[1, :edge] = ukey
+                newEdges[1, :kind] = :undirected
+                newEdges[1, :i] = i
+                newEdges[1, :j] = j
+                newEdges[1, :ground] = ground
+                newEdges[1, :response] = response
+                newEdges[2, :edge] = dkey
+                newEdges[2, :kind] = :directed
+                newEdges[2, :i] = i
+                newEdges[2, :j] = j
+                newEdges[2, :ground] = ground
+                newEdges[2, :response] = response
+                append!(edges, newEdges)
+            end
+        end
+    end
+
+    # edges: filter out unused combinations
+    filter!(config.edgeFilter, edges)
+    edgeNames = edges.edge
+
+    # accum, accumHat, metadata: generate IDs for each unit
+    unitIDs = map(eachrow(data)) do dataRow
+        return Symbol(join(dataRow[units], "."))
+    end
+
+    # accum, accumHat, metadata: add to the data and group by unit ID
+    data = hcat(data, DataFrame(:unitID => unitIDs))
+    tempAccum = combine(first, groupby(data, :unitID))
+
+    # accum, accumHat, metadata: filter unused units
+    filter!(tempAccum, config.unitFilter)
+
+    # accum, accumHat, metadata: placeholder zeros for all unit/edge pairs
+    tempValues = DataFrame(Dict(
+        edge=>zeros(Real, nrow(tempAccum))
+        for edge in edgeNames
+    ))
+
+    # accum, accumHat, metadata: add placeholders and split into multiple dfs
+    tempAccum = hcat(tempAccum, tempValues)
+    accum = copy(tempAccum[!, [:unitID, edgeNames...]])
+    accumHat = copy(accum)
+    metaNames = setdiff(Symbol.(names(tempAccum)), edgeNames)
+    metadata = copy(tempAccum[!, metaNames])
+
+    # embedding: empty starting point
+    embedding = DataFrame(Dict(
+        :label=>String[],
+        :var=>Real[],
+        (name=>Real[] for name in edgeNames)...
+    ))
+
+    # nodes: zero'd starting point
+    nodes = DataFrame(Dict(
+        :node=>codes,
+        (name=>zeros(Real, length(codes)) for name in edgeNames)...
+    ))
+
+    # points: empty starting point
+    points = DataFrame(Dict(
+        unit=>Real[] for unit in accum.unitID
+    ))
+
+    pointsHat = similar(points, 0)
+    pointsNodes = DataFrame(Dict(
+        node=>Real[] for node in nodes.node
+    ))
+
+    # done!
+    return metadata,
+        points,
+        pointsHat,
+        pointsNodes,
+        accum,
+        accumHat,
+        edges,
+        nodes,
+        embedding,
+        config
 end
 
 # NOTE I have to be careful about how i super type M and R without making ambiguous methods
@@ -62,16 +151,194 @@ function accumulate!(
         T::Type{M{R}}, model::T
     ) where {M<:AbstractLinearENAModel,R<:AbstractLinearENARotation}
 
-    # TODO
+    prev_convo = model.data[1, model.conversations]
+    howrecents = [Inf for c in model.codes]
+    for line in eachrow(data)
+
+        # reset on new conversations
+        if prev_convo != line[model.conversations]
+            prev_convo = line[model.conversations]
+            howrecents .= Inf
+        end
+
+        # count how recently codes occured
+        for (i, code) in enumerate(model.codes)
+            if line[code] > 0
+                howrecents[i] = 0
+            else
+                howrecents[i] += 1
+            end
+        end
+
+        # update the accum counts of the unit on this line
+        unit = model.accum[!, :unitID] == line[:unitID]
+        for edge in eachrow(model.edges)
+            if edge[:kind] == :count
+                i = edge.i
+                if howrecents[i] == 0
+                    model.accum[unit, edge[:edge]] .+= 1
+                end
+            elseif edge[:kind] == :directed
+                i, j = edge.i, edge.j
+                if howrecents[j] == 0 && howrecents[i] < model.config.windowSize
+                    model.accum[unit, edge[:edge]] .+= 1
+                end
+            elseif edge[:kind] == :undirected
+                i, j = edge.i, edge.j
+                if howrecents[i] == 0 && howrecents[j] < model.config.windowSize
+                    model.accum[unit, edge[:edge]] .+= 1
+                elseif howrecents[j] == 0 && howrecents[i] < model.config.windowSize
+                    model.accum[unit, edge[:edge]] .+= 1
+                end
+            end
+        end
+    end
+
+    # maybe drop rows with empty values
+    edgeNames = model.edges.edge
+    if model.config.dropEmpty
+        droppedUnits = filter(model.accum) do unitRow
+            return all(iszero.(values(unitRow[edgeNames])))
+        end
+
+        filter!(model.accum) do unitRow
+            return !all(iszero.(values(unitRow[edgeNames])))
+        end
+
+        select!(model.points, Not(droppedUnits.unitID))
+        select!(model.pointsHat, Not(droppedUnits.unitID))
+    # else, maybe recenter the empty rows to the mean
+    elseif model.config.recenterEmpty
+        zeroRows = map(eachrow(model.accum)) do unitRow
+            return all(iszero.(values(unitRow[edgeNames])))
+        end
+
+        nonZeroRows = .!zeroRows
+        N = sum(nonZeroRows)
+        meanPoint = transpose(sum(eachcol(model.accum[nonZeroRows, edgeNames])) / N)
+        model.accum[zeroRows, edgeNames] .= meanPoint
+    # else, maybe deflate the model so empty and the mean always align
+    elseif model.config.deflateEmpty
+        meanAxis = transpose(sum(eachcol(model.accum[!, edgeNames])))
+        s = sqrt(sum(meanAxis .^ 2))
+        if s != 0
+            meanAxis /= s
+        end
+
+        meanPoints = Matrix{Float64}(model.accum[!, edgeNames]) * Vector{Float64}(meanAxis)
+        for edge in edgeNames
+            edgeAxis = [edge == edgep ? 1 : 0 for edgep in edgeNames]
+            scalar = dot(edgeAxis, meanAxis) / dot(meanAxis, meanAxis)
+            model.accum[!, edge] .-= scalar * meanPoints
+        end
+    end
+
+    # normalize each unit, if requested
+    if model.config.sphereNormalize
+        for unitRow in eachrow(model.accum)
+            vector = Vector{Float64}(unitRow[edgeNames])
+            s = sqrt(sum(vector .^ 2))
+            if s != 0
+                unitRow[edgeNames] = vector / s
+            end
+        end
+    # else, still scale it down to make plots easier to read
+    else
+        s = maximum(maximum(model.accum[!, r]) for r in edgeNames)
+        for r in edgeNames
+            model.accum[!, r] /= s
+        end
+    end
+end
+
+function approximate!(
+        T::Type{M{R}}, model::T
+    ) where {M<:AbstractLinearENAModel,R<:AbstractLinearENARotation}
+
+    # compute densities
+    edgeDensityDict, nodeDensityDict = computeNetworkDensities(model)
+
+    # Regression model for placing the code dots into the approximated high-dimensional space
+    ## start with a small amount of noise to prevent colinearity issues
+    X = Matrix{Float64}(rand(nrow(model.accum), nrow(model.nodes)) / 1000000000)
+
+    ## for each unit's edges, split the edge between nodes on either end
+    for (k, unitRow) in enumerate(eachrow(model.accum))
+        for edge in eachrow(model.edges)
+            i, j = edge.i, edge.j
+            X[k, i] += unitRow[edge.edge] / 2
+            X[k, j] += unitRow[edge.edge] / 2
+        end
+    end
+
+    ## run partial regression
+    X = (transpose(X) * X)^-1 * transpose(X)
+
+    ## fit each dimension (edge) of the original high-dimensional space
+    for edge in model.edges.edge
+        y = Vector{Float64}(model.accum[:, edge])
+        coefs = X * y # regress on this edge
+        model.nodes[!, edge] = coefs[1:end]
+    end
+
+    # find accumHat
+    ## Refit the units: in high-d space, the refit units are as close as possible to their
+    ## center of mass wrt the network
+    ## This is by-definition the refit space
+    for unitEdge in model.edges.edge
+        for (k, unitRow) in enumerate(eachrow(model.accumHat))
+            unitRow[unitEdge] =
+                sum(
+                    model.nodes[nodeEdge.i, unitEdge] * accumModel[k, nodeEdge.edge] +
+                    model.nodes[nodeEdge.j, unitEdge] * accumModel[k, nodeEdge.edge]
+                    for nodeEdge in model.edges
+                ) / 2
+        end
+    end
 end
 
 function rotate!(
         T::Type{M{R}}, model::T
     ) where {M<:AbstractLinearENAModel,R<:AbstractLinearENARotation}
 
+    # TODO HERE
+    X = Matrix{Float64}(subspaceModel[!, networkModel[!, :relationship]])
+    for i in 1:size(X)[2]
+        xcol = X[:, i]
+        xcol = xcol .- mean(xcol) # mean center
+        X[:, i] = xcol
+    end
+
+    if !isnothing(controlModel)
+        C = Matrix{Float64}(controlModel)
+        for i in 1:size(C)[2]
+            ccol = C[:, i]
+            ccol = ccol .- mean(ccol) # mean center
+            C[:, i] = ccol
+            for j in 1:size(X)[2] # deflate
+                xcol = X[:, j]
+                scalar = dot(xcol, ccol) / dot(ccol, ccol)
+                xcol -= scalar * ccol
+                X[:, j] = xcol
+            end
+        end
+    end
+
+    # then, once we've deflated or not, we run an SVD on the data
+    pcaModel = fit(PCA, X', pratio=1.0)
+
+    pcaModel = projection(help_deflating_svd(networkModel, subspaceModel))
+    networkModel[!, :weight_x] = pcaModel[:, rotation.dim1]
+    networkModel[!, :weight_y] = pcaModel[:, rotation.dim2]
+
+
+    accumModel[!, :pos_x] = Matrix{Float64}(accumModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_x])
+    accumModel[!, :pos_y] = Matrix{Float64}(accumModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_y])
+
     # TODO normalize and orthogonalize existing embedding dims from child
     # TODO perform ortho SVD on remaining dims
     # NOTE this means that SVDRotation can be a "do nothing" and this will work
+    # TODO this top level rotate! adds poitns and pointsHat
 end
 
 function tests(
@@ -482,7 +749,7 @@ function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1
 
     #### Optional: illustrate a trajectory by a continuous, non-repeating value
     if !isnothing(showTrajectoryBy)
-        smoothingData = innerjoin(ena.accumModel[displayRows, :], ena.metadata[displayRows, :], on=:ENA_UNIT)
+        smoothingData = innerjoin(ena.accumModel[displayRows, :], ena.metadata[displayRows, :], on=:unitID)
         if showTrajectoryBy in Symbol.(names(smoothingData))
             smoothingData = combine(
                 groupby(smoothingData, showTrajectoryBy),

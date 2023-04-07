@@ -1,13 +1,18 @@
 # DONE
 
-# use macro helper to define a standard ENA struct with bells
-@enamodel BiplotENAModel LinearENAModel SVDRotation
+# use macro helper to define a standard ENA struct with all the bells
+@enamodel(BiplotENAModel, AbstractLinearENAModel)
 
 # override default model constructor kwargs
-function defaultmodelkwargs(AbstractBiplotENAModel; kwargs...)
-    parentdefaults = defaultmodelkwargs(supertype(AbstractBiplotENAModel); kwargs...)
+function defaultmodelkwargs(
+        T::Type{M{R}};
+        kwargs...
+    ) where {M<:AbstractBiplotENAModel,R<:AbstractLinearENARotation}
+
+    super = supertype(AbstractBiplotENAModel){R}
+    parentdefaults = defaultmodelkwargs(super; kwargs...)
     defaults = (
-        relationshipFilter=(i, j, ci, cj)->(i == j),
+        edgeFilter=(row)->(row[:kind] == :count),
         windowSize=1
     )
 

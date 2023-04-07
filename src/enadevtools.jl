@@ -1,29 +1,31 @@
-# SKIP
-
-module devtools
+module enadevtools
 
 # Type Tree
 
 ## Rotations
 abstract type AbstractENARotation end
 abstract type AbstractLinearENARotation <: AbstractENARotation end
-abstract type AbstractNonlinearENARotation <: AbstractENARotation end
+# abstract type AbstractNonlinearENARotation <: AbstractENARotation end
 
 ## Models
 abstract type AbstractENAModel{T<:AbstractENARotation} end
 abstract type AbstractLinearENAModel{T<:AbstractLinearENARotation} <: AbstractENAModel{T} end
-abstract type AbstractNonlinearENAModel{T<:AbstractNonlinearENARotation} <: AbstractENAModel{T} end
+# abstract type AbstractNonlinearENAModel{T<:AbstractNonlinearENARotation} <: AbstractENAModel{T} end
 
 ## Type Macros
-macro enamodel(self, parent, defaultrotation)
-    parent = Symbol(string(:Abstract, parent))
-    intermediate = Symbol(string(:Abstract, self))
+macro enamodel(
+        self, parent;
+        defaultrotation=:SVDRotation,
+        rotationtype=:AbstractLinearENARotation
+        abstractname=Symbol(string(:Abstract, self))
+    )
+
     return quote
-        # make an abstract type
-        abstract type $intermediate{T} <: $parent{T} end
+        # make abstract type
+        abstract type $abstractname{T<:$rotationtype} <: $parent{T<:$rotationtype} end
 
         # make struct
-        struct $self{T} <: $intermediate{T}
+        struct $self{T<:$rotationtype} <: $abstractname{T<:$rotationtype}
             # required arguments
             data::DataFrame
             codes::Array{Symbol,1}
@@ -34,14 +36,16 @@ macro enamodel(self, parent, defaultrotation)
             rotation::T
         
             # model
-            points::DataFrame
             metadata::DataFrame
+            points::DataFrame
+            pointsHat::DataFrame
+            pointsNodes::DataFrame
             accum::DataFrame
             accumHat::DataFrame
             edges::DataFrame
             nodes::DataFrame
             embedding::DataFrame
-            config::DataFrame
+            config::NamedTuple
         end
 
         # make constructor
@@ -52,7 +56,7 @@ macro enamodel(self, parent, defaultrotation)
                 units::Array{Symbol,1};
                 rotateBy::T=$defaultrotation(),
                 kwargs...
-            ) where T <: AbstractENARotation
+            ) where T <: $rotationtype
 
             # call common ENA constructor
             return constructENA(
@@ -61,8 +65,6 @@ macro enamodel(self, parent, defaultrotation)
                 rotateBy, kwargs...
             )
         end
-
-        export $self
     end
 end
 
@@ -73,50 +75,103 @@ return constructENA(
     ) where {M<:AbstractENAModel,R<:AbstractENARotation}
 
     kwargs = defaultmodelkwargs(T; kwargs...)
-    points::DataFrame,
-    metadata::DataFrame,
-    accum::DataFrame,
-    accumHat::DataFrame,
-    edges::DataFrame,
-    nodes::DataFrame,
-    embedding::DataFrame,
-    config::DataFrame = populateENAdfs(
-        T, data, codes, conversations, units, rotation;
-        kwargs...
-    )
-
     model = T(
-        data, codes, conversations, units,
-        rotation,
-        points, metadata, accum, accumHat,
-        edges, nodes, embedding, config
+        data, codes, conversations, units, rotation,
+        populateENAfields(
+            T, data, codes, conversations, units, rotation;
+            kwargs...
+        )...
     )
 
-    accumulate!(model; kwargs...)
-    rotate!(model; kwargs...)
+    accumulate!(T, model)
+    approximate!(T, model)
+    rotate!(T, model)
     return model
 end
 
 ## Unimplemented Functions
-function accumulate!(model::AbstractENAModel)
+function populateENAfields(
+        T::Type{M{R}},
+        data::DataFrame,
+        codes::Array{Symbol,1},
+        conversations::Array{Symbol,1},
+        units::Array{Symbol,1},
+        rotation::R;
+        config...
+    ) where {M<:AbstractENAModel,R<:AbstractENARotation}
+    
     error("Unimplemented")
 end
 
-function rotate!(model::AbstractENAModel)
+function accumulate!(T::Type{M{R}}, model::T) where {M<:AbstractENAModel,R<:AbstractENARotation}
     error("Unimplemented")
 end
 
-function tests(model::AbstractENAModel)
+function approximate!(T::Type{M{R}}, model::T) where {M<:AbstractENAModel,R<:AbstractENARotation}
     error("Unimplemented")
 end
 
-function plot(model::AbstractENAModel)
+function rotate!(T::Type{M{R}}, model::T) where {M<:AbstractENAModel,R<:AbstractENARotation}
     error("Unimplemented")
+end
+
+function tests(T::Type{M{R}}, model::T) where {M<:AbstractENAModel,R<:AbstractENARotation}
+    error("Unimplemented")
+end
+
+# in linear, do plot like the consruct helper, override its components under there
+function plot(T::Type{M{R}}, model::T; kwargs...) where {M<:AbstractENAModel,R<:AbstractENARotation}
+    error("Unimplemented")
+end
+
+## Wrapper Functions
+function plot(model::AbstractENAModel; kwargs...)
+    return plot(type(model), model; kwargs...)
 end
 
 # TODO below here
 
 # Helpers
+
+function computeNetworkDensities(model, rows=!)
+
+    # sum densities for each edge
+    edgeNames = model.edges.edge
+    edgeDensities = sum(eachcol(model.accum[rows, edgeNames]))
+
+    # find the density of each code row dot, by "splitting" the density of each line between its two codes
+    nodeNames = model.nodes[!, :node]
+    nodeDensities = zeros(length(nodeNames))
+    for (k, edge) in eachrow(model.edges)
+        i, j = edge.i, edge.j
+        nodeDensities[i] += edgeDensities[k]
+        nodeDensities[j] += edgeDensities[k]
+    end
+
+    # normalize each
+    s = maximum(edgeDensities)
+    if s != 0
+        edgeDensities /= s
+    end
+
+    s = maximum(nodeDensities)
+    if s != 0
+        nodeDensities /= s
+    end
+
+    edgeDensityDict = Dict(
+        edge => density
+        for (edge, density) in zip(edgeNames, edgeDensities)
+    )
+
+    nodeDensityDict = Dict(
+        node => density
+        for (node, density) in zip(nodeNames, nodeDensities)
+    )
+
+    return edgeDensityDict, nodeDensityDict
+end
+
 
 function help_deflating_svd(networkModel::DataFrame, subspaceModel::DataFrame, controlModel::Union{Nothing,DataFrame}=nothing)
     X = Matrix{Float64}(subspaceModel[!, networkModel[!, :relationship]])
@@ -269,5 +324,7 @@ function rotatedLabel(label, x, y)
     
     return text(label, :top, default(:xtickfontsize), rotation=angle)
 end
+
+# TODO exports
 
 end # module

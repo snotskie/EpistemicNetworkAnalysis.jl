@@ -27,9 +27,10 @@ using GLM
 # using UMAP
 
 # Helpers
-include("./devtools.jl")
-using devtools
-include("./defaults.jl")
+include("./enadevtools.jl")
+using enadevtools
+# TODO import the enadevtool functions we need to extend
+include("./lineardefaults.jl")
 include("./utils.jl")
 
 # Rotations

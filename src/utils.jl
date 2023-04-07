@@ -13,3 +13,5 @@ function derivedAllCode!(data, newCol, oldCols...)
         data[!, newCol] = data[!, newCol] .* data[!, col]
     end
 end
+
+# TODO to_xlsx and from_xlsx
