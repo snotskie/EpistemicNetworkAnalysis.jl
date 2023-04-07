@@ -1,3 +1,9 @@
+@enamodel PlainENAModel LinearENAModel SVDRotation
+const ENAModel = PlainENAModel
+export ENAModel
+
+# TODO below here, prolly cut to defaults
+
 struct ENAModel{T} <: AbstractLinearENAModel{T}
     # Inherits:
     codes::Array{Symbol,1}

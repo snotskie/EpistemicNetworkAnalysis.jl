@@ -22,14 +22,17 @@ using HypothesisTests
 using GLM
 
 ## Nonlinear
-using Random
-using Distances
-using UMAP
+# using Random
+# using Distances
+# using UMAP
 
-# Includes
-include("./helpers.jl")
-include("./typetree.jl")
-include("./plotbase.jl")
+# Helpers
+include("./devtools.jl")
+using devtools
+include("./defaults.jl")
+include("./utils.jl")
+
+# Rotations
 include("./SVDRotation.jl")
 include("./LDARotation.jl")
 include("./MulticlassRotation.jl")
@@ -38,12 +41,14 @@ include("./Formula2Rotation.jl")
 include("./MeansRotation.jl")
 include("./Means2Rotation.jl")
 include("./ThematicRotation.jl")
-include("./UMAPRotation.jl")
+
+# Models
 include("./ENAModel.jl")
 include("./DigraphENAModel.jl")
-include("./NonlinearENAModel.jl")
-# include("./CopyRotation.jl")
-include("./ena_dataset.jl")
+include("./Biplot.jl")
+
+# Example Data
+include("./loadExample.jl")
 
 # Exports
 export ENAModel
@@ -59,42 +64,8 @@ export FormulaRotation
 export Formula2Rotation
 export ThematicRotation
 export UMAPRotation
-export ena_dataset
+export loadExample
 export derivedAnyCode!
 export derivedAllCode!
-
-# @warn "Running EpistemicNetworkAnalysis.jl as main. Performing kitchen sink operation."
-# let
-
-# data = ena_dataset("shakespeare.data")
-# conversations = [:Play, :Act]
-# units = [:Play, :Speaker]
-# codes = [
-#     :Love,
-#     :Death,
-#     :Honor,
-#     :Men,
-#     :Women,
-#     # :Beauty,
-#     # :Fear,
-#     # :Friendship,
-#     # :Hate,
-#     # :Pride
-# ]
-
-# myENA = DirectedENAModel(
-#     data, codes, conversations, units,
-#     windowSize=4,
-#     rotateBy=MeansRotation(:Play, "Romeo and Juliet", "Hamlet"),
-#     # fitNodesToCircle=true
-# )
-
-# display(myENA)
-# p = plot(myENA, flipY=true)
-# savefig(p, "~/Downloads/temp.svg")
-# display(p)
-
-# end # let
-
 
 end # module

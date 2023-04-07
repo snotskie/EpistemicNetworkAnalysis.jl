@@ -1,3 +1,171 @@
+# HERE
+
+function defaultmodelkwargs( # DONE
+        T::Type{M{R}};
+        windowSize::Int=4,
+        rotateBy::AbstractLinearENARotation=SVDRotation(),
+        sphereNormalize::Bool=true,
+        dropEmpty::Bool=false,
+        recenterEmpty::Bool=false,
+        deflateEmpty::Bool=false,
+        meanCenter::Bool=true,
+        subspaces::Int=0,
+        fitNodesToCircle::Bool=false,
+        subsetFilter::Function=x->true,
+        relationshipFilter::Function=(i,j,ci,cj)->(i<j),
+        kwargs...
+    ) where {M<:AbstractLinearENAModel,R<:AbstractLinearENARotation}
+
+    defaults = (
+        rotateBy=rotateBy,
+        sphereNormalize=sphereNormalize,
+        dropEmpty=dropEmpty,
+        recenterEmpty=recenterEmpty,
+        deflateEmpty=deflateEmpty,
+        meanCenter=meanCenter,
+        subspaces=subspaces,
+        fitNodesToCircle=fitNodesToCircle,
+        subsetFilter=subsetFilter,
+        relationshipFilter=relationshipFilter
+    )
+
+    return merge(defaults, kwargs)
+end
+
+function populateENAdfs(
+        T::Type{M{R}},
+        data::DataFrame,
+        codes::Array{Symbol,1},
+        conversations::Array{Symbol,1},
+        units::Array{Symbol,1},
+        rotation::R;
+        kwargs...
+    ) where {M<:AbstractLinearENAModel,R<:AbstractLinearENARotation}
+
+    # TODO
+    # points::DataFrame,
+    # metadata::DataFrame,
+    # accum::DataFrame,
+    # accumHat::DataFrame,
+    # edges::DataFrame,
+    # nodes::DataFrame,
+    # embedding::DataFrame,
+    # config::DataFrame = populateENAdfs(
+    #     T, data, codes, conversations, units,
+    #     rotation, kwargs...
+    # )
+end
+
+# NOTE I have to be careful about how i super type M and R without making ambiguous methods
+
+function accumulate!(
+        T::Type{M{R}}, model::T
+    ) where {M<:AbstractLinearENAModel,R<:AbstractLinearENARotation}
+
+    # TODO
+end
+
+function rotate!(
+        T::Type{M{R}}, model::T
+    ) where {M<:AbstractLinearENAModel,R<:AbstractLinearENARotation}
+
+    # TODO
+end
+
+function tests(
+        T::Type{M{R}}, model::T
+    ) where {M<:AbstractLinearENAModel,R<:AbstractLinearENARotation}
+
+    # TODO
+end
+
+function plot(
+        T::Type{M{R}}, model::T
+    ) where {M<:AbstractLinearENAModel,R<:AbstractLinearENARotation}
+
+    # TODO
+end
+
+# TODO below here
+
+function tests(ena::AbstractENAModel)
+
+    ### Find difference between each pair of points, in accum and centroid
+    centroidDiffsX = Real[]
+    centroidDiffsY = Real[]
+    accumDiffsX = Real[]
+    accumDiffsY = Real[]
+    for (i, unitRowA) in enumerate(eachrow(ena.accumModel))
+        for (j, unitRowB) in enumerate(eachrow(ena.accumModel))
+            if i < j
+                push!(centroidDiffsX, ena.centroidModel[i, :pos_x] - ena.centroidModel[j, :pos_x])
+                push!(centroidDiffsY, ena.centroidModel[i, :pos_y] - ena.centroidModel[j, :pos_y])
+                push!(accumDiffsX, unitRowA[:pos_x] - unitRowB[:pos_x])
+                push!(accumDiffsY, unitRowA[:pos_y] - unitRowB[:pos_y])
+            end
+        end
+    end
+
+    corr_x = cor(ena.centroidModel[!, :pos_x], ena.accumModel[!, :pos_x])
+    corr_y = cor(ena.centroidModel[!, :pos_y], ena.accumModel[!, :pos_y])
+
+    ### Do those differences correlate?
+    pearson_x = cor(centroidDiffsX, accumDiffsX)
+    pearson_y = cor(centroidDiffsY, accumDiffsY)
+
+    ### Find the percent variance explained by the x and y axis of the entire high dimensional space
+    unitModel = ena.accumModel
+    total_variance = sum(var.(eachcol(unitModel[!, ena.networkModel[!, :relationship]])))
+    variance_x = var(unitModel[!, :pos_x]) / total_variance
+    variance_y = var(unitModel[!, :pos_y]) / total_variance
+
+    ### Package and return
+    return Dict(
+        :correlation_x => corr_x,
+        :correlation_y => corr_y,
+        :coregistration_x => pearson_x,
+        :coregistration_y => pearson_y,
+        :variance_x => variance_x,
+        :variance_y => variance_y
+    )
+end
+
+
+
+
+## Text display
+function Base.display(ena::AbstractENAModel) # TODO should this be print, display, or show?
+
+    ### Show plotted points
+    println("Units (plotted points):")
+    show(ena.accumModel, allrows=true)
+    println()
+
+    ### Show centroids
+    println("Units (centroids):")
+    show(ena.centroidModel, allrows=true)
+    println()
+
+    ### Show codes
+    println("Codes:")
+    show(ena.codeModel, allrows=true)
+    println()
+
+    ### Show network
+    println("Network:")
+    show(ena.networkModel, allrows=true)
+    println()
+
+    ### Show every test result we have
+    results = test(ena)
+    for key in keys(results)
+        println("$key:")
+        println(results[key])
+        println()
+    end
+end
+
+
 ## Plotting
 ### Common defaults and globals
 const DEFAULT_NEG_COLOR = colorant"#cc423a"
@@ -285,7 +453,7 @@ function plot_network!(p::Plot, ena::AbstractENAModel, displayRows::Array{Bool,1
     if showCodeLabels
         labels = map(zip(ena.codeModel[!, :code], x, y)) do (label, xi, yi)
             if rotateCodeLabels
-                return text(label, :top, default(:xtickfontsize), rotation=help_font_angle(xi, yi))
+                return rotatedLabel(label, xi, yi)
             else
                 return text(label, :top, default(:xtickfontsize))
             end
@@ -446,7 +614,7 @@ function plot_predictive!(p::Plot, ena::AbstractENAModel, targetCol::Symbol;
     if showCodeLabels
         labels = map(zip(ena.codeModel[codeVisible, :code], x, y)) do (label, xi, yi)
             if rotateCodeLabels
-                return text(label, :top, default(:xtickfontsize), rotation=help_font_angle(xi, yi))
+                return rotatedLabel(label, xi, yi)
             else
                 return text(label, :top, default(:xtickfontsize))
             end
@@ -599,7 +767,7 @@ function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, neg
     if showCodeLabels
         labels = map(zip(ena.codeModel[codeVisible, :code], x, y)) do (label, xi, yi)
             if rotateCodeLabels
-                return text(label, :top, default(:xtickfontsize), rotation=help_font_angle(xi, yi))
+                return rotatedLabel(label, xi, yi)
             else
                 return text(label, :top, default(:xtickfontsize))
             end

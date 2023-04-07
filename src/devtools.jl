@@ -1,3 +1,123 @@
+# SKIP
+
+module devtools
+
+# Type Tree
+
+## Rotations
+abstract type AbstractENARotation end
+abstract type AbstractLinearENARotation <: AbstractENARotation end
+abstract type AbstractNonlinearENARotation <: AbstractENARotation end
+
+## Models
+abstract type AbstractENAModel{T<:AbstractENARotation} end
+abstract type AbstractLinearENAModel{T<:AbstractLinearENARotation} <: AbstractENAModel{T} end
+abstract type AbstractNonlinearENAModel{T<:AbstractNonlinearENARotation} <: AbstractENAModel{T} end
+
+## Type Macros
+macro enamodel(self, parent, defaultrotation)
+    parent = Symbol(string(:Abstract, parent))
+    intermediate = Symbol(string(:Abstract, self))
+    return quote
+        # make an abstract type
+        abstract type $intermediate{T} <: $parent{T} end
+
+        # make struct
+        struct $self{T} <: $intermediate{T}
+            # required arguments
+            data::DataFrame
+            codes::Array{Symbol,1}
+            conversations::Array{Symbol,1}
+            units::Array{Symbol,1}
+        
+            # rotation
+            rotation::T
+        
+            # model
+            points::DataFrame
+            metadata::DataFrame
+            accum::DataFrame
+            accumHat::DataFrame
+            edges::DataFrame
+            nodes::DataFrame
+            embedding::DataFrame
+            config::DataFrame
+        end
+
+        # make constructor
+        function $self(
+                data::DataFrame,
+                codes::Array{Symbol,1},
+                conversations::Array{Symbol,1},
+                units::Array{Symbol,1};
+                rotateBy::T=$defaultrotation(),
+                kwargs...
+            ) where T <: AbstractENARotation
+
+            # call common ENA constructor
+            return constructENA(
+                $self{T},
+                data, codes, conversations, units,
+                rotateBy, kwargs...
+            )
+        end
+
+        export $self
+    end
+end
+
+return constructENA(
+        T::Type{M{R}},
+        data, codes, conversations, units, rotation;
+        kwargs...
+    ) where {M<:AbstractENAModel,R<:AbstractENARotation}
+
+    kwargs = defaultmodelkwargs(T; kwargs...)
+    points::DataFrame,
+    metadata::DataFrame,
+    accum::DataFrame,
+    accumHat::DataFrame,
+    edges::DataFrame,
+    nodes::DataFrame,
+    embedding::DataFrame,
+    config::DataFrame = populateENAdfs(
+        T, data, codes, conversations, units, rotation;
+        kwargs...
+    )
+
+    model = T(
+        data, codes, conversations, units,
+        rotation,
+        points, metadata, accum, accumHat,
+        edges, nodes, embedding, config
+    )
+
+    accumulate!(model; kwargs...)
+    rotate!(model; kwargs...)
+    return model
+end
+
+## Unimplemented Functions
+function accumulate!(model::AbstractENAModel)
+    error("Unimplemented")
+end
+
+function rotate!(model::AbstractENAModel)
+    error("Unimplemented")
+end
+
+function tests(model::AbstractENAModel)
+    error("Unimplemented")
+end
+
+function plot(model::AbstractENAModel)
+    error("Unimplemented")
+end
+
+# TODO below here
+
+# Helpers
+
 function help_deflating_svd(networkModel::DataFrame, subspaceModel::DataFrame, controlModel::Union{Nothing,DataFrame}=nothing)
     X = Matrix{Float64}(subspaceModel[!, networkModel[!, :relationship]])
     for i in 1:size(X)[2]
@@ -141,26 +261,13 @@ function help_nonlinear_gradient(lo, mid, hi; grains=100, curve=1.5)
     )
 end
 
-function help_font_angle(x, y)
+function rotatedLabel(label, x, y)
+    angle = atan(y, x) * 180 / pi
     if x < 0
-        return atan(-y, -x) * 180 / pi
+        angle = atan(-y, -x) * 180 / pi
     else
-        return atan(y, x) * 180 / pi
-    end
+    
+    return text(label, :top, default(:xtickfontsize), rotation=angle)
 end
 
-function derivedAnyCode!(data, newCol, oldCols...)
-    data[!, newCol] = ones(nrow(data))
-    for col in oldCols
-        data[!, newCol] = data[!, newCol] .* (1 .- data[!, col])
-    end
-
-    data[!, newCol] = 1 .- data[!, newCol]
-end
-
-function derivedAllCode!(data, newCol, oldCols...)
-    data[!, newCol] = ones(nrow(data))
-    for col in oldCols
-        data[!, newCol] = data[!, newCol] .* data[!, col]
-    end
-end
+end # module
