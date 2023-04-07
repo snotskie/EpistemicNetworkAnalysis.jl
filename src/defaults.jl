@@ -69,7 +69,9 @@ function rotate!(
         T::Type{M{R}}, model::T
     ) where {M<:AbstractLinearENAModel,R<:AbstractLinearENARotation}
 
-    # TODO
+    # TODO normalize and orthogonalize existing embedding dims from child
+    # TODO perform ortho SVD on remaining dims
+    # NOTE this means that SVDRotation can be a "do nothing" and this will work
 end
 
 function tests(
