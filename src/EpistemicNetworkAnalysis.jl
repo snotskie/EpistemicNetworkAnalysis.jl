@@ -28,45 +28,43 @@ using GLM
 
 # Helpers
 include("./enadevtools.jl")
-using enadevtools
-# TODO import the enadevtool functions we need to extend
 include("./lineardefaults.jl")
 include("./utils.jl")
 
 # Rotations
 include("./SVDRotation.jl")
-include("./LDARotation.jl")
-include("./MulticlassRotation.jl")
-include("./FormulaRotation.jl")
-include("./Formula2Rotation.jl")
-include("./MeansRotation.jl")
-include("./Means2Rotation.jl")
-include("./ThematicRotation.jl")
+# include("./LDARotation.jl")
+# include("./MulticlassRotation.jl")
+# include("./FormulaRotation.jl")
+# include("./Formula2Rotation.jl")
+# include("./MeansRotation.jl")
+# include("./Means2Rotation.jl")
+# include("./ThematicRotation.jl")
 
 # Models
-include("./ENAModel.jl")
-include("./DigraphENAModel.jl")
-include("./Biplot.jl")
+# include("./ENAModel.jl")
+# include("./DigraphENAModel.jl")
+include("./BiplotENAModel.jl")
 
 # Example Data
 include("./loadExample.jl")
 
 # Exports
-export ENAModel
-export DigraphENAModel
-export NonlinearENAModel
-export plot
-export SVDRotation
-export LDARotation
-export MulticlassRotation
-export MeansRotation
-export Means2Rotation
-export FormulaRotation
-export Formula2Rotation
-export ThematicRotation
-export UMAPRotation
-export loadExample
-export derivedAnyCode!
-export derivedAllCode!
+# export ENAModel
+# export DigraphENAModel
+# export NonlinearENAModel
+# export plot
+# export SVDRotation
+# export LDARotation
+# export MulticlassRotation
+# export MeansRotation
+# export Means2Rotation
+# export FormulaRotation
+# export Formula2Rotation
+# export ThematicRotation
+# export UMAPRotation
+# export loadExample
+# export derivedAnyCode!
+# export derivedAllCode!
 
 end # module

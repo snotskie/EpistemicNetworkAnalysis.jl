@@ -1,5 +1,5 @@
 function defaultmodelkwargs(
-        T::Type{M{R}};
+        ::Type{M};
         unitFilter::Function=x->true,
         edgeFilter::Function=x->true,
         windowSize::Real=Inf,
@@ -7,35 +7,37 @@ function defaultmodelkwargs(
         dropEmpty::Bool=false,
         recenterEmpty::Bool=false,
         deflateEmpty::Bool=false,
-        fitNodesToCircle::Bool=false,
         rotateBy::AbstractLinearENARotation=SVDRotation(),
         kwargs...
-    ) where {M<:AbstractLinearENAModel,R<:AbstractLinearENARotation}
+    ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
+    kwargs = NamedTuple(kwargs)
     defaults = (
-        rotateBy=rotateBy,
+        unitFilter=unitFilter,
+        edgeFilter=edgeFilter,
+        windowSize=windowSize,
         sphereNormalize=sphereNormalize,
         dropEmpty=dropEmpty,
         recenterEmpty=recenterEmpty,
         deflateEmpty=deflateEmpty,
-        meanCenter=meanCenter,
-        fitNodesToCircle=fitNodesToCircle,
-        unitFilter=unitFilter,
-        edgeFilter=edgeFilter
+        rotateBy=rotateBy,
+        kwargs...
     )
 
     return merge(defaults, kwargs)
 end
 
 function populateENAfields(
-        T::Type{M{R}},
+        ::Type{M},
         data::DataFrame,
         codes::Array{Symbol,1},
         conversations::Array{Symbol,1},
         units::Array{Symbol,1},
         rotation::R;
         config...
-    ) where {M<:AbstractLinearENAModel,R<:AbstractLinearENARotation}
+    ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
+
+    config = NamedTuple(config)
 
     # edges: empty starting point
     edges = DataFrame(
@@ -52,7 +54,7 @@ function populateENAfields(
         for (j, response) in enumerate(codes)
             if i == j
                 newEdge = similar(edges, 1)
-                newEdge[1, :edge] = ground
+                newEdge[1, :edge] = Symbol(string("_", ground, "_"))
                 newEdge[1, :kind] = :count
                 newEdge[1, :i] = i
                 newEdge[1, :j] = j
@@ -60,8 +62,8 @@ function populateENAfields(
                 newEdge[1, :response] = response
                 append!(edges, newEdge)
             else
-                ukey = Symbol(string(code1, "_", code2))
-                dkey = Symbol(string(code1, "_to_", code2))
+                ukey = Symbol(string(ground, "_", response))
+                dkey = Symbol(string(ground, "_to_", response))
                 newEdges = similar(edges, 2)
                 newEdges[1, :edge] = ukey
                 newEdges[1, :kind] = :undirected
@@ -84,6 +86,12 @@ function populateENAfields(
     filter!(config.edgeFilter, edges)
     edgeNames = edges.edge
 
+    # nodes: zero'd starting point
+    nodes = DataFrame(Dict(
+        :node=>codes,
+        (name=>zeros(Real, length(codes)) for name in edgeNames)...
+    ))
+
     # accum, accumHat, metadata: generate IDs for each unit
     unitIDs = map(eachrow(data)) do dataRow
         return Symbol(join(dataRow[units], "."))
@@ -94,7 +102,7 @@ function populateENAfields(
     tempAccum = combine(first, groupby(data, :unitID))
 
     # accum, accumHat, metadata: filter unused units
-    filter!(tempAccum, config.unitFilter)
+    filter!(config.unitFilter, tempAccum)
 
     # accum, accumHat, metadata: placeholder zeros for all unit/edge pairs
     tempValues = DataFrame(Dict(
@@ -103,6 +111,7 @@ function populateENAfields(
     ))
 
     # accum, accumHat, metadata: add placeholders and split into multiple dfs
+    # makeunique=true because 
     tempAccum = hcat(tempAccum, tempValues)
     accum = copy(tempAccum[!, [:unitID, edgeNames...]])
     accumHat = copy(accum)
@@ -116,12 +125,6 @@ function populateENAfields(
         (name=>Real[] for name in edgeNames)...
     ))
 
-    # nodes: zero'd starting point
-    nodes = DataFrame(Dict(
-        :node=>codes,
-        (name=>zeros(Real, length(codes)) for name in edgeNames)...
-    ))
-
     # points: empty starting point
     points = DataFrame(Dict(
         unit=>Real[] for unit in accum.unitID
@@ -133,7 +136,12 @@ function populateENAfields(
     ))
 
     # done!
-    return metadata,
+    return data,
+        codes,
+        conversations,
+        units,
+        rotation,
+        metadata,
         points,
         pointsHat,
         pointsNodes,
@@ -145,15 +153,14 @@ function populateENAfields(
         config
 end
 
-# NOTE I have to be careful about how i super type M and R without making ambiguous methods
-
 function accumulate!(
-        T::Type{M{R}}, model::T
-    ) where {M<:AbstractLinearENAModel,R<:AbstractLinearENARotation}
+        ::Type{M},
+            model::M
+    ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
     prev_convo = model.data[1, model.conversations]
     howrecents = [Inf for c in model.codes]
-    for line in eachrow(data)
+    for line in eachrow(model.data)
 
         # reset on new conversations
         if prev_convo != line[model.conversations]
@@ -171,7 +178,7 @@ function accumulate!(
         end
 
         # update the accum counts of the unit on this line
-        unit = model.accum[!, :unitID] == line[:unitID]
+        unit = model.accum.unitID .== line.unitID
         for edge in eachrow(model.edges)
             if edge[:kind] == :count
                 i = edge.i
@@ -252,8 +259,8 @@ function accumulate!(
 end
 
 function approximate!(
-        T::Type{M{R}}, model::T
-    ) where {M<:AbstractLinearENAModel,R<:AbstractLinearENARotation}
+        ::Type{M}, model::M
+    ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
     # compute densities
     edgeDensityDict, nodeDensityDict = computeNetworkDensities(model)
@@ -289,150 +296,180 @@ function approximate!(
         for (k, unitRow) in enumerate(eachrow(model.accumHat))
             unitRow[unitEdge] =
                 sum(
-                    model.nodes[nodeEdge.i, unitEdge] * accumModel[k, nodeEdge.edge] +
-                    model.nodes[nodeEdge.j, unitEdge] * accumModel[k, nodeEdge.edge]
-                    for nodeEdge in model.edges
+                    model.nodes[nodeEdge.i, unitEdge] * model.accum[k, nodeEdge.edge] +
+                    model.nodes[nodeEdge.j, unitEdge] * model.accum[k, nodeEdge.edge]
+                    for nodeEdge in eachrow(model.edges)
                 ) / 2
         end
     end
 end
 
 function rotate!(
-        T::Type{M{R}}, model::T
-    ) where {M<:AbstractLinearENAModel,R<:AbstractLinearENARotation}
+        ::Type{M}, model::M
+    ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
-    # TODO HERE
-    X = Matrix{Float64}(subspaceModel[!, networkModel[!, :relationship]])
-    for i in 1:size(X)[2]
-        xcol = X[:, i]
-        xcol = xcol .- mean(xcol) # mean center
-        X[:, i] = xcol
+    # for existing dimensions given to us by the child class,
+    # add normalize them, orthogonalize them from each other,
+    # and add point positions to the model
+    numExistingDims = nrow(model.embedding)
+    if numExistingDims > 0
+        # normalize the first dimension (the rest are normalized below)
+        s = sqrt(sum(model.embedding[1, :] .^ 2))
+        if s != 0
+            model.embedding[1, :] /= s
+        end
     end
 
-    if !isnothing(controlModel)
-        C = Matrix{Float64}(controlModel)
-        for i in 1:size(C)[2]
-            ccol = C[:, i]
-            ccol = ccol .- mean(ccol) # mean center
-            C[:, i] = ccol
-            for j in 1:size(X)[2] # deflate
-                xcol = X[:, j]
-                scalar = dot(xcol, ccol) / dot(ccol, ccol)
-                xcol -= scalar * ccol
-                X[:, j] = xcol
+    for i in 1:numExistingDims
+        addPointsToModelFromDim(model, model.embedding[i, :])
+
+        # orthogonalize, by rejection, each existing dimension from each previous dimension.
+        # note, a dimension will be orthogonalize before it is used to add points to the model
+        denom = dot(model.embedding[i, :], model.embedding[i, :])
+        for j in (i+1):numExistingDims
+            s = sqrt(sum(model.embedding[j, :] .^ 2))
+            if s != 0
+                model.embedding[j, :] /= s
+            end
+
+            scalar = dot(model.embedding[j, :], model.embedding[i, :]) / denom
+            model.embedding[j, :] -= scalar * model.embedding[i, :]
+            s = sqrt(sum(model.embedding[j, :] .^ 2))
+            if s < 0.05
+                model.embedding[j, :] .= 0
+                @warn "During the rotation step, axis $j was deflated to zero due to close correlation with axis $i."
+            elseif s != 0
+                model.embedding[j, :] /= s
             end
         end
     end
 
-    # then, once we've deflated or not, we run an SVD on the data
-    pcaModel = fit(PCA, X', pratio=1.0)
+    # make a mean centered copy of accum
+    edgeNames = model.edges.edge
+    X = Matrix{Float64}(model.accum[!, edgeNames])
+    for i in 1:size(X)[2]
+        X[:, i] .-= mean(X[:, i])
+    end
 
-    pcaModel = projection(help_deflating_svd(networkModel, subspaceModel))
-    networkModel[!, :weight_x] = pcaModel[:, rotation.dim1]
-    networkModel[!, :weight_y] = pcaModel[:, rotation.dim2]
+    # if needed, deflate those points' dimensions from X before we run SVD on it
+    if numExistingDims > 0
+        P = transpose(Matrix{Float64}(model.points))
+        for i in 1:size(P)[2]
+            col = P[:, i] .- mean(P[:, i])
+            denom = dot(col, col)
+            for j in 1:size(X)[2]
+                scalar = dot(X[:, j], col) / denom
+                X[:, j] -= scalar * col
+            end
+        end
+    end
 
+    # then, once we've deflated or not, we run SVD on the data, then add to the model
+    svd = transpose(projection(fit(PCA, X', pratio=1.0)))
+    df = similar(model.embedding, size(svd)[1])
+    df[!, edgeNames] = svd
+    append!(model.embedding, df)
+    for i in (numExistingDims+1):nrow(model.embedding)
+        addPointsToModelFromDim(model, model.embedding[i, :])
+    end
 
-    accumModel[!, :pos_x] = Matrix{Float64}(accumModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_x])
-    accumModel[!, :pos_y] = Matrix{Float64}(accumModel[!, relationshipIds]) * Vector{Float64}(networkModel[!, :weight_y])
+    # TODO add labels and vars explained to the embedding
 
-    # TODO normalize and orthogonalize existing embedding dims from child
-    # TODO perform ortho SVD on remaining dims
     # NOTE this means that SVDRotation can be a "do nothing" and this will work
-    # TODO this top level rotate! adds poitns and pointsHat
 end
 
 function tests(
-        T::Type{M{R}}, model::T
-    ) where {M<:AbstractLinearENAModel,R<:AbstractLinearENARotation}
+        ::Type{M}, model::M
+    ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
     # TODO
 end
 
 function plot(
-        T::Type{M{R}}, model::T
-    ) where {M<:AbstractLinearENAModel,R<:AbstractLinearENARotation}
+        ::Type{M}, model::M
+    ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
     # TODO
 end
 
 # TODO below here
 
-function tests(ena::AbstractENAModel)
+# function tests(ena::AbstractENAModel)
 
-    ### Find difference between each pair of points, in accum and centroid
-    centroidDiffsX = Real[]
-    centroidDiffsY = Real[]
-    accumDiffsX = Real[]
-    accumDiffsY = Real[]
-    for (i, unitRowA) in enumerate(eachrow(ena.accumModel))
-        for (j, unitRowB) in enumerate(eachrow(ena.accumModel))
-            if i < j
-                push!(centroidDiffsX, ena.centroidModel[i, :pos_x] - ena.centroidModel[j, :pos_x])
-                push!(centroidDiffsY, ena.centroidModel[i, :pos_y] - ena.centroidModel[j, :pos_y])
-                push!(accumDiffsX, unitRowA[:pos_x] - unitRowB[:pos_x])
-                push!(accumDiffsY, unitRowA[:pos_y] - unitRowB[:pos_y])
-            end
-        end
-    end
+#     ### Find difference between each pair of points, in accum and centroid
+#     centroidDiffsX = Real[]
+#     centroidDiffsY = Real[]
+#     accumDiffsX = Real[]
+#     accumDiffsY = Real[]
+#     for (i, unitRowA) in enumerate(eachrow(ena.accumModel))
+#         for (j, unitRowB) in enumerate(eachrow(ena.accumModel))
+#             if i < j
+#                 push!(centroidDiffsX, ena.centroidModel[i, :pos_x] - ena.centroidModel[j, :pos_x])
+#                 push!(centroidDiffsY, ena.centroidModel[i, :pos_y] - ena.centroidModel[j, :pos_y])
+#                 push!(accumDiffsX, unitRowA[:pos_x] - unitRowB[:pos_x])
+#                 push!(accumDiffsY, unitRowA[:pos_y] - unitRowB[:pos_y])
+#             end
+#         end
+#     end
 
-    corr_x = cor(ena.centroidModel[!, :pos_x], ena.accumModel[!, :pos_x])
-    corr_y = cor(ena.centroidModel[!, :pos_y], ena.accumModel[!, :pos_y])
+#     corr_x = cor(ena.centroidModel[!, :pos_x], ena.accumModel[!, :pos_x])
+#     corr_y = cor(ena.centroidModel[!, :pos_y], ena.accumModel[!, :pos_y])
 
-    ### Do those differences correlate?
-    pearson_x = cor(centroidDiffsX, accumDiffsX)
-    pearson_y = cor(centroidDiffsY, accumDiffsY)
+#     ### Do those differences correlate?
+#     pearson_x = cor(centroidDiffsX, accumDiffsX)
+#     pearson_y = cor(centroidDiffsY, accumDiffsY)
 
-    ### Find the percent variance explained by the x and y axis of the entire high dimensional space
-    unitModel = ena.accumModel
-    total_variance = sum(var.(eachcol(unitModel[!, ena.networkModel[!, :relationship]])))
-    variance_x = var(unitModel[!, :pos_x]) / total_variance
-    variance_y = var(unitModel[!, :pos_y]) / total_variance
+#     ### Find the percent variance explained by the x and y axis of the entire high dimensional space
+#     unitModel = ena.accumModel
+#     total_variance = sum(var.(eachcol(unitModel[!, ena.networkModel[!, :relationship]])))
+#     variance_x = var(unitModel[!, :pos_x]) / total_variance
+#     variance_y = var(unitModel[!, :pos_y]) / total_variance
 
-    ### Package and return
-    return Dict(
-        :correlation_x => corr_x,
-        :correlation_y => corr_y,
-        :coregistration_x => pearson_x,
-        :coregistration_y => pearson_y,
-        :variance_x => variance_x,
-        :variance_y => variance_y
-    )
-end
-
-
+#     ### Package and return
+#     return Dict(
+#         :correlation_x => corr_x,
+#         :correlation_y => corr_y,
+#         :coregistration_x => pearson_x,
+#         :coregistration_y => pearson_y,
+#         :variance_x => variance_x,
+#         :variance_y => variance_y
+#     )
+# end
 
 
-## Text display
-function Base.display(ena::AbstractENAModel) # TODO should this be print, display, or show?
 
-    ### Show plotted points
-    println("Units (plotted points):")
-    show(ena.accumModel, allrows=true)
-    println()
 
-    ### Show centroids
-    println("Units (centroids):")
-    show(ena.centroidModel, allrows=true)
-    println()
+# ## Text display
+# function Base.display(ena::AbstractENAModel) # TODO should this be print, display, or show?
 
-    ### Show codes
-    println("Codes:")
-    show(ena.codeModel, allrows=true)
-    println()
+#     ### Show plotted points
+#     println("Units (plotted points):")
+#     show(ena.accumModel, allrows=true)
+#     println()
 
-    ### Show network
-    println("Network:")
-    show(ena.networkModel, allrows=true)
-    println()
+#     ### Show centroids
+#     println("Units (centroids):")
+#     show(ena.centroidModel, allrows=true)
+#     println()
 
-    ### Show every test result we have
-    results = test(ena)
-    for key in keys(results)
-        println("$key:")
-        println(results[key])
-        println()
-    end
-end
+#     ### Show codes
+#     println("Codes:")
+#     show(ena.codeModel, allrows=true)
+#     println()
+
+#     ### Show network
+#     println("Network:")
+#     show(ena.networkModel, allrows=true)
+#     println()
+
+#     ### Show every test result we have
+#     results = test(ena)
+#     for key in keys(results)
+#         println("$key:")
+#         println(results[key])
+#         println()
+#     end
+# end
 
 
 ## Plotting

@@ -5,10 +5,11 @@
 
 # override default model constructor kwargs
 function defaultmodelkwargs(
-        T::Type{M{R}};
+        ::Type{M};
         kwargs...
-    ) where {M<:AbstractBiplotENAModel,R<:AbstractLinearENARotation}
+    ) where {R<:AbstractLinearENARotation, M<:AbstractBiplotENAModel{R}}
 
+    kwargs = NamedTuple(kwargs)
     super = supertype(AbstractBiplotENAModel){R}
     parentdefaults = defaultmodelkwargs(super; kwargs...)
     defaults = (
