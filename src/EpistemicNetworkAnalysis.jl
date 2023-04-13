@@ -42,7 +42,7 @@ include("./SVDRotation.jl")
 # include("./ThematicRotation.jl")
 
 # Models
-# include("./ENAModel.jl")
+include("./ENAModel.jl")
 # include("./DigraphENAModel.jl")
 include("./BiplotENAModel.jl")
 
@@ -50,11 +50,12 @@ include("./BiplotENAModel.jl")
 include("./loadExample.jl")
 
 # Exports
-# export ENAModel
+export ENAModel
+export BiplotENAModel
 # export DigraphENAModel
 # export NonlinearENAModel
 # export plot
-# export SVDRotation
+export SVDRotation
 # export LDARotation
 # export MulticlassRotation
 # export MeansRotation
@@ -63,7 +64,7 @@ include("./loadExample.jl")
 # export Formula2Rotation
 # export ThematicRotation
 # export UMAPRotation
-# export loadExample
+export loadExample
 # export derivedAnyCode!
 # export derivedAllCode!
 

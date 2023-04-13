@@ -49,9 +49,9 @@ macro enamodel(
         # make constructor
         function $(esc(self))(
                 data::DataFrame,
-                codes::Array{Symbol,1},
-                conversations::Array{Symbol,1},
-                units::Array{Symbol,1};
+                codes::Array{<:Any,1},
+                conversations::Array{<:Any,1},
+                units::Array{<:Any,1};
                 rotateBy::R=$(esc(defaultrotation))(),
                 kwargs...
             ) where {R<:$(esc(rotationtype))}
@@ -66,9 +66,35 @@ macro enamodel(
     end
 end
 
+# Wrapper constructor, accepts any type for codes etc.
 function constructENA(
         ::Type{M},
-        data, codes, conversations, units, rotation;
+        data::DataFrame,
+        codes::Array{<:Any,1},
+        conversations::Array{<:Any,1},
+        units::Array{<:Any,1},
+        rotation::R;
+        kwargs...
+    ) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
+    return constructENA(
+        M,
+        data,
+        Symbol.(codes),
+        Symbol.(conversations),
+        Symbol.(units),
+        rotation;
+        kwargs...
+    )
+end
+
+# Base constructor, requires symbols
+function constructENA(
+        ::Type{M},
+        data::DataFrame,
+        codes::Array{Symbol,1},
+        conversations::Array{Symbol,1},
+        units::Array{Symbol,1},
+        rotation::R;
         kwargs...
     ) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
 

@@ -1,7 +1,7 @@
 # DONE
 
 # use macro helper to define a standard ENA struct with all the bells
-@enamodel(BiplotENAModel, AbstractLinearENAModel)
+@enamodel BiplotENAModel AbstractLinearENAModel
 
 # override default model constructor kwargs
 function defaultmodelkwargs(
