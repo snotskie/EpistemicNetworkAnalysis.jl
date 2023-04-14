@@ -32,22 +32,20 @@ include("./lineardefaults.jl")
 include("./utils.jl")
 
 # Rotations
-include("./SVDRotation.jl")
-# include("./LDARotation.jl")
-# include("./MulticlassRotation.jl")
-# include("./FormulaRotation.jl")
-# include("./Formula2Rotation.jl")
-# include("./MeansRotation.jl")
-# include("./Means2Rotation.jl")
-# include("./ThematicRotation.jl")
+include("./rotations/SVDRotation.jl")
+include("./rotations/ModeratedRotation.jl")
+# include("./rotations/LDARotation.jl")
+# include("./rotations/MulticlassRotation.jl")
+# include("./rotations/FormulaRotation.jl")
+# include("./rotations/Formula2Rotation.jl")
+# include("./rotations/MeansRotation.jl")
+# include("./rotations/Means2Rotation.jl")
+# include("./rotations/ThematicRotation.jl")
 
 # Models
-include("./ENAModel.jl")
-# include("./DigraphENAModel.jl")
-include("./BiplotENAModel.jl")
-
-# Example Data
-include("./loadExample.jl")
+include("./models/ENAModel.jl")
+# include("./models/DigraphENAModel.jl")
+include("./models/BiplotENAModel.jl")
 
 # Exports
 export ENAModel
@@ -56,6 +54,7 @@ export BiplotENAModel
 # export NonlinearENAModel
 # export plot
 export SVDRotation
+export ModeratedRotation
 # export LDARotation
 # export MulticlassRotation
 # export MeansRotation

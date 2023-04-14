@@ -7,7 +7,7 @@ function defaultmodelkwargs(
     ) where {R<:AbstractLinearENARotation, M<:AbstractPlainENAModel{R}}
 
     kwargs = NamedTuple(kwargs)
-    super = supertype(AbstractPlainENAModel){R}
+    super = modelsupertype(M, AbstractPlainENAModel)
     parentdefaults = defaultmodelkwargs(super; kwargs...)
     defaults = (
         edgeFilter=(row)->(row[:kind] == :undirected),

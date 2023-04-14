@@ -10,7 +10,7 @@ function defaultmodelkwargs(
     ) where {R<:AbstractLinearENARotation, M<:AbstractBiplotENAModel{R}}
 
     kwargs = NamedTuple(kwargs)
-    super = supertype(AbstractBiplotENAModel){R}
+    super = modelsupertype(M, AbstractBiplotENAModel)
     parentdefaults = defaultmodelkwargs(super; kwargs...)
     defaults = (
         edgeFilter=(row)->(row[:kind] == :count),

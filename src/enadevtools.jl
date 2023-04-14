@@ -10,6 +10,25 @@ abstract type AbstractENAModel{T<:AbstractENARotation} end
 abstract type AbstractLinearENAModel{T<:AbstractLinearENARotation} <: AbstractENAModel{T} end
 # abstract type AbstractNonlinearENAModel{T<:AbstractNonlinearENARotation} <: AbstractENAModel{T} end
 
+## Type Helpers
+function modelsupertype(::Type{M}, ::Type{N}) where {
+        R<:AbstractENARotation,
+        M<:AbstractENAModel{R},
+        N<:AbstractENAModel
+    }
+    
+    return supertype(N){R}
+end
+
+function rotationsupertype(::Type{M}, ::Type{S}) where {
+        R<:AbstractENARotation,
+        M<:AbstractENAModel{R},
+        S<:AbstractENARotation
+    }
+    
+    return M.name.wrapper{supertype(S)}
+end
+
 ## Type Macros
 macro enamodel(
         self, parent,
@@ -73,7 +92,7 @@ function constructENA(
         codes::Array{<:Any,1},
         conversations::Array{<:Any,1},
         units::Array{<:Any,1},
-        rotation::R;
+        rotation::AbstractENARotation;
         kwargs...
     ) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
     return constructENA(
@@ -94,7 +113,7 @@ function constructENA(
         codes::Array{Symbol,1},
         conversations::Array{Symbol,1},
         units::Array{Symbol,1},
-        rotation::R;
+        rotation::AbstractENARotation;
         kwargs...
     ) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
 
@@ -119,31 +138,31 @@ function populateENAfields(
         codes::Array{Symbol,1},
         conversations::Array{Symbol,1},
         units::Array{Symbol,1},
-        rotation::R;
+        rotation::AbstractENARotation;
         config...
     ) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
     
     error("Unimplemented")
 end
 
-function accumulate!(::Type{M}, model::M) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
+function accumulate!(::Type{M}, model::AbstractENAModel) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
     error("Unimplemented")
 end
 
-function approximate!(::Type{M}, model::M) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
+function approximate!(::Type{M}, model::AbstractENAModel) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
     error("Unimplemented")
 end
 
-function rotate!(::Type{M}, model::M) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
+function rotate!(::Type{M}, model::AbstractENAModel) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
     error("Unimplemented")
 end
 
-function tests(::Type{M}, model::M) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
+function tests(::Type{M}, model::AbstractENAModel) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
     error("Unimplemented")
 end
 
 # in linear, do plot like the consruct helper, override its components under there
-function plot(::Type{M}, model::M; kwargs...) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
+function plot(::Type{M}, model::AbstractENAModel; kwargs...) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
     error("Unimplemented")
 end
 

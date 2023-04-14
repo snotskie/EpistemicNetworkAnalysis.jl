@@ -33,7 +33,7 @@ function populateENAfields(
         codes::Array{Symbol,1},
         conversations::Array{Symbol,1},
         units::Array{Symbol,1},
-        rotation::R;
+        rotation::AbstractLinearENARotation;
         config...
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
@@ -121,7 +121,9 @@ function populateENAfields(
     # embedding: empty starting point
     embedding = DataFrame(Dict(
         :label=>String[],
-        :var=>Real[],
+        :variance_explained=>Real[],
+        :pearson=>Real[],
+        :coregistration=>Real[],
         (name=>Real[] for name in edgeNames)...
     ))
 
@@ -155,7 +157,7 @@ end
 
 function accumulate!(
         ::Type{M},
-            model::M
+            model::AbstractLinearENAModel
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
     prev_convo = model.data[1, model.conversations]
@@ -259,7 +261,7 @@ function accumulate!(
 end
 
 function approximate!(
-        ::Type{M}, model::M
+        ::Type{M}, model::AbstractLinearENAModel
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
     # compute densities
@@ -305,41 +307,45 @@ function approximate!(
 end
 
 function rotate!(
-        ::Type{M}, model::M
+        ::Type{M}, model::AbstractLinearENAModel
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
     # for existing dimensions given to us by the child class,
     # add normalize them, orthogonalize them from each other,
     # and add point positions to the model
+    edgeNames = model.edges.edge
     numExistingDims = nrow(model.embedding)
     if numExistingDims > 0
         # normalize the first dimension (the rest are normalized below)
-        s = sqrt(sum(model.embedding[1, :] .^ 2))
+        v1 = Vector(model.embedding[1, edgeNames])
+        s = sqrt(sum(v1 .^ 2))
         if s != 0
-            model.embedding[1, :] /= s
+            model.embedding[1, edgeNames] .= v1 / s
         end
     end
 
     for i in 1:numExistingDims
-        addPointsToModelFromDim(model, model.embedding[i, :])
+        addPointsToModelFromDim(model, model.embedding[i, edgeNames])
 
         # orthogonalize, by rejection, each existing dimension from each previous dimension.
         # note, a dimension will be orthogonalize before it is used to add points to the model
-        denom = dot(model.embedding[i, :], model.embedding[i, :])
+        vi = Vector(model.embedding[i, edgeNames])
+        denom = dot(vi, vi)
         for j in (i+1):numExistingDims
-            s = sqrt(sum(model.embedding[j, :] .^ 2))
+            vj = Vector(model.embedding[j, edgeNames])
+            s = sqrt(sum(vj .^ 2))
             if s != 0
-                model.embedding[j, :] /= s
+                model.embedding[j, edgeNames] .= vj / s
             end
 
-            scalar = dot(model.embedding[j, :], model.embedding[i, :]) / denom
-            model.embedding[j, :] -= scalar * model.embedding[i, :]
-            s = sqrt(sum(model.embedding[j, :] .^ 2))
+            scalar = dot(vj, vi) / denom
+            model.embedding[j, edgeNames] -= scalar * vi
+            s = sqrt(sum(vj .^ 2))
             if s < 0.05
-                model.embedding[j, :] .= 0
+                model.embedding[j, edgeNames] .= 0
                 @warn "During the rotation step, axis $j was deflated to zero due to close correlation with axis $i."
             elseif s != 0
-                model.embedding[j, :] /= s
+                model.embedding[j, edgeNames] .= vj / s
             end
         end
     end
@@ -368,25 +374,45 @@ function rotate!(
     svd = transpose(projection(fit(PCA, X', pratio=1.0)))
     df = similar(model.embedding, size(svd)[1])
     df[!, edgeNames] = svd
+    df.label = ["SVD$(i)" for i in 1:nrow(df)]
     append!(model.embedding, df)
     for i in (numExistingDims+1):nrow(model.embedding)
         addPointsToModelFromDim(model, model.embedding[i, :])
     end
 
-    # TODO add labels and vars explained to the embedding
+    # Now that we have the full embedding ready, run basic stats on it
+    unitIDs = model.accum.unitID
+    total_variance = sum(var.(eachrow(model.points[!, unitIDs])))
+    for i in 1:nrow(model.embedding)
+        points = Vector(model.points[i, unitIDs])
+        pointsHat = Vector(model.pointsHat[i, unitIDs])
+        model.embedding[i, :variance_explained] = var(points) / total_variance
+        model.embedding[i, :pearson] = cor(points, pointsHat)
+        pointsDiffs = [
+            a - b
+            for a in points
+            for b in points
+        ]
 
-    # NOTE this means that SVDRotation can be a "do nothing" and this will work
+        pointsHatDiffs = [
+            a - b
+            for a in pointsHat
+            for b in pointsHat
+        ]
+
+        model.embedding[i, :coregistration] = cor(pointsDiffs, pointsHatDiffs)
+    end
 end
 
 function tests(
-        ::Type{M}, model::M
+        ::Type{M}, model::AbstractLinearENAModel
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
-    # TODO
+    # TODO maybe cut this, think about tests as summary stats dict
 end
 
 function plot(
-        ::Type{M}, model::M
+        ::Type{M}, model::AbstractLinearENAModel
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
     # TODO
@@ -394,53 +420,8 @@ end
 
 # TODO below here
 
-# function tests(ena::AbstractENAModel)
-
-#     ### Find difference between each pair of points, in accum and centroid
-#     centroidDiffsX = Real[]
-#     centroidDiffsY = Real[]
-#     accumDiffsX = Real[]
-#     accumDiffsY = Real[]
-#     for (i, unitRowA) in enumerate(eachrow(ena.accumModel))
-#         for (j, unitRowB) in enumerate(eachrow(ena.accumModel))
-#             if i < j
-#                 push!(centroidDiffsX, ena.centroidModel[i, :pos_x] - ena.centroidModel[j, :pos_x])
-#                 push!(centroidDiffsY, ena.centroidModel[i, :pos_y] - ena.centroidModel[j, :pos_y])
-#                 push!(accumDiffsX, unitRowA[:pos_x] - unitRowB[:pos_x])
-#                 push!(accumDiffsY, unitRowA[:pos_y] - unitRowB[:pos_y])
-#             end
-#         end
-#     end
-
-#     corr_x = cor(ena.centroidModel[!, :pos_x], ena.accumModel[!, :pos_x])
-#     corr_y = cor(ena.centroidModel[!, :pos_y], ena.accumModel[!, :pos_y])
-
-#     ### Do those differences correlate?
-#     pearson_x = cor(centroidDiffsX, accumDiffsX)
-#     pearson_y = cor(centroidDiffsY, accumDiffsY)
-
-#     ### Find the percent variance explained by the x and y axis of the entire high dimensional space
-#     unitModel = ena.accumModel
-#     total_variance = sum(var.(eachcol(unitModel[!, ena.networkModel[!, :relationship]])))
-#     variance_x = var(unitModel[!, :pos_x]) / total_variance
-#     variance_y = var(unitModel[!, :pos_y]) / total_variance
-
-#     ### Package and return
-#     return Dict(
-#         :correlation_x => corr_x,
-#         :correlation_y => corr_y,
-#         :coregistration_x => pearson_x,
-#         :coregistration_y => pearson_y,
-#         :variance_x => variance_x,
-#         :variance_y => variance_y
-#     )
-# end
-
-
-
-
 # ## Text display
-# function Base.display(ena::AbstractENAModel) # TODO should this be print, display, or show?
+# function Base.display(ena::AbstractENAModel) # TODO use show, not display
 
 #     ### Show plotted points
 #     println("Units (plotted points):")

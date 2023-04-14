@@ -1,6 +1,7 @@
 using EpistemicNetworkAnalysis
 using Test
 using DataFrames
+using GLM
 
 @testset "EpistemicNetworkAnalysis.jl" begin
 
@@ -32,15 +33,26 @@ using DataFrames
 
     # Test that each model/rotation combination runs
     models = [ENAModel, BiplotENAModel]
-    rotations = [SVDRotation(), MeansRotation(:Play, "Romeo and Juliet", "Hamlet")]
+    rotations = Dict(
+        "SVD1" => SVDRotation(),
+        "Act" => ModeratedRotation(
+            LinearModel,
+            @formula(y ~ 1 + Act),
+            2,
+            nothing
+        ),
+        # "Play" => MeansRotation(:Play, "Romeo and Juliet", "Hamlet")
+    )
+
     for M in models
-        for rotation in rotations
+        for (label, rotation) in rotations
             myENA = M(
                 data, codes, conversations, units,
                 rotateBy=rotation
             )
 
             @test typeof(myENA) == M{typeof(rotation)}
+            @test myENA.embedding[1, :label] == label
         end
     end
 
