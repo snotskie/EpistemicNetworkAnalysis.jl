@@ -10,6 +10,9 @@ abstract type AbstractENAModel{T<:AbstractENARotation} end
 abstract type AbstractLinearENAModel{T<:AbstractLinearENARotation} <: AbstractENAModel{T} end
 # abstract type AbstractNonlinearENAModel{T<:AbstractNonlinearENARotation} <: AbstractENAModel{T} end
 
+## EdgePainters
+abstract type AbstractEdgePainter end
+
 ## Type Helpers
 function modelsupertype(::Type{M}, ::Type{N}) where {
         R<:AbstractENARotation,
@@ -145,6 +148,18 @@ function populateENAfields(
     error("Unimplemented")
 end
 
+function defaultmodelkwargs(::Type{M}, model::AbstractENAModel; kwargs...) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
+    error("Unimplemented")
+end
+
+function defaultplotkwargs(::Type{M}, model::AbstractENAModel; kwargs...) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
+    error("Unimplemented")
+end
+
+# NOTE: when implementing these functions elsewhere, M should be the *most* specific
+# type that the function applies to, while model should be the *least* specific.
+# Also, accumulate! and approximate! should be generic to the rotation type when possible,
+# while rotate! should be generic to the ENA type when possible.
 function accumulate!(::Type{M}, model::AbstractENAModel) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
     error("Unimplemented")
 end
@@ -157,18 +172,19 @@ function rotate!(::Type{M}, model::AbstractENAModel) where {R<:AbstractENARotati
     error("Unimplemented")
 end
 
-function tests(::Type{M}, model::AbstractENAModel) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
+function summarize!(::Type{M}, model::AbstractENAModel) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
     error("Unimplemented")
 end
 
 # in linear, do plot like the consruct helper, override its components under there
-function plot(::Type{M}, model::AbstractENAModel; kwargs...) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
+function plot(::Type{M}, model::AbstractENAModel, plotconfig::NamedTuple) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
     error("Unimplemented")
 end
 
 ## Wrapper Functions
 function plot(model::AbstractENAModel; kwargs...)
-    return plot(type(model), model; kwargs...)
+    plotconfig = defaultplotkwargs(typeof(model), model; kwargs...)
+    return plot(typeof(model), model, plotconfig)
 end
 
 # Helpers
@@ -228,6 +244,26 @@ function addPointsToModelFromDim(model, dim)
     df = similar(model.pointsNodes, 1)
     df[1, nodeNames] = pointsNodes
     append!(model.pointsNodes, df)
+end
+
+function layoutSubplots(ps::Array{Plot}, plotconfig::NamedTuple)
+    for p in ps
+        xticks!(p, plotconfig.xticks)
+        yticks!(p, plotconfig.yticks)
+        if plotconfig.lims > 0
+            xlims!(p, plotconfig.xlims...)
+            ylims!(p, plotconfig.ylims...)
+        end
+    end
+
+    N = ceil(Int, sqrt(length(ps)))
+    M = ceil(Int, length(ps)/N)
+    layout = grid(N, M)
+    while length(ps) < N*M
+        push!(ps, plot(legend=false,grid=false,foreground_color_subplot=:white))
+    end
+
+    return plot(ps..., size=(plotconfig.size*M, plotconfig.size*N), layout=layout)
 end
 
 # function help_deflating_svd(networkModel::DataFrame, subspaceModel::DataFrame, controlModel::Union{Nothing,DataFrame}=nothing)
@@ -324,54 +360,12 @@ end
 #     return (xs, ys)
 # end
 
-# function help_plot_ci(p, xs, ys, color, shape, label, showCIs::Bool=true)
-#     if length(xs) > 0
-#         x = mean(xs)
-#         y = mean(ys)
-#         Plots.plot!(p, [x], [y],
-#             label=label,
-#             seriestype=:scatter,
-#             markersize=4,
-#             markershape=shape,
-#             markercolor=color,
-#             markerstrokecolor=color)
-#     end
-
-#     if length(xs) > 1 && showCIs
-#         ci_x = collect(confint(OneSampleTTest(xs)))
-#         ci_y = collect(confint(OneSampleTTest(ys)))
-#         Plots.plot!(p, [ci_x[1], ci_x[2]], [ci_y[1], ci_y[1]],
-#             label=nothing,
-#             seriestype=:line,
-#             linewidth=1,
-#             linecolor=color)
-
-#         Plots.plot!(p, [ci_x[1], ci_x[2]], [ci_y[2], ci_y[2]],
-#             label=nothing,
-#             seriestype=:line,
-#             linewidth=1,
-#             linecolor=color)
-
-#         Plots.plot!(p, [ci_x[1], ci_x[1]], [ci_y[1], ci_y[2]],
-#             label=nothing,
-#             seriestype=:line,
-#             linewidth=1,
-#             linecolor=color)
-
-#         Plots.plot!(p, [ci_x[2], ci_x[2]], [ci_y[1], ci_y[2]],
-#             label=nothing,
-#             seriestype=:line,
-#             linewidth=1,
-#             linecolor=color)
-#     end
-# end
-
-# function help_nonlinear_gradient(lo, mid, hi; grains=100, curve=1.5)
-#     return vcat(
-#         [weighted_color_mean((100-i)^curve/grains^curve, lo, mid) for i in 1:grains],
-#         [weighted_color_mean(1-i^curve/grains^curve, mid, hi) for i in 1:grains]
-#     )
-# end
+function nonlinearGradientMap(lo, mid, hi; grains=100, curve=1.5)
+    return vcat(
+        [weighted_color_mean((100-i)^curve/grains^curve, lo, mid) for i in 1:grains],
+        [weighted_color_mean(1-i^curve/grains^curve, mid, hi) for i in 1:grains]
+    )
+end
 
 # function rotatedLabel(label, x, y)
 #     angle = atan(y, x) * 180 / pi

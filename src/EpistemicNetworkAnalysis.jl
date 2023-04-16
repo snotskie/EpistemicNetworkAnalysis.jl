@@ -9,6 +9,7 @@ import Plots.plot!
 import Plots.Plot
 using Colors
 using Dierckx
+using DataStructures
 
 ## Data
 using DataFrames
@@ -28,7 +29,8 @@ using GLM
 
 # Helpers
 include("./enadevtools.jl")
-include("./lineardefaults.jl")
+include("./linearmodeling.jl")
+include("./linearplotting.jl")
 include("./utils.jl")
 
 # Rotations
@@ -52,7 +54,7 @@ export ENAModel
 export BiplotENAModel
 # export DigraphENAModel
 # export NonlinearENAModel
-# export plot
+export plot
 export SVDRotation
 export ModeratedRotation
 # export LDARotation

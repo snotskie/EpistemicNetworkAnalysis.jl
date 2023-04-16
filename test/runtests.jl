@@ -2,6 +2,7 @@ using EpistemicNetworkAnalysis
 using Test
 using DataFrames
 using GLM
+using Plots
 
 @testset "EpistemicNetworkAnalysis.jl" begin
 
@@ -23,6 +24,9 @@ using GLM
 
     myENA = ENAModel(data, codes, conversations, units)
     @test typeof(myENA) == ENAModel{SVDRotation}
+    p = plot(myENA)
+    @test typeof(p) == Plot
+    @test length(p.subplots) == 3
 
     # Test that model also accepts strings
     codes = string.(codes)
@@ -56,9 +60,11 @@ using GLM
         end
     end
 
-    # TODO means rotation
     # TODO plotting
+    # TODO to/from ODS
+    # TODO means rotation
     # TODO conversions
+    # TODO show
     # TODO other models and rotation types
     # TODO clean up
     # TODO auto-docs
