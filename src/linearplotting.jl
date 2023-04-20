@@ -28,8 +28,8 @@ function defaultplotkwargs(
         xlims::Array{<:Real}=xticks[[1, end]],
         ylims::Array{<:Real}=yticks[[1, end]],
         titles::Array{<:AbstractString}=String[],
-        xlabel::AbstractString="X",
-        ylabel::AbstractString="Y",
+        xlabel::AbstractString=model.embedding[x, :].label,
+        ylabel::AbstractString=model.embedding[y, :].label,
         unitLabel::AbstractString="Unit",
         leg::Union{Symbol,Bool}=:topleft,
         negColor::Colorant=DEFAULT_NEG_COLOR,
@@ -184,6 +184,13 @@ function plotConfidenceInterval(p, xs, ys, color, shape, label)
             linewidth=1,
             linecolor=color)
     end
+end
+
+function getAxisLabels(model::AbstractLinearENAModel, plotconfig::NamedTuple)
+    return (
+        xlabel="$(plotconfig.xlabel) ($(round(100*model.embedding[plotconfig.x, :].variance_explained, digits=1))%)",
+        ylabel="$(plotconfig.ylabel) ($(round(100*model.embedding[plotconfig.y, :].variance_explained, digits=1))%)"
+    )
 end
 
 # Painters
@@ -369,10 +376,11 @@ function plot_omnibus!(
         ::Type{M}, ps::Array{Plot}, model::AbstractLinearENAModel, plotconfig::NamedTuple
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
-    p = plot(
+    p = plot(;
         leg=plotconfig.leg,
         margin=plotconfig.margin,
-        size=(plotconfig.size, plotconfig.size)
+        size=(plotconfig.size, plotconfig.size),
+        getAxisLabels(model, plotconfig)...
     )
 
     letter = DEFAULT_ALPHABET[length(ps)+1]
@@ -569,9 +577,11 @@ function plot_units!(
     
     # Default color: black
     colors = colorant"black"
+    label = plotconfig.unitLabel
 
     # Optionally, color spectrally
     if !isnothing(plotconfig.spectralColorBy)
+        label = string(plotconfig.spectralColorBy)
         if plotconfig.spectralColorBy in Symbol.(names(model.accum))
             colVals = Vector{Real}(model.accum[displayRows, plotconfig.spectralColorBy])
             allColVals = colVals = Vector{Real}(model.accum[!, plotconfig.spectralColorBy])
@@ -585,23 +595,36 @@ function plot_units!(
             colVals /= maximum(allColVals)
             colors = [HSL(colVal*240, 1, 0.5) for colVal in colVals]
         end
-    elseif !isnothing(plotconfig.groupBy) # Else, optionally color by a grouping variable
-        groupColors = getGroupColorMap(model, plotconfig)
-        colors = map(model.metadata[displayRows, plotconfig.groupBy]) do group
-            return groupColors[group]
-        end
     end
     
-    # Draw the units
-    plot!(
-        p, xs, ys,
-        label=plotconfig.unitLabel,
-        seriestype=:scatter,
-        markershape=:circle,
-        markersize=GLOBAL_UNIT_SIZE,
-        markercolor=colors,
-        markerstrokewidth=0
-    )
+    # Draw the units: if grouping, have to plot each group individually
+    if !isnothing(plotconfig.groupBy)
+        for group in unique(model.metadata[displayRows, plotconfig.groupBy])
+            groupRows = model.metadata[!, plotconfig.groupBy] .== group
+            plotRows = displayRows .& groupRows
+            label = string(group, " ", plotconfig.unitLabel)
+            groupColors = getGroupColorMap(model, plotconfig)
+            plot!(
+                p, xs[plotRows], ys[plotRows],
+                label=label,
+                seriestype=:scatter,
+                markershape=:circle,
+                markersize=GLOBAL_UNIT_SIZE,
+                markercolor=groupColors[group],
+                markerstrokewidth=0
+            )
+        end
+    else
+        plot!(
+            p, xs[displayRows], ys[displayRows],
+            label=label,
+            seriestype=:scatter,
+            markershape=:circle,
+            markersize=GLOBAL_UNIT_SIZE,
+            markercolor=colors,
+            markerstrokewidth=0
+        )
+    end
 end
 
 function plot_means!(

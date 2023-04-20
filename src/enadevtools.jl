@@ -45,7 +45,7 @@ macro enamodel(
         abstract type $(esc(abstractname)){T<:$(esc(rotationtype))} <: $(esc(parent)){T} end
 
         # make struct
-        struct $(esc(self)){T<:$(esc(rotationtype))} <: $(esc(abstractname)){T}
+        mutable struct $(esc(self)){T<:$(esc(rotationtype))} <: $(esc(abstractname)){T}
             # required arguments
             data::DataFrame
             codes::Array{Symbol,1}

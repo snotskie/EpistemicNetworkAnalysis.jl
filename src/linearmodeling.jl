@@ -52,7 +52,7 @@ function populateENAfields(
     # edges: fill in all possible combinations
     for (i, ground) in enumerate(codes)
         for (j, response) in enumerate(codes)
-            if i == j
+            if i == j # single code count edges
                 newEdge = similar(edges, 1)
                 newEdge[1, :edge] = Symbol(string("_", ground, "_"))
                 newEdge[1, :kind] = :count
@@ -61,7 +61,7 @@ function populateENAfields(
                 newEdge[1, :ground] = ground
                 newEdge[1, :response] = response
                 append!(edges, newEdge)
-            else
+            elseif i < j # directed and undirected edges
                 ukey = Symbol(string(ground, "_", response))
                 dkey = Symbol(string(ground, "_to_", response))
                 newEdges = similar(edges, 2)
@@ -77,6 +77,16 @@ function populateENAfields(
                 newEdges[2, :j] = j
                 newEdges[2, :ground] = ground
                 newEdges[2, :response] = response
+                append!(edges, newEdges)
+            else # remaining directed edges
+                dkey = Symbol(string(ground, "_to_", response))
+                newEdges = similar(edges, 1)
+                newEdges[1, :edge] = dkey
+                newEdges[1, :kind] = :directed
+                newEdges[1, :i] = i
+                newEdges[1, :j] = j
+                newEdges[1, :ground] = ground
+                newEdges[1, :response] = response
                 append!(edges, newEdges)
             end
         end
@@ -161,6 +171,11 @@ function accumulate!(
 
     prev_convo = model.data[1, model.conversations]
     howrecents = [Inf for c in model.codes]
+    unitIndexMap = Dict(
+        unitRow.unitID => i
+        for (i, unitRow) in enumerate(eachrow(model.accum))
+    )
+
     for line in eachrow(model.data)
 
         # reset on new conversations
@@ -179,24 +194,24 @@ function accumulate!(
         end
 
         # update the accum counts of the unit on this line
-        unit = model.accum.unitID .== line.unitID
+        unit = unitIndexMap[line.unitID]
         for edge in eachrow(model.edges)
-            if edge[:kind] == :count
+            if edge.kind == :count
                 i = edge.i
                 if howrecents[i] == 0
-                    model.accum[unit, edge[:edge]] .+= 1
+                    model.accum[unit, edge.edge] += 1
                 end
-            elseif edge[:kind] == :directed
+            elseif edge.kind == :directed
                 i, j = edge.i, edge.j
                 if howrecents[j] == 0 && howrecents[i] < model.config.windowSize
-                    model.accum[unit, edge[:edge]] .+= 1
+                    model.accum[unit, edge.edge] += 1
                 end
-            elseif edge[:kind] == :undirected
+            elseif edge.kind == :undirected               
                 i, j = edge.i, edge.j
                 if howrecents[i] == 0 && howrecents[j] < model.config.windowSize
-                    model.accum[unit, edge[:edge]] .+= 1
+                    model.accum[unit, edge.edge] += 1
                 elseif howrecents[j] == 0 && howrecents[i] < model.config.windowSize
-                    model.accum[unit, edge[:edge]] .+= 1
+                    model.accum[unit, edge.edge] += 1
                 end
             end
         end
@@ -205,14 +220,14 @@ function accumulate!(
     # maybe drop rows with empty values
     edgeNames = model.edges.edge
     if model.config.dropEmpty
-        droppedUnits = filter(model.accum) do unitRow
+        droppedRows = map(eachrow(model.accum)) do unitRow
             return all(iszero.(values(unitRow[edgeNames])))
         end
 
-        filter!(model.accum) do unitRow
-            return !all(iszero.(values(unitRow[edgeNames])))
-        end
-
+        droppedUnits = model.accum[droppedRows, :]
+        model.accum = model.accum[.!droppedRows, :]
+        model.accumHat = model.accumHat[.!droppedRows, :]
+        model.metadata = model.metadata[.!droppedRows, :]
         select!(model.points, Not(droppedUnits.unitID))
         select!(model.pointsHat, Not(droppedUnits.unitID))
     # else, maybe recenter the empty rows to the mean
@@ -243,11 +258,11 @@ function accumulate!(
 
     # normalize each unit, if requested
     if model.config.sphereNormalize
-        for unitRow in eachrow(model.accum)
-            vector = Vector{Float64}(unitRow[edgeNames])
+        for i in 1:nrow(model.accum)
+            vector = Vector{Float64}(model.accum[i, edgeNames])
             s = sqrt(sum(vector .^ 2))
             if s != 0
-                unitRow[edgeNames] = vector / s
+                model.accum[i, edgeNames] = vector / s
             end
         end
     # else, still scale it down to make plots easier to read
