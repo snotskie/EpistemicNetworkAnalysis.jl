@@ -2,19 +2,27 @@
 # and without having to deal with restarting the REPL between module loads
 
 include("../src/EpistemicNetworkAnalysis.jl")
-data = EpistemicNetworkAnalysis.loadExample("shakespeare.data")
+
+# data = EpistemicNetworkAnalysis.loadExample("toy")
+# conversations = [:Convo]
+# units = [:Unit]
+# codes = [:A, :B, :C]
+# group = :Group
+
+data = EpistemicNetworkAnalysis.loadExample("shakespeare")
 conversations = [:Play, :Act]
 units = [:Play, :Speaker]
 codes = [
-    :Love,
-    :Death,
-    :Honor,
-    :Men,
-    :Women
+   :Love,
+   :Death,
+   :Honor,
+   :Men,
+   :Women
 ]
+group = :Play
 
-myENA = EpistemicNetworkAnalysis.ENAModel(data, codes, conversations, units)
-p = EpistemicNetworkAnalysis.plot(myENA, groupBy=:Play)
+myENA = EpistemicNetworkAnalysis.ENAModel(data, codes, conversations, units, windowSize=4)
+p = EpistemicNetworkAnalysis.plot(myENA, groupBy=group)
 
 #=
 

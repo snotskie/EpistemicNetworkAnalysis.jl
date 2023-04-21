@@ -10,8 +10,7 @@ function defaultmodelkwargs(
     super = modelsupertype(M, AbstractPlainENAModel)
     parentdefaults = defaultmodelkwargs(super; kwargs...)
     defaults = (
-        edgeFilter=(row)->(row[:kind] == :undirected),
-        windowSize=1
+        edgeFilter=(row)->(row[:kind] == :undirected),# comma necessary for NamedTuple
     )
 
     return merge(parentdefaults, defaults, kwargs)

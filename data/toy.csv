@@ -1,0 +1,11 @@
+Group,Convo,Unit,Line,A,B,C
+Red,1,X,1,0,0,1
+Red,1,Y,2,1,0,0
+Blue,1,Z,3,0,1,1
+Blue,1,W,4,0,0,0
+Red,1,X,5,0,0,1
+Red,2,X,1,1,0,0
+Red,2,Y,2,1,0,0
+Blue,2,Z,3,0,1,1
+Blue,2,W,4,0,0,0
+Red,2,X,5,1,0,0

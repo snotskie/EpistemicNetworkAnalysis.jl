@@ -41,10 +41,8 @@ function populateENAfields(
 
     # edges: empty starting point
     edges = DataFrame(
-        edge=Symbol[],
+        edgeID=Symbol[],
         kind=Symbol[],
-        i=Int[],
-        j=Int[],
         ground=Symbol[],
         response=Symbol[]
     )
@@ -53,38 +51,36 @@ function populateENAfields(
     for (i, ground) in enumerate(codes)
         for (j, response) in enumerate(codes)
             if i == j # single code count edges
-                newEdge = similar(edges, 1)
-                newEdge[1, :edge] = Symbol(string("_", ground, "_"))
+                ckey = Symbol(string("_", ground, "_"))
+                ekey = Symbol(string(ground, "_to_", response))
+                newEdge = similar(edges, 2)
+                newEdge[1, :edgeID] = ckey
                 newEdge[1, :kind] = :count
-                newEdge[1, :i] = i
-                newEdge[1, :j] = j
                 newEdge[1, :ground] = ground
                 newEdge[1, :response] = response
+                newEdge[2, :edgeID] = ekey
+                newEdge[2, :kind] = :echo
+                newEdge[2, :ground] = ground
+                newEdge[2, :response] = response
                 append!(edges, newEdge)
             elseif i < j # directed and undirected edges
                 ukey = Symbol(string(ground, "_", response))
                 dkey = Symbol(string(ground, "_to_", response))
                 newEdges = similar(edges, 2)
-                newEdges[1, :edge] = ukey
+                newEdges[1, :edgeID] = ukey
                 newEdges[1, :kind] = :undirected
-                newEdges[1, :i] = i
-                newEdges[1, :j] = j
                 newEdges[1, :ground] = ground
                 newEdges[1, :response] = response
-                newEdges[2, :edge] = dkey
+                newEdges[2, :edgeID] = dkey
                 newEdges[2, :kind] = :directed
-                newEdges[2, :i] = i
-                newEdges[2, :j] = j
                 newEdges[2, :ground] = ground
                 newEdges[2, :response] = response
                 append!(edges, newEdges)
             else # remaining directed edges
                 dkey = Symbol(string(ground, "_to_", response))
                 newEdges = similar(edges, 1)
-                newEdges[1, :edge] = dkey
+                newEdges[1, :edgeID] = dkey
                 newEdges[1, :kind] = :directed
-                newEdges[1, :i] = i
-                newEdges[1, :j] = j
                 newEdges[1, :ground] = ground
                 newEdges[1, :response] = response
                 append!(edges, newEdges)
@@ -94,12 +90,12 @@ function populateENAfields(
 
     # edges: filter out unused combinations
     filter!(config.edgeFilter, edges)
-    edgeNames = edges.edge
+    edgeIDs = edges.edgeID
 
     # nodes: zero'd starting point
     nodes = DataFrame(Dict(
-        :node=>codes,
-        (name=>zeros(Real, length(codes)) for name in edgeNames)...
+        :nodeID=>codes,
+        (name=>zeros(Real, length(codes)) for name in edgeIDs)...
     ))
 
     # accum, accumHat, metadata: generate IDs for each unit
@@ -116,16 +112,16 @@ function populateENAfields(
 
     # accum, accumHat, metadata: placeholder zeros for all unit/edge pairs
     tempValues = DataFrame(Dict(
-        edge=>zeros(Real, nrow(tempAccum))
-        for edge in edgeNames
+        edgeID=>zeros(Real, nrow(tempAccum))
+        for edgeID in edgeIDs
     ))
 
     # accum, accumHat, metadata: add placeholders and split into multiple dfs
     # makeunique=true because 
     tempAccum = hcat(tempAccum, tempValues)
-    accum = copy(tempAccum[!, [:unitID, edgeNames...]])
+    accum = copy(tempAccum[!, [:unitID, edgeIDs...]])
     accumHat = copy(accum)
-    metaNames = setdiff(Symbol.(names(tempAccum)), edgeNames)
+    metaNames = setdiff(Symbol.(names(tempAccum)), edgeIDs)
     metadata = copy(tempAccum[!, metaNames])
 
     # embedding: empty starting point
@@ -134,17 +130,17 @@ function populateENAfields(
         :variance_explained=>Real[],
         :pearson=>Real[],
         :coregistration=>Real[],
-        (name=>Real[] for name in edgeNames)...
+        (edgeID=>Real[] for edgeID in edgeIDs)...
     ))
 
     # points: empty starting point
     points = DataFrame(Dict(
-        unit=>Real[] for unit in accum.unitID
+        unitID=>Real[] for unitID in accum.unitID
     ))
 
     pointsHat = similar(points, 0)
     pointsNodes = DataFrame(Dict(
-        node=>Real[] for node in nodes.node
+        nodeID=>Real[] for nodeID in nodes.nodeID
     ))
 
     # done!
@@ -170,10 +166,14 @@ function accumulate!(
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
     prev_convo = model.data[1, model.conversations]
-    howrecents = [Inf for c in model.codes]
+    howrecents = Dict(
+        node.nodeID => Inf
+        for node in eachrow(model.nodes)
+    )
+
     unitIndexMap = Dict(
-        unitRow.unitID => i
-        for (i, unitRow) in enumerate(eachrow(model.accum))
+        unit.unitID => i
+        for (i, unit) in enumerate(eachrow(model.accum))
     )
 
     for line in eachrow(model.data)
@@ -181,47 +181,50 @@ function accumulate!(
         # reset on new conversations
         if prev_convo != line[model.conversations]
             prev_convo = line[model.conversations]
-            howrecents .= Inf
+            for key in keys(howrecents)
+                howrecents[key] = Inf
+            end
         end
 
         # count how recently codes occured
-        for (i, code) in enumerate(model.codes)
-            if line[code] > 0
-                howrecents[i] = 0
-            else
-                howrecents[i] += 1
-            end
+        for nodeID in model.nodes.nodeID
+            howrecents[nodeID] += 1
         end
 
         # update the accum counts of the unit on this line
         unit = unitIndexMap[line.unitID]
         for edge in eachrow(model.edges)
             if edge.kind == :count
-                i = edge.i
-                if howrecents[i] == 0
-                    model.accum[unit, edge.edge] += 1
+                if line[edge.response] > 0
+                    model.accum[unit, edge.edgeID] += 1
                 end
-            elseif edge.kind == :directed
-                i, j = edge.i, edge.j
-                if howrecents[j] == 0 && howrecents[i] < model.config.windowSize
-                    model.accum[unit, edge.edge] += 1
+            elseif edge.kind == :echo || edge.kind == :directed
+                if (line[edge.response] > 0 && howrecents[edge.ground] < model.config.windowSize) ||
+                    (line[edge.ground] > 0 && line[edge.response] > 0)
+                    model.accum[unit, edge.edgeID] += 1
                 end
-            elseif edge.kind == :undirected               
-                i, j = edge.i, edge.j
-                if howrecents[i] == 0 && howrecents[j] < model.config.windowSize
-                    model.accum[unit, edge.edge] += 1
-                elseif howrecents[j] == 0 && howrecents[i] < model.config.windowSize
-                    model.accum[unit, edge.edge] += 1
+            elseif edge.kind == :undirected
+                if (line[edge.response] > 0 && howrecents[edge.ground] < model.config.windowSize) ||
+                   (line[edge.ground] > 0 && howrecents[edge.response] < model.config.windowSize) ||
+                   (line[edge.ground] > 0 && line[edge.response] > 0)
+                    model.accum[unit, edge.edgeID] += 1
                 end
+            end
+        end
+
+        # count how recently codes occured
+        for nodeID in model.nodes.nodeID
+            if line[nodeID] > 0
+                howrecents[nodeID] = 0
             end
         end
     end
 
     # maybe drop rows with empty values
-    edgeNames = model.edges.edge
+    edgeIDs = model.edges.edgeID
     if model.config.dropEmpty
         droppedRows = map(eachrow(model.accum)) do unitRow
-            return all(iszero.(values(unitRow[edgeNames])))
+            return all(iszero.(values(unitRow[edgeIDs])))
         end
 
         droppedUnits = model.accum[droppedRows, :]
@@ -233,24 +236,24 @@ function accumulate!(
     # else, maybe recenter the empty rows to the mean
     elseif model.config.recenterEmpty
         zeroRows = map(eachrow(model.accum)) do unitRow
-            return all(iszero.(values(unitRow[edgeNames])))
+            return all(iszero.(values(unitRow[edgeIDs])))
         end
 
         nonZeroRows = .!zeroRows
         N = sum(nonZeroRows)
-        meanPoint = transpose(sum(eachcol(model.accum[nonZeroRows, edgeNames])) / N)
-        model.accum[zeroRows, edgeNames] .= meanPoint
+        meanPoint = transpose(sum(eachcol(model.accum[nonZeroRows, edgeIDs])) / N)
+        model.accum[zeroRows, edgeIDs] .= meanPoint
     # else, maybe deflate the model so empty and the mean always align
     elseif model.config.deflateEmpty
-        meanAxis = transpose(sum(eachcol(model.accum[!, edgeNames])))
+        meanAxis = transpose(sum(eachcol(model.accum[!, edgeIDs])))
         s = sqrt(sum(meanAxis .^ 2))
         if s != 0
             meanAxis /= s
         end
 
-        meanPoints = Matrix{Float64}(model.accum[!, edgeNames]) * Vector{Float64}(meanAxis)
-        for edge in edgeNames
-            edgeAxis = [edge == edgep ? 1 : 0 for edgep in edgeNames]
+        meanPoints = Matrix{Float64}(model.accum[!, edgeIDs]) * Vector{Float64}(meanAxis)
+        for edge in edgeIDs
+            edgeAxis = [edge == edgep ? 1 : 0 for edgep in edgeIDs]
             scalar = dot(edgeAxis, meanAxis) / dot(meanAxis, meanAxis)
             model.accum[!, edge] .-= scalar * meanPoints
         end
@@ -259,16 +262,16 @@ function accumulate!(
     # normalize each unit, if requested
     if model.config.sphereNormalize
         for i in 1:nrow(model.accum)
-            vector = Vector{Float64}(model.accum[i, edgeNames])
+            vector = Vector{Float64}(model.accum[i, edgeIDs])
             s = sqrt(sum(vector .^ 2))
             if s != 0
-                model.accum[i, edgeNames] = vector / s
+                model.accum[i, edgeIDs] = vector / s
             end
         end
     # else, still scale it down to make plots easier to read
     else
-        s = maximum(maximum(model.accum[!, r]) for r in edgeNames)
-        for r in edgeNames
+        s = maximum(maximum(model.accum[!, r]) for r in edgeIDs)
+        for r in edgeIDs
             model.accum[!, r] /= s
         end
     end
@@ -279,18 +282,22 @@ function approximate!(
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
     # compute densities
-    edgeDensityDict, nodeDensityDict = computeNetworkDensities(model)
+    # edgeDensityDict, nodeDensityDict = computeNetworkDensities(model)
 
     # Regression model for placing the code dots into the approximated high-dimensional space
     ## start with a small amount of noise to prevent colinearity issues
     X = Matrix{Float64}(rand(nrow(model.accum), nrow(model.nodes)) / 1000000000)
+    nodeIndexMap = Dict(
+        nodeID => i
+        for (i, nodeID) in enumerate(model.nodes.nodeID)
+    )
 
     ## for each unit's edges, split the edge between nodes on either end
     for (k, unitRow) in enumerate(eachrow(model.accum))
         for edge in eachrow(model.edges)
-            i, j = edge.i, edge.j
-            X[k, i] += unitRow[edge.edge] / 2
-            X[k, j] += unitRow[edge.edge] / 2
+            i, j = nodeIndexMap[edge.ground], nodeIndexMap[edge.response]
+            X[k, i] += unitRow[edge.edgeID] / 2
+            X[k, j] += unitRow[edge.edgeID] / 2
         end
     end
 
@@ -298,7 +305,7 @@ function approximate!(
     X = (transpose(X) * X)^-1 * transpose(X)
 
     ## fit each dimension (edge) of the original high-dimensional space
-    for edge in model.edges.edge
+    for edge in model.edges.edgeID
         y = Vector{Float64}(model.accum[:, edge])
         coefs = X * y # regress on this edge
         model.nodes[!, edge] = coefs[1:end]
@@ -308,12 +315,12 @@ function approximate!(
     ## Refit the units: in high-d space, the refit units are as close as possible to their
     ## center of mass wrt the network
     ## This is by-definition the refit space
-    for unitEdge in model.edges.edge
+    for unitEdgeID in model.edges.edgeID
         for (k, unitRow) in enumerate(eachrow(model.accumHat))
-            unitRow[unitEdge] =
+            unitRow[unitEdgeID] =
                 sum(
-                    model.nodes[nodeEdge.i, unitEdge] * model.accum[k, nodeEdge.edge] +
-                    model.nodes[nodeEdge.j, unitEdge] * model.accum[k, nodeEdge.edge]
+                    model.nodes[nodeIndexMap[nodeEdge.ground  ], unitEdgeID] * model.accum[k, nodeEdge.edgeID] +
+                    model.nodes[nodeIndexMap[nodeEdge.response], unitEdgeID] * model.accum[k, nodeEdge.edgeID]
                     for nodeEdge in eachrow(model.edges)
                 ) / 2
         end
@@ -327,46 +334,46 @@ function rotate!(
     # for existing dimensions given to us by the child class,
     # add normalize them, orthogonalize them from each other,
     # and add point positions to the model
-    edgeNames = model.edges.edge
+    edgeIDs = model.edges.edgeID
     numExistingDims = nrow(model.embedding)
     if numExistingDims > 0
         # normalize the first dimension (the rest are normalized below)
-        v1 = Vector(model.embedding[1, edgeNames])
+        v1 = Vector(model.embedding[1, edgeIDs])
         s = sqrt(sum(v1 .^ 2))
         if s != 0
-            model.embedding[1, edgeNames] .= v1 / s
+            model.embedding[1, edgeIDs] .= v1 / s
         end
     end
 
     for i in 1:numExistingDims
-        addPointsToModelFromDim(model, model.embedding[i, edgeNames])
+        addPointsToModelFromDim(model, model.embedding[i, edgeIDs])
 
         # orthogonalize, by rejection, each existing dimension from each previous dimension.
         # note, a dimension will be orthogonalize before it is used to add points to the model
-        vi = Vector(model.embedding[i, edgeNames])
+        vi = Vector(model.embedding[i, edgeIDs])
         denom = dot(vi, vi)
         for j in (i+1):numExistingDims
-            vj = Vector(model.embedding[j, edgeNames])
+            vj = Vector(model.embedding[j, edgeIDs])
             s = sqrt(sum(vj .^ 2))
             if s != 0
-                model.embedding[j, edgeNames] .= vj / s
+                model.embedding[j, edgeIDs] .= vj / s
             end
 
             scalar = dot(vj, vi) / denom
-            model.embedding[j, edgeNames] -= scalar * vi
+            model.embedding[j, edgeIDs] -= scalar * vi
             s = sqrt(sum(vj .^ 2))
             if s < 0.05
-                model.embedding[j, edgeNames] .= 0
+                model.embedding[j, edgeIDs] .= 0
                 @warn "During the rotation step, axis $j was deflated to zero due to close correlation with axis $i."
             elseif s != 0
-                model.embedding[j, edgeNames] .= vj / s
+                model.embedding[j, edgeIDs] .= vj / s
             end
         end
     end
 
     # make a mean centered copy of accum
-    edgeNames = model.edges.edge
-    X = Matrix{Float64}(model.accum[!, edgeNames])
+    edgeIDs = model.edges.edgeID
+    X = Matrix{Float64}(model.accum[!, edgeIDs])
     for i in 1:size(X)[2]
         X[:, i] .-= mean(X[:, i])
     end
@@ -387,7 +394,7 @@ function rotate!(
     # then, once we've deflated or not, we run SVD on the data, then add to the model
     svd = transpose(projection(fit(PCA, X', pratio=1.0)))
     df = similar(model.embedding, size(svd)[1])
-    df[!, edgeNames] = svd
+    df[!, edgeIDs] = svd
     df.label = ["SVD$(i)" for i in 1:nrow(df)]
     append!(model.embedding, df)
     for i in (numExistingDims+1):nrow(model.embedding)

@@ -28,8 +28,8 @@ function defaultplotkwargs(
         xlims::Array{<:Real}=xticks[[1, end]],
         ylims::Array{<:Real}=yticks[[1, end]],
         titles::Array{<:AbstractString}=String[],
-        xlabel::AbstractString=model.embedding[x, :].label,
-        ylabel::AbstractString=model.embedding[y, :].label,
+        xlabel::AbstractString=model.embedding[x, :label],
+        ylabel::AbstractString=model.embedding[y, :label],
         unitLabel::AbstractString="Unit",
         leg::Union{Symbol,Bool}=:topleft,
         negColor::Colorant=DEFAULT_NEG_COLOR,
@@ -233,21 +233,21 @@ function paint_edge!(
     )
 
     regressionData = DataFrame(Dict(
-        edge.edge => Vector(model.accum[!, edge.edge]),
+        edge.edgeID => Vector(model.accum[!, edge.edgeID]),
         :vals => edgePainter.vals
     ))
 
     # Bugfix: https://github.com/JuliaStats/GLM.jl/issues/239
-    regressionData[!, edge.edge] = map(Float64, regressionData[!, edge.edge])
+    regressionData[!, edge.edgeID] = map(Float64, regressionData[!, edge.edgeID])
 
     # Compute line widths as the strength (slope) between the vals and the accum network weights
-    f1 = FormulaTerm(term(edge.edge), term(:vals))
+    f1 = FormulaTerm(term(edge.edgeID), term(:vals))
     slope = 0
     pearson = 0
     try
         m1 = fit(LinearModel, f1, regressionData)
         slope = coef(m1)[2]
-        pearson = cor(regressionData[!, edge.edge], regressionData[!, :vals])
+        pearson = cor(regressionData[!, edge.edgeID], regressionData[!, :vals])
         if isnan(pearson)
             pearson = 0
         end
@@ -436,35 +436,27 @@ function plot_network!(
         return
     end
 
-    # Find the true weight on each edge
-    edgeNames = model.edges.edge
-    allEdgeWidths = map(edgeNames) do edge
-        return sum(model.accum[!, edge])
+    # Find widths
+    allEdgeWidths, allNodeWidths = computeNetworkDensities(model)
+    edgeWidths, nodeWidths = computeNetworkDensities(model, displayRows)
+
+    # Rescale
+    s = maximum(values(allEdgeWidths))
+    if s != 0
+        for edgeID in model.edges.edgeID
+            edgeWidths[edgeID] *= GLOBAL_MAX_EDGE_SIZE / s
+        end
     end
 
-    # Find the displayed weight on each edge
-    edgeWidths = map(edgeNames) do edge
-        return sum(model.accum[displayRows, edge])
+    s = maximum(values(allNodeWidths))
+    if s != 0
+        for nodeID in model.nodes.nodeID
+            nodeWidths[nodeID] *= GLOBAL_MAX_NODE_SIZE / s
+        end
     end
 
-    # Rescale the lines
-    edgeWidths *= GLOBAL_MAX_EDGE_SIZE / maximum(allEdgeWidths)
-
-    # Initialize node widths, compute while we visit each line
-    allNodeWidths = zeros(nrow(model.nodes))
-    nodeWidths = zeros(nrow(model.nodes))
-
-    # For each line...
-    for (i, edge) in enumerate(eachrow(model.edges))
-        j, k = edge.i, edge.j
-
-        # ...add to its node weights
-        allNodeWidths[j] += allEdgeWidths[i]
-        allNodeWidths[k] += allEdgeWidths[i]
-        nodeWidths[j] += edgeWidths[i]
-        nodeWidths[k] += edgeWidths[i]
-
-        # and plot that line
+    # Plot each line
+    for edge in eachrow(model.edges)
         edgePoints = [
             fixPoint([
                 model.pointsNodes[plotconfig.x, edge.ground],
@@ -477,8 +469,8 @@ function plot_network!(
         elseif edge.kind in [:undirected, :undirected]
             if plotconfig.showWarps
                 pointT = fixPoint([
-                    model.embedding[plotconfig.x, edge.edge],
-                    model.embedding[plotconfig.y, edge.edge]
+                    model.embedding[plotconfig.x, edge.edgeID],
+                    model.embedding[plotconfig.y, edge.edgeID]
                 ], model, plotconfig)
                 
                 push!(edgePoints, pointT)
@@ -501,15 +493,14 @@ function plot_network!(
             end
         end
 
-        paint_edge!(p, edgePainter, model, edge, edgePoints, edgeWidths[i])
+        paint_edge!(p, edgePainter, model, edge, edgePoints, edgeWidths[edge.edgeID])
     end
 
     # Rescale and draw the nodes
-    nodeWidths *= GLOBAL_MAX_NODE_SIZE / maximum(allNodeWidths)
-    nodeNames = model.nodes.node
-    xs = [fixX(x, model, plotconfig) for x in model.pointsNodes[plotconfig.x, nodeNames]]
-    ys = [fixY(y, model, plotconfig) for y in model.pointsNodes[plotconfig.y, nodeNames]]
-    labels = map(zip(nodeNames, xs, ys)) do (label, xi, yi)
+    nodeIDs = model.nodes.nodeID
+    xs = [fixX(x, model, plotconfig) for x in model.pointsNodes[plotconfig.x, nodeIDs]]
+    ys = [fixY(y, model, plotconfig) for y in model.pointsNodes[plotconfig.y, nodeIDs]]
+    labels = map(zip(nodeIDs, xs, ys)) do (label, xi, yi)
         if plotconfig.fitNodesToCircle
             angle = atan(yi, xi) * 180 / pi
             if xi < 0
@@ -528,7 +519,7 @@ function plot_network!(
         seriestype=:scatter,
         series_annotations=labels,
         markershape=:circle,
-        markersize=nodeWidths,
+        markersize=[nodeWidths[nodeID] for nodeID in nodeIDs],
         markercolor=:black,
         markerstrokewidth=0
     )

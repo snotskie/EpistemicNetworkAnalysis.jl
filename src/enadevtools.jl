@@ -189,60 +189,62 @@ end
 
 # Helpers
 
-function computeNetworkDensities(model, rows=!)
+function computeNetworkDensities(model, rows=!; normalize=false)
 
     # sum densities for each edge
-    edgeNames = model.edges.edge
-    edgeDensities = sum(eachcol(model.accum[rows, edgeNames]))
+    edgeIDs = model.edges.edgeID
+    edgeDensities = Dict(
+        edgeID => sum(model.accum[rows, edgeID])
+        for edgeID in edgeIDs
+    )
 
     # find the density of each code row dot, by "splitting" the density of each line between its two codes
-    nodeNames = model.nodes.node
-    nodeDensities = zeros(length(nodeNames))
-    for (k, edge) in enumerate(eachrow(model.edges))
-        i, j = edge.i, edge.j
-        nodeDensities[i] += edgeDensities[k]
-        nodeDensities[j] += edgeDensities[k]
-    end
-
-    # normalize each
-    s = maximum(edgeDensities)
-    if s != 0
-        edgeDensities /= s
-    end
-
-    s = maximum(nodeDensities)
-    if s != 0
-        nodeDensities /= s
-    end
-
-    edgeDensityDict = Dict(
-        edge => density
-        for (edge, density) in zip(edgeNames, edgeDensities)
+    nodeIDs = model.nodes.nodeID
+    nodeDensities = Dict(
+        nodeID => 0.0
+        for nodeID in nodeIDs
     )
 
-    nodeDensityDict = Dict(
-        node => density
-        for (node, density) in zip(nodeNames, nodeDensities)
-    )
+    for edge in eachrow(model.edges)
+        nodeDensities[edge.ground] += edgeDensities[edge.edgeID]
+        nodeDensities[edge.response] += edgeDensities[edge.edgeID]
+    end
 
-    return edgeDensityDict, nodeDensityDict
+    # optionally normalize each
+    if normalize
+        s = maximum(values(edgeDensities))
+        if s != 0
+            for edgeID in edgeIDs
+                edgeDensities[edge] /= s
+            end
+        end
+
+        s = maximum(values(nodeDensities))
+        if s != 0
+            for nodeID in nodeIDs
+                nodeDensities[node] /= s
+            end
+        end
+    end
+
+    return edgeDensities, nodeDensities
 end
 
 function addPointsToModelFromDim(model, dim)
-    edgeNames = model.edges.edge
+    edgeIDs = model.edges.edgeID
     unitIDs = model.accum.unitID
-    nodeNames = model.nodes.node
-    points = Matrix{Float64}(model.accum[!, edgeNames]) * Vector{Float64}(dim[edgeNames])
+    nodeIDs = model.nodes.nodeID
+    points = Matrix{Float64}(model.accum[!, edgeIDs]) * Vector{Float64}(dim[edgeIDs])
     df = similar(model.points, 1)
     df[1, unitIDs] = points
     append!(model.points, df)
-    pointsHat = Matrix{Float64}(model.accumHat[!, edgeNames]) * Vector{Float64}(dim[edgeNames])
+    pointsHat = Matrix{Float64}(model.accumHat[!, edgeIDs]) * Vector{Float64}(dim[edgeIDs])
     df = similar(model.pointsHat, 1)
     df[1, unitIDs] = pointsHat
     append!(model.pointsHat, df)
-    pointsNodes = Matrix{Float64}(model.nodes[!, edgeNames]) * Vector{Float64}(dim[edgeNames])
+    pointsNodes = Matrix{Float64}(model.nodes[!, edgeIDs]) * Vector{Float64}(dim[edgeIDs])
     df = similar(model.pointsNodes, 1)
-    df[1, nodeNames] = pointsNodes
+    df[1, nodeIDs] = pointsNodes
     append!(model.pointsNodes, df)
 end
 
