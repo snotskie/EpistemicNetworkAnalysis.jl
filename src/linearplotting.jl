@@ -46,6 +46,7 @@ function defaultplotkwargs(
         showMeans::Bool=true,
         showWarps::Bool=false,
         fitNodesToCircle::Bool=false,
+        weakLinks::Bool=true,
         # TODO the options I cut from the model type
         kwargs...
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
@@ -82,6 +83,7 @@ function defaultplotkwargs(
         showMeans=showMeans,
         showWarps=showWarps,
         fitNodesToCircle=fitNodesToCircle,
+        weakLinks=weakLinks,
         kwargs...
     )
 
@@ -97,9 +99,8 @@ function plot(
     ps = Plot[]
     plot_omnibus!(M, ps, model, plotconfig)
     plot_trends!(M, ps, model, plotconfig)
-    # plot_groups!(M, ps, model, plotconfig)
-    # plot_subtractions!(M, ps, model, plotconfig)
-    # plot_labels!(M, ps, model, plotconfig)
+    plot_groups!(M, ps, model, plotconfig)
+    plot_subtractions!(M, ps, model, plotconfig)
     # plot_extras!(M, ps, model, plotconfig)
     return layoutSubplots(ps, plotconfig)
 end
@@ -193,30 +194,150 @@ function getAxisLabels(model::AbstractLinearENAModel, plotconfig::NamedTuple)
     )
 end
 
+function paintSortedNetwork!(
+        p::Plot,
+        model::AbstractLinearENAModel,
+        plotconfig::NamedTuple,
+        edgeWidths::Dict,
+        edgeColors::Dict,
+        nodeWidths::Dict
+    )
+
+    edgeOrder = first.(sort(collect(edgeWidths), by=x->x[2]))
+    edgeMap = Dict(
+        edge.edgeID => i
+        for (i, edge) in enumerate(eachrow(model.edges))
+    )
+
+    edgePoints = Dict(
+        edgeID => []
+        for edgeID in edgeOrder
+    )
+
+    for edge in eachrow(model.edges)
+        push!(edgePoints[edge.edgeID], fixPoint([
+            model.pointsNodes[plotconfig.x, edge.ground],
+            model.pointsNodes[plotconfig.y, edge.ground]
+        ], model, plotconfig))
+
+        if edge.kind == :count
+            push!(edgePoints[edge.edgeID], fixPoint([0, 0], model, plotconfig))
+        elseif edge.kind in [:undirected, :undirected]
+            if plotconfig.showWarps
+                pointT = fixPoint([
+                    model.embedding[plotconfig.x, edge.edgeID],
+                    model.embedding[plotconfig.y, edge.edgeID]
+                ], model, plotconfig)
+                
+                push!(edgePoints[edge.edgeID], pointT)
+                push!(edgePoints[edge.edgeID], pointT)
+                push!(edgePoints[edge.edgeID], pointT)
+            end
+
+            push!(edgePoints[edge.edgeID], fixPoint([
+                model.pointsNodes[plotconfig.x, edge.response],
+                model.pointsNodes[plotconfig.y, edge.response]
+            ], model, plotconfig))
+        end
+
+        if plotconfig.fitNodesToCircle
+            for point in edgePoints[edge.edgeID]
+                s = sqrt(sum(point .^ 2))
+                if s != 0
+                    point .= point / s
+                end
+            end
+        end
+    end
+
+    for edgeID in edgeOrder
+        edge = model.edges[edgeMap[edgeID], :]
+        if edgeWidths[edgeID] > 0
+            plot!(p,
+                first.(edgePoints[edgeID]), # xs
+                last.(edgePoints[edgeID]), # ys
+                label=nothing,
+                seriestype=:curves,
+                arrows=(edge.kind == :directed),
+                linewidth=edgeWidths[edgeID],
+                linecolor=edgeColors[edgeID]
+            )
+        end
+    end
+
+    for nodeID in model.nodes.nodeID
+        x = fixX(model.pointsNodes[plotconfig.x, nodeID], model, plotconfig)
+        y = fixY(model.pointsNodes[plotconfig.y, nodeID], model, plotconfig)
+        label = text(string(nodeID), :top, default(:xtickfontsize))
+        if plotconfig.fitNodesToCircle
+            s = sqrt(x^2 + y^2)
+            if s != 0
+                x /= s
+                y /= s
+            end
+
+            angle = atan(y, x) * 180 / pi
+            if x < 0
+                angle = atan(-y, -x) * 180 / pi
+            end
+            
+            label = text(string(nodeID), :top, default(:xtickfontsize), rotation=angle)
+        end
+
+        if nodeWidths[nodeID] > 0
+            plot!(
+                p, [x], [y],
+                label=nothing,
+                seriestype=:scatter,
+                series_annotations=[label],
+                markershape=:circle,
+                markersize=[nodeWidths[nodeID]],
+                markercolor=:black,
+                markerstrokewidth=0
+            )
+        end
+    end
+end
+
 # Painters
 abstract type AbstractLinearEdgePainter <: AbstractEdgePainter end
 struct FlatLinearEdgePainter <: AbstractLinearEdgePainter
     color::Colorant
 end
 
-function paint_edge!(
+function paint_edges!(
         p::Plot,
         edgePainter::FlatLinearEdgePainter,
         model::AbstractLinearENAModel,
-        edge, points, width
+        plotconfig::NamedTuple,
+        displayRows::BitVector=BitVector(repeat([true], nrow(model.accum)))
     )
 
-    # TODO compute widths here?
+    # Find widths
+    allEdgeWidths, allNodeWidths = computeNetworkDensities(model)
+    edgeWidths, nodeWidths = computeNetworkDensities(model, displayRows)
 
-    plot!(p,
-        first.(points), # xs
-        last.(points), # ys
-        label=nothing,
-        seriestype=:curves,
-        arrows=(edge.kind == :directed),
-        linewidth=width,
-        linecolor=edgePainter.color
+    # Rescale
+    s = maximum(values(allEdgeWidths))
+    if s != 0
+        for edgeID in model.edges.edgeID
+            edgeWidths[edgeID] *= GLOBAL_MAX_EDGE_SIZE / s
+        end
+    end
+
+    s = maximum(values(allNodeWidths))
+    if s != 0
+        for nodeID in model.nodes.nodeID
+            nodeWidths[nodeID] *= GLOBAL_MAX_NODE_SIZE / s
+        end
+    end
+
+    edgeColors = Dict(
+        edgeID => edgePainter.color
+        for edgeID in model.edges.edgeID
     )
+
+    paintSortedNetwork!(p, model, plotconfig, edgeWidths, edgeColors, nodeWidths)
 end
 
 struct TrendLinearEdgePainter <: AbstractLinearEdgePainter
@@ -225,37 +346,25 @@ struct TrendLinearEdgePainter <: AbstractLinearEdgePainter
     pos_color::Colorant
 end
 
-function paint_edge!(
+function paint_edges!(
         p::Plot,
         edgePainter::TrendLinearEdgePainter,
         model::AbstractLinearENAModel,
-        edge, points, width
+        plotconfig::NamedTuple,
+        displayRows::BitVector=BitVector(repeat([true], nrow(model.accum)))
     )
 
+    # Compile data for regressions
     regressionData = DataFrame(Dict(
-        edge.edgeID => Vector(model.accum[!, edge.edgeID]),
-        :vals => edgePainter.vals
+        :vals => edgePainter.vals[displayRows],
+        [
+            # why map? Bugfix: https://github.com/JuliaStats/GLM.jl/issues/239
+            edgeID => map(Float64, Vector(model.accum[displayRows, edgeID]))
+            for edgeID in model.edges.edgeID
+        ]...
     ))
 
-    # Bugfix: https://github.com/JuliaStats/GLM.jl/issues/239
-    regressionData[!, edge.edgeID] = map(Float64, regressionData[!, edge.edgeID])
-
-    # Compute line widths as the strength (slope) between the vals and the accum network weights
-    f1 = FormulaTerm(term(edge.edgeID), term(:vals))
-    slope = 0
-    pearson = 0
-    try
-        m1 = fit(LinearModel, f1, regressionData)
-        slope = coef(m1)[2]
-        pearson = cor(regressionData[!, edge.edgeID], regressionData[!, :vals])
-        if isnan(pearson)
-            pearson = 0
-        end
-    catch e
-        # do nothing
-    end
-
-    # Color the lines based on their correlation with the x position
+    # Color map the lines based on their correlation with the vals
     mid_color = weighted_color_mean(0.5, RGB(edgePainter.neg_color), RGB(edgePainter.pos_color))
     mid_color = weighted_color_mean(0.3, RGB(mid_color), colorant"white")
     edgeColorMap = nonlinearGradientMap(
@@ -265,111 +374,55 @@ function paint_edge!(
         curve=2.5
     )
 
-    index = 1 + round(Int, (length(edgeColorMap) - 1) * (pearson + 1) / 2)
-    color = edgeColorMap[index]
-    plot!(p,
-        first.(points), # xs
-        last.(points), # ys
-        label=nothing,
-        seriestype=:curves,
-        arrows=(edge.kind == :directed),
-        linewidth=width,
-        linecolor=color
-    )
+    # Compute line widths as the strength (slope) between the vals and the accum network weights
+    edgeWidths = Dict(edgeID => 0.0 for edgeID in model.edges.edgeID)
+    edgeColors = Dict(edgeID => colorant"black" for edgeID in model.edges.edgeID)
+    for edgeID in model.edges.edgeID
+        f1 = FormulaTerm(term(edgeID), term(:vals))
+        try
+            m1 = fit(LinearModel, f1, regressionData)
+            slope = coef(m1)[2]
+            pearson = cor(regressionData[!, edgeID], regressionData[!, :vals])
+            if isnan(pearson)
+                pearson = 0
+            end
 
-# ### Size the lines based on their slope with the x position
-# lineWidths = map(lineData) do (slope, pearson)
-#     return abs(slope)
-# end
+            if !plotconfig.weakLinks && abs(pearson) < 0.3
+                slope = 0
+            end
 
-# ### Normalize
-# lineWidths *= GLOBAL_MAX_EDGE_SIZE / maximum(lineWidths)
+            edgeWidths[edgeID] = abs(slope)
+            index = 1 + round(Int, (length(edgeColorMap) - 1) * (pearson + 1) / 2)
+            edgeColors[edgeID] = edgeColorMap[index]
+        catch e
+            # do nothing
+        end
+    end
 
-# ### Placeholder, let's compute code weights as we visit each line
-# codeWidths = zeros(nrow(ena.codeModel))
-# codeVisible = Bool.(zeros(nrow(ena.codeModel)))
+    # Compute node widths
+    nodeWidths = Dict(nodeID => 0.0 for nodeID in model.nodes.nodeID)
+    for edge in eachrow(model.edges)
+        nodeWidths[edge.ground] += edgeWidths[edge.edgeID]
+        nodeWidths[edge.response] += edgeWidths[edge.edgeID]
+    end
 
-# ### For each line...
-# networkData = hcat(ena.networkModel, DataFrame(:width => lineWidths, :color => lineColors, :pearson => last.(lineData)))
-# for networkRow in sort(eachrow(networkData), by=row->row[:width], rev=reverseLineSort)
+    # Rescale
+    s = maximum(values(edgeWidths))
+    if s != 0
+        for edgeID in model.edges.edgeID
+            edgeWidths[edgeID] *= GLOBAL_MAX_EDGE_SIZE / s
+        end
+    end
 
-#     ### ...contribute to the code weights...
-#     j, k = ena.relationshipMap[networkRow[:relationship]]
-#     codeWidths[j] += networkRow[:width]
-#     codeWidths[k] += networkRow[:width]
+    s = maximum(values(nodeWidths))
+    if s != 0
+        for nodeID in model.nodes.nodeID
+            nodeWidths[nodeID] *= GLOBAL_MAX_NODE_SIZE / s
+        end
+    end
 
-#     ### ...and if that line should be shown...
-#     if weakLinks || abs(networkRow[:pearson]) >= 0.3
-#         ### ...plot it in the right width and color
-#         codeVisible[j] = true
-#         codeVisible[k] = true
-#         pointA = [ena.codeModel[j, :pos_x] * (flipX ? -1 : 1), ena.codeModel[j, :pos_y] * (flipY ? -1 : 1)]
-#         pointB = [ena.codeModel[k, :pos_x] * (flipX ? -1 : 1), ena.codeModel[k, :pos_y] * (flipY ? -1 : 1)]
-#         if j == k
-#             pointB = [0.0, 0.0]
-#         end
-        
-#         pointT = (pointA+pointB)/2
-#         if showWarps
-#             pointT = [networkRow[:weight_x] * (flipX ? -1 : 1), networkRow[:weight_y] * (flipY ? -1 : 1)]
-#         end
-
-#         points = hcat(pointA, pointT, pointT, pointT, pointB)
-#         plot!(p,
-#             points[1, :],
-#             points[2, :],
-#             label=nothing,
-#             seriestype=:curves,
-#             arrows=showArrows,
-#             linewidth=networkRow[:width],
-#             linecolor=networkRow[:color])
-#     end
-# end
-
-# ### Rescale the code widths
-# codeWidths *= GLOBAL_MAX_NODE_SIZE / maximum(codeWidths)
-
-# ### And plot the codes and we're done
-# x = ena.codeModel[codeVisible, :pos_x] * (flipX ? -1 : 1)
-# y = ena.codeModel[codeVisible, :pos_y] * (flipY ? -1 : 1)
-# if showCodeLabels
-#     labels = map(zip(ena.codeModel[codeVisible, :code], x, y)) do (label, xi, yi)
-#         if rotateCodeLabels
-#             return rotatedLabel(label, xi, yi)
-#         else
-#             return text(label, :top, default(:xtickfontsize))
-#         end
-#     end
-
-#     plot!(p, x, y,
-#         label=nothing,
-#         seriestype=:scatter,
-#         series_annotations=labels,
-#         markershape=:circle,
-#         markersize=codeWidths,
-#         markercolor=:black,
-#         markerstrokewidth=0)
-# else
-#     plot!(p, x, y,
-#         label=nothing,
-#         seriestype=:scatter,
-#         # series_annotations=labels,
-#         markershape=:circle,
-#         markersize=codeWidths,
-#         markercolor=:black,
-#         markerstrokewidth=0)
-# end
-# end
+    paintSortedNetwork!(p, model, plotconfig, edgeWidths, edgeColors, nodeWidths)
 end
-
-# TODO use Trend instead
-# struct SubtractionLinearEdgePainter <: AbstractLinearEdgePainter
-#     groupVar::Symbol
-#     group1::Any
-#     group1_color::Colorant
-#     group2::Any
-#     group2_color::Colorant
-# end
 
 # Subplots
 function plot_omnibus!(
@@ -422,6 +475,73 @@ function plot_trends!(
     push!(ps, py)
 end
 
+function plot_groups!(
+        ::Type{M}, ps::Array{Plot}, model::AbstractLinearENAModel, plotconfig::NamedTuple
+    ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
+
+    if isnothing(plotconfig.groupBy)
+        return
+    end
+
+    groupColors = getGroupColorMap(model, plotconfig)
+    for group in keys(groupColors)
+        p = plot(
+            leg=plotconfig.leg,
+            margin=plotconfig.margin,
+            size=(plotconfig.size, plotconfig.size)
+        )
+
+        letter = DEFAULT_ALPHABET[length(ps)+1]
+        title!(p, "($(letter)) $(group)")
+        groupRows = model.metadata[!, plotconfig.groupBy] .== group
+        plot_network!(M, p, model, FlatLinearEdgePainter(groupColors[group]), plotconfig, groupRows)
+        plot_units!(M, p, model, plotconfig, groupRows)
+        plot_means!(M, p, model, plotconfig, groupRows)
+        push!(ps, p)
+    end
+end
+
+function plot_subtractions!(
+        ::Type{M}, ps::Array{Plot}, model::AbstractLinearENAModel, plotconfig::NamedTuple
+    ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
+
+    if isnothing(plotconfig.groupBy)
+        return
+    end
+
+    groupColors = getGroupColorMap(model, plotconfig)
+    for (i, group1) in enumerate(keys(groupColors))
+        for (j, group2) in enumerate(keys(groupColors))
+            if i < j
+                p = plot(
+                    leg=plotconfig.leg,
+                    margin=plotconfig.margin,
+                    size=(plotconfig.size, plotconfig.size)
+                )
+
+                letter = DEFAULT_ALPHABET[length(ps)+1]
+                title!(p, "($(letter)) $(group1) vs. $(group2)")
+                groupRows = (model.metadata[!, plotconfig.groupBy] .== group1) .|
+                            (model.metadata[!, plotconfig.groupBy] .== group2)
+                vals = map(model.metadata[!, plotconfig.groupBy]) do g
+                    if g == group1
+                        return 1
+                    elseif g == group2
+                        return 2
+                    else
+                        return missing
+                    end
+                end
+
+                plot_network!(M, p, model, TrendLinearEdgePainter(vals, groupColors[group1], groupColors[group2]), plotconfig, groupRows)
+                plot_units!(M, p, model, plotconfig, groupRows)
+                plot_means!(M, p, model, plotconfig, groupRows)
+                push!(ps, p)
+            end
+        end
+    end
+end
+
 # Plot Elements
 function plot_network!(
         ::Type{M},
@@ -429,100 +549,15 @@ function plot_network!(
         model::AbstractLinearENAModel,
         edgePainter::AbstractLinearEdgePainter,
         plotconfig::NamedTuple,
-        displayRows::Array{Bool}=repeat([true], nrow(model.accum))
+        displayRows::BitVector=BitVector(repeat([true], nrow(model.accum)))
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
     if !plotconfig.showNetworks
         return
     end
 
-    # Find widths
-    allEdgeWidths, allNodeWidths = computeNetworkDensities(model)
-    edgeWidths, nodeWidths = computeNetworkDensities(model, displayRows)
-
-    # Rescale
-    s = maximum(values(allEdgeWidths))
-    if s != 0
-        for edgeID in model.edges.edgeID
-            edgeWidths[edgeID] *= GLOBAL_MAX_EDGE_SIZE / s
-        end
-    end
-
-    s = maximum(values(allNodeWidths))
-    if s != 0
-        for nodeID in model.nodes.nodeID
-            nodeWidths[nodeID] *= GLOBAL_MAX_NODE_SIZE / s
-        end
-    end
-
-    # Plot each line
-    for edge in eachrow(model.edges)
-        edgePoints = [
-            fixPoint([
-                model.pointsNodes[plotconfig.x, edge.ground],
-                model.pointsNodes[plotconfig.y, edge.ground]
-            ], model, plotconfig)
-        ]
-
-        if edge.kind == :count
-            push!(edgePoints, fixPoint([0, 0], model, plotconfig))
-        elseif edge.kind in [:undirected, :undirected]
-            if plotconfig.showWarps
-                pointT = fixPoint([
-                    model.embedding[plotconfig.x, edge.edgeID],
-                    model.embedding[plotconfig.y, edge.edgeID]
-                ], model, plotconfig)
-                
-                push!(edgePoints, pointT)
-                push!(edgePoints, pointT)
-                push!(edgePoints, pointT)
-            end
-
-            push!(edgePoints, fixPoint([
-                model.pointsNodes[plotconfig.x, edge.response],
-                model.pointsNodes[plotconfig.y, edge.response]
-            ], model, plotconfig))
-        end
-
-        if plotconfig.fitNodesToCircle
-            for point in edgePoints
-                s = sqrt(sum(point .^ 2))
-                if s != 0
-                    point .= point / s
-                end
-            end
-        end
-
-        paint_edge!(p, edgePainter, model, edge, edgePoints, edgeWidths[edge.edgeID])
-    end
-
-    # Rescale and draw the nodes
-    nodeIDs = model.nodes.nodeID
-    xs = [fixX(x, model, plotconfig) for x in model.pointsNodes[plotconfig.x, nodeIDs]]
-    ys = [fixY(y, model, plotconfig) for y in model.pointsNodes[plotconfig.y, nodeIDs]]
-    labels = map(zip(nodeIDs, xs, ys)) do (label, xi, yi)
-        if plotconfig.fitNodesToCircle
-            angle = atan(yi, xi) * 180 / pi
-            if xi < 0
-                angle = atan(-yi, -xi) * 180 / pi
-            end
-            
-            return text(string(label), :top, default(:xtickfontsize), rotation=angle)
-        else
-            return text(string(label), :top, default(:xtickfontsize))
-        end
-    end
-
-    plot!(
-        p, xs, ys,
-        label=nothing,
-        seriestype=:scatter,
-        series_annotations=labels,
-        markershape=:circle,
-        markersize=[nodeWidths[nodeID] for nodeID in nodeIDs],
-        markercolor=:black,
-        markerstrokewidth=0
-    )
+    # Just pass the work off to the edge painter
+    paint_edges!(p, edgePainter, model, plotconfig, displayRows)
 
     # TODO move to plot_extras or _trends or _groups or idk?
     # #### Optional: illustrate a trajectory by a continuous, non-repeating value
@@ -554,7 +589,7 @@ function plot_units!(
         p::Plot,
         model::AbstractLinearENAModel,
         plotconfig::NamedTuple,
-        displayRows::Array{Bool}=repeat([true], nrow(model.accum))
+        displayRows::BitVector=BitVector(repeat([true], nrow(model.accum)))
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
     if !plotconfig.showUnits
@@ -623,7 +658,7 @@ function plot_means!(
         p::Plot,
         model::AbstractLinearENAModel,
         plotconfig::NamedTuple,
-        displayRows::Array{Bool}=repeat([true], nrow(model.accum))
+        displayRows::BitVector=BitVector(repeat([true], nrow(model.accum)))
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
     if !plotconfig.showMeans
