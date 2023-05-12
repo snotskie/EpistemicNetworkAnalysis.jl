@@ -332,7 +332,7 @@ function rotate!(
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
     # for existing dimensions given to us by the child class,
-    # add normalize them, orthogonalize them from each other,
+    # normalize them, orthogonalize them from each other,
     # and add point positions to the model
     edgeIDs = model.edges.edgeID
     numExistingDims = nrow(model.embedding)
@@ -379,8 +379,9 @@ function rotate!(
     end
 
     # if needed, deflate those points' dimensions from X before we run SVD on it
+    unitIDs = model.accum.unitID
     if numExistingDims > 0
-        P = transpose(Matrix{Float64}(model.points))
+        P = transpose(Matrix{Float64}(model.points[!, unitIDs]))
         for i in 1:size(P)[2]
             col = P[:, i] .- mean(P[:, i])
             denom = dot(col, col)
@@ -390,6 +391,11 @@ function rotate!(
             end
         end
     end
+
+    # TODO BUG can't figure out why the existing dims
+    # aren't being deflated for SVD the way I expect,
+    # the way they used to be in the previous version
+    # of jENA
 
     # then, once we've deflated or not, we run SVD on the data, then add to the model
     svd = transpose(projection(fit(PCA, X', pratio=1.0)))
@@ -402,8 +408,7 @@ function rotate!(
     end
 
     # Now that we have the full embedding ready, run basic stats on it
-    unitIDs = model.accum.unitID
-    total_variance = sum(var.(eachrow(model.points[!, unitIDs])))
+    total_variance = sum(var.(eachcol(model.accum[!, edgeIDs])))
     for i in 1:nrow(model.embedding)
         points = Vector(model.points[i, unitIDs])
         pointsHat = Vector(model.pointsHat[i, unitIDs])
@@ -423,6 +428,8 @@ function rotate!(
 
         model.embedding[i, :coregistration] = cor(pointsDiffs, pointsHatDiffs)
     end
+
+    @assert sum(model.embedding.variance_explained) ≈ 1.0 "Var Exp does not add up to 100% as expected"
 end
 
 # function tests(

@@ -55,8 +55,8 @@ function rotate!(
     end
 
     ## BUGFIX: https://github.com/JuliaStats/GLM.jl/issues/239
-    edgeNames = model.edges.edge
-    for edge in edgeNames
+    edgeIDs = model.edges.edgeID
+    for edge in edgeIDs
         regressionData[!, edge] = map(Float64, regressionData[!, edge])
     end
 
@@ -64,7 +64,7 @@ function rotate!(
     embedding = similar(model.embedding, length(model.rotation.formulas))
     for (i, formula) in enumerate(model.rotation.formulas)
         embedding[i, :label] = string(formula.rhs[model.rotation.coef_indexes[i]])
-        for edge in edgeNames
+        for edge in edgeIDs
             f1 = FormulaTerm(term(edge), formula.rhs)
             try
                 if model.rotation.contrasts[i] isa Nothing

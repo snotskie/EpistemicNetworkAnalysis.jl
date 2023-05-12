@@ -7,7 +7,7 @@ using Plots
 @testset "EpistemicNetworkAnalysis.jl" begin
 
     # Test that example data loads
-    data = loadExample("shakespeare.data")
+    data = loadExample("shakespeare")
     @test nrow(data) == 1978
     @test Set(names(data)) == Set(["X","RowID","Type","Play","Act","Scene","Utterance_Index","Line_Index","Speaker","Line","Love","Beauty","Death","Fear","Friendship","Hate","Honor","Men","Women","Pride"])
 
