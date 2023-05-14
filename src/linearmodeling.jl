@@ -192,22 +192,24 @@ function accumulate!(
         end
 
         # update the accum counts of the unit on this line
-        unit = unitIndexMap[line.unitID]
-        for edge in eachrow(model.edges)
-            if edge.kind == :count
-                if line[edge.response] > 0
-                    model.accum[unit, edge.edgeID] += 1
-                end
-            elseif edge.kind == :echo || edge.kind == :directed
-                if (line[edge.response] > 0 && howrecents[edge.ground] < model.config.windowSize) ||
+        if haskey(unitIndexMap, line.unitID) # in case the unit was filtered out above
+            unit = unitIndexMap[line.unitID]
+            for edge in eachrow(model.edges)
+                if edge.kind == :count
+                    if line[edge.response] > 0
+                        model.accum[unit, edge.edgeID] += 1
+                    end
+                elseif edge.kind == :echo || edge.kind == :directed
+                    if (line[edge.response] > 0 && howrecents[edge.ground] < model.config.windowSize) ||
+                        (line[edge.ground] > 0 && line[edge.response] > 0)
+                        model.accum[unit, edge.edgeID] += 1
+                    end
+                elseif edge.kind == :undirected
+                    if (line[edge.response] > 0 && howrecents[edge.ground] < model.config.windowSize) ||
+                    (line[edge.ground] > 0 && howrecents[edge.response] < model.config.windowSize) ||
                     (line[edge.ground] > 0 && line[edge.response] > 0)
-                    model.accum[unit, edge.edgeID] += 1
-                end
-            elseif edge.kind == :undirected
-                if (line[edge.response] > 0 && howrecents[edge.ground] < model.config.windowSize) ||
-                   (line[edge.ground] > 0 && howrecents[edge.response] < model.config.windowSize) ||
-                   (line[edge.ground] > 0 && line[edge.response] > 0)
-                    model.accum[unit, edge.edgeID] += 1
+                        model.accum[unit, edge.edgeID] += 1
+                    end
                 end
             end
         end
@@ -360,7 +362,7 @@ function rotate!(
             end
 
             scalar = dot(vj, vi) / denom
-            model.embedding[j, edgeIDs] -= scalar * vi
+            model.embedding[j, edgeIDs] .= vj - scalar * vi
             s = sqrt(sum(vj .^ 2))
             if s < 0.05
                 model.embedding[j, edgeIDs] .= 0

@@ -21,8 +21,7 @@ function ModeratedRotation(
     formulas = FormulaTerm[formula1]
     contrasts = Union{Nothing,Dict}[contrast1]
 
-    i = 0
-    while i < length(args)
+    for i in 1:4:length(args)
         push!(regression_models, args[i+0])
         push!(coef_indexes, args[i+1])
         if args[i+2] isa Term # BUGFIX

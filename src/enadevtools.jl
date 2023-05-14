@@ -156,6 +156,11 @@ function defaultplotkwargs(::Type{M}, model::AbstractENAModel; kwargs...) where 
     error("Unimplemented")
 end
 
+function defaultplotkwargs(::Type{M}, model::AbstractENAModel, config::NamedTuple) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
+    # wrapper for the above, to simplify logic of children that override their parent plotkwargs
+    defaultplotkwargs(M, model; Dict(zip(keys(config), values(config)))...)
+end
+
 # NOTE: when implementing these functions elsewhere, M should be the *most* specific
 # type that the function applies to, while model should be the *least* specific.
 # Also, accumulate! and approximate! should be generic to the rotation type when possible,

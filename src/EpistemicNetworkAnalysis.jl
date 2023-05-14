@@ -27,6 +27,9 @@ using GLM
 # using Distances
 # using UMAP
 
+# Dataflow Logic
+using Pipe
+
 # Helpers
 include("./enadevtools.jl")
 include("./linearmodeling.jl")

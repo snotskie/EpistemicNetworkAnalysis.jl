@@ -12,6 +12,11 @@ const DEFAULT_ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZθ
 const GLOBAL_MAX_EDGE_SIZE = 8
 const GLOBAL_MAX_NODE_SIZE = 8
 const GLOBAL_UNIT_SIZE = 3
+const DEFAULT_INNER_MEAN_MARKERS = [
+    :utriangle, :dtriangle, :rtriangle, :ltriangle,
+    :pentagon, :heptagon, :octagon, :star4,
+    :star6, :star7, :star8
+]
 
 function defaultplotkwargs(
         ::Type{M},
@@ -23,8 +28,16 @@ function defaultplotkwargs(
         meanCenter::Bool=model.config.sphereNormalize,
         origin::Array{<:Real}=(meanCenter ?  [mean(model.points[x, :]), mean(model.points[y, :])] : [0,0]),
         lims::Real=1,
-        xticks::Array{<:Real}=round.([origin[1]-lims, origin[1], origin[1]+lims], digits=4),
-        yticks::Array{<:Real}=round.([origin[2]-lims, origin[2], origin[2]+lims], digits=4),
+        flipX::Bool=false,
+        flipY::Bool=false,
+        xticks::Array{<:Real}=(
+            round.([origin[1]-lims, origin[1], origin[1]+lims], digits=4) |>
+            (xticks) -> (flipX ? -reverse(xticks) : xticks)
+        ),
+        yticks::Array{<:Real}=(
+            round.([origin[2]-lims, origin[2], origin[2]+lims], digits=4) |>
+            (yticks) -> (flipY ? -reverse(yticks) : yticks)
+        ),
         xlims::Array{<:Real}=xticks[[1, end]],
         ylims::Array{<:Real}=yticks[[1, end]],
         titles::Array{<:AbstractString}=String[],
@@ -36,9 +49,8 @@ function defaultplotkwargs(
         posColor::Colorant=DEFAULT_POS_COLOR,
         extraColors::Array{<:Colorant,1}=DEFAULT_EXTRA_COLORS,
         alphabet::String=DEFAULT_ALPHABET,
-        flipX::Bool=false,
-        flipY::Bool=false,
         groupBy::Union{Symbol,Nothing}=nothing,
+        innerGroupBy::Union{Symbol,Nothing}=nothing,
         spectralColorBy::Union{Symbol,Nothing}=nothing,
         showExtras::Bool=false,
         showNetworks::Bool=true,
@@ -76,6 +88,7 @@ function defaultplotkwargs(
         flipX=flipX,
         flipY=flipY,
         groupBy=groupBy,
+        innerGroupBy=innerGroupBy,
         spectralColorBy=spectralColorBy,
         showExtras=showExtras,
         showNetworks=showNetworks,
@@ -343,7 +356,7 @@ function paint_edges!(
 end
 
 struct TrendLinearEdgePainter <: AbstractLinearEdgePainter
-    vals::Vector{<:Real}
+    vals::Vector{<:Union{Missing,Real}}
     neg_color::Colorant
     pos_color::Colorant
 end
@@ -675,11 +688,28 @@ function plot_means!(
     for group in keys(groupColors)
         groupRows = model.metadata[!, plotconfig.groupBy] .== group
         meanedRows = displayRows .& groupRows
-        unitIDs = model.accum[meanedRows, :unitID]
-        xs = [fixX(x, model, plotconfig) for x in model.points[plotconfig.x, unitIDs]]
-        ys = [fixX(y, model, plotconfig) for y in model.points[plotconfig.y, unitIDs]]
-        color = groupColors[group]
-        plotConfidenceInterval(p, xs, ys, color, :square, "$(group) Mean")
+        if any(meanedRows)
+            unitIDs = model.accum[meanedRows, :unitID]
+            xs = [fixX(x, model, plotconfig) for x in model.points[plotconfig.x, unitIDs]]
+            ys = [fixY(y, model, plotconfig) for y in model.points[plotconfig.y, unitIDs]]
+            color = groupColors[group]
+            if isnothing(plotconfig.innerGroupBy)
+                plotConfidenceInterval(p, xs, ys, color, :square, "$(group) Mean")
+            else
+                allInnerGroups = sort(unique(model.metadata[!, plotconfig.innerGroupBy]))
+                # NOTE when we run out of markers, we stop plotting inner groups
+                for (igroup, imarker) in zip(allInnerGroups, DEFAULT_INNER_MEAN_MARKERS)
+                    igroupRows = model.metadata[!, plotconfig.innerGroupBy] .== igroup
+                    imeanedRows = meanedRows .& igroupRows
+                    if any(imeanedRows)
+                        iunitIDs = model.accum[imeanedRows, :unitID]
+                        ixs = [fixX(x, model, plotconfig) for x in model.points[plotconfig.x, iunitIDs]]
+                        iys = [fixY(y, model, plotconfig) for y in model.points[plotconfig.y, iunitIDs]]
+                        plotConfidenceInterval(p, ixs, iys, color, imarker, "$(group) Mean where $(plotconfig.innerGroupBy) = $(igroup)")
+                    end
+                end
+            end
+        end
     end
 end
 

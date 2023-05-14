@@ -24,15 +24,17 @@ codes = [
 ]
 group = :Play
 rotation = EpistemicNetworkAnalysis.MeansRotation(
-    :Play, "Romeo and Juliet", "Hamlet"
+    :Play, "Romeo and Juliet", "Hamlet",
+    :Act, 1, 5,
 )
 
 myENA = EpistemicNetworkAnalysis.ENAModel(
     data, codes, conversations, units,
     windowSize=4,
-    rotateBy=rotation
+    rotateBy=rotation,
+    unitFilter=(row -> row.Act in [1, 5])
 )
 
-p = EpistemicNetworkAnalysis.plot(myENA, groupBy=group)
+p = EpistemicNetworkAnalysis.plot(myENA, weakLinks=false, flipY=true)
 # p = EpistemicNetworkAnalysis.plot(myENA, groupBy=group, lims=2)
 # p = EpistemicNetworkAnalysis.plot(myENA, groupBy=group, x=3, y=4)
