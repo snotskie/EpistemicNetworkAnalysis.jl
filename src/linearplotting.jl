@@ -21,10 +21,10 @@ function defaultplotkwargs(
         margin::PlotMeasures.AbsoluteLength=10mm,
         size::Real=600,
         meanCenter::Bool=model.config.sphereNormalize,
-        origin::Array{<:Real}=(meanCenter ? [0,0] : [mean(model.points[x, :]), mean(model.points[y, :])]),
+        origin::Array{<:Real}=(meanCenter ?  [mean(model.points[x, :]), mean(model.points[y, :])] : [0,0]),
         lims::Real=1,
-        xticks::Array{<:Real}=[origin[1]-lims, origin[1], origin[1]+lims],
-        yticks::Array{<:Real}=[origin[2]-lims, origin[2], origin[2]+lims],
+        xticks::Array{<:Real}=round.([origin[1]-lims, origin[1], origin[1]+lims], digits=4),
+        yticks::Array{<:Real}=round.([origin[2]-lims, origin[2], origin[2]+lims], digits=4),
         xlims::Array{<:Real}=xticks[[1, end]],
         ylims::Array{<:Real}=yticks[[1, end]],
         titles::Array{<:AbstractString}=String[],
@@ -107,17 +107,19 @@ end
 
 # Helpers
 function fixX(x::Real, model::AbstractLinearENAModel, plotconfig::NamedTuple)
-    if plotconfig.meanCenter
-        x -= mean(model.points[plotconfig.x, :])
-    end
+    # NOTE mean centering happens in the plotkwargs via xticks etc.
+    # if plotconfig.meanCenter
+    #     x -= mean(model.points[plotconfig.x, :])
+    # end
 
     return x * (plotconfig.flipX ? -1 : 1)
 end
 
 function fixY(y::Real, model::AbstractLinearENAModel, plotconfig::NamedTuple)
-    if plotconfig.meanCenter
-        y -= mean(model.points[plotconfig.y, :])
-    end
+    # NOTE mean centering happens in the plotkwargs via xticks etc.
+    # if plotconfig.meanCenter
+    #     y -= mean(model.points[plotconfig.y, :])
+    # end
 
     return y * (plotconfig.flipY ? -1 : 1)
 end
