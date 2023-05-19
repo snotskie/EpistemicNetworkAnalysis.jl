@@ -23,18 +23,27 @@ codes = [
    :Women
 ]
 group = :Play
-rotation = EpistemicNetworkAnalysis.MeansRotation(
-    :Play, "Romeo and Juliet", "Hamlet",
-    :Act, 1, 5,
+# rotation = EpistemicNetworkAnalysis.MeansRotation(
+#     :Play, "Romeo and Juliet", "Hamlet",
+#     :Act, 1, 5,
+#     moderated=true
+# )
+
+rotation = EpistemicNetworkAnalysis.TopicRotation(
+    "My Topic",
+    [:Women],
+    [:Men]
 )
 
-myENA = EpistemicNetworkAnalysis.ENAModel(
+model = EpistemicNetworkAnalysis.ENAModel(
     data, codes, conversations, units,
     windowSize=4,
-    rotateBy=rotation,
-    unitFilter=(row -> row.Act in [1, 5])
+    # rotateBy=rotation,
+    # recenterEmpty=true,
+    dropEmpty=true,
+    # deflateEmpty=true,
 )
 
-p = EpistemicNetworkAnalysis.plot(myENA, weakLinks=false, flipY=true)
-# p = EpistemicNetworkAnalysis.plot(myENA, groupBy=group, lims=2)
-# p = EpistemicNetworkAnalysis.plot(myENA, groupBy=group, x=3, y=4)
+p = EpistemicNetworkAnalysis.plot(model, weakLinks=false) #, groupBy=group)
+# p = EpistemicNetworkAnalysis.plot(model, groupBy=group, lims=2)
+# p = EpistemicNetworkAnalysis.plot(model, groupBy=group, x=3, y=4)

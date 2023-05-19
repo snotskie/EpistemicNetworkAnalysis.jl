@@ -1,4 +1,4 @@
-abstract type AbstractMeansRotation <: AbstractModeratedRotation end
+abstract type AbstractMeansRotation <: AbstractFormulaRotation end
 struct MeansRotation <: AbstractMeansRotation
     regression_models::Array{Type{<:RegressionModel}}
     formulas::Array{<:FormulaTerm}
@@ -7,13 +7,15 @@ struct MeansRotation <: AbstractMeansRotation
     groupVars::Array{Symbol}
     controlGroups::Array{<:Any}
     treatmentGroups::Array{<:Any}
+    moderated::Bool
 end
 
 function MeansRotation(
         groupVar1::Symbol,
         controlGroup1::Any,
         treatmentGroup1::Any,
-        args...
+        args...;
+        moderated=false
     )
 
     @assert length(args) % 3 == 0 "MeansRotation expects a multiple of 3 arguments"
@@ -33,12 +35,14 @@ function MeansRotation(
         i += 4
     end
 
-    # for i in 1:length(controlGroups)
-    #     for j in (i+1):length(controlGroups)
-    #         iterm = Term(Symbol(string("MCInteraction_", controlGroups[i], "_", controlGroups[j])))
-    #         f1 = FormulaTerm(f1.lhs, f1.rhs + iterm)
-    #     end
-    # end
+    if moderated
+        for i in 1:length(controlGroups)
+            for j in (i+1):length(controlGroups)
+                iterm = Term(Symbol(string("MCInteraction_", groupVars[i], "_", groupVars[j])))
+                f1 = FormulaTerm(f1.lhs, f1.rhs + iterm)
+            end
+        end
+    end
 
     N = length(groupVars)
     regression_models = repeat([LinearModel], N)
@@ -53,7 +57,8 @@ function MeansRotation(
         contrasts,
         groupVars,
         controlGroups,
-        treatmentGroups
+        treatmentGroups,
+        moderated
     )
 end
 
@@ -77,35 +82,41 @@ function rotate!(
             end
         end
 
-        col_data = Vector{Float64}(col_data) .- mean(col_data)
+        col_data = Vector(col_data) .- mean(skipmissing(col_data))
         model.metadata[!, col_name] = col_data
     end
 
-    # # compute interactions between those terms
-    # coef_index_interaction = maximum(model.rotation.coef_indexes) + 1
-    # for (i, coef_index_i) in enumerate(model.rotation.coef_indexes)
-    #     col_name_i = Symbol(model.rotation.formulas[i].rhs[coef_index_i])
-    #     for (j, coef_index_j) in enumerate(model.rotation.coef_indexes[i+1:end])
-    #         col_name_j = Symbol(model.rotation.formulas[j].rhs[coef_index_j])
-    #         col_name_interaction = Symbol(model.rotation.formulas[j].rhs[coef_index_interaction])
-    #         col_data = Vector(model.metadata[!, col_name_i]) .* Vector(model.metadata[!, col_name_j])
-    #         model.metadata[!, col_name_interaction] = col_data
-    #         coef_index_interaction += 1
-    #     end
-    # end
+    # optionally compute interactions between those terms
+    if model.rotation.moderated
+        coef_index_interaction = maximum(model.rotation.coef_indexes) + 1
+        for (i, coef_index_i) in enumerate(model.rotation.coef_indexes)
+            col_name_i = Symbol(model.rotation.formulas[i].rhs[coef_index_i])
+            for (j, coef_index_j) in enumerate(model.rotation.coef_indexes[i+1:end])
+                col_name_j = Symbol(model.rotation.formulas[j].rhs[coef_index_j])
+                col_name_interaction = Symbol(model.rotation.formulas[j].rhs[coef_index_interaction])
+                col_data = Vector(model.metadata[!, col_name_i]) .* Vector(model.metadata[!, col_name_j])
+                model.metadata[!, col_name_interaction] = col_data
+                coef_index_interaction += 1
+            end
+        end
+    end
 
     # let parent handle the rest
     super = rotationsupertype(M, AbstractMeansRotation)
     rotate!(super, model)
+
+    # update embedding labels
+    for (i, label) in enumerate(model.rotation.groupVars)
+        model.embedding[i, :label] = string(label)
+    end
 end
 
+# insert colors and groups
 function defaultplotkwargs(
         ::Type{M},
         model::AbstractLinearENAModel;
         x::Int=1,
         y::Int=2,
-        xlabel::AbstractString=(x <= length(model.rotation.groupVars) ? string(model.rotation.groupVars[x]) : model.embedding[x, :label]),
-        ylabel::AbstractString=(y <= length(model.rotation.groupVars) ? string(model.rotation.groupVars[y]) : model.embedding[y, :label]),
         negColor::Colorant=DEFAULT_NEG_COLOR,
         posColor::Colorant=DEFAULT_POS_COLOR,
         extraColors::Array{<:Colorant,1}=(
@@ -137,10 +148,8 @@ function defaultplotkwargs(
 
     kwargs = NamedTuple(kwargs)
     defaults = (
-        x,
-        y,
-        xlabel,
-        ylabel,
+        x=x,
+        y=y,
         negColor=negColor,
         posColor=posColor,
         extraColors=extraColors,

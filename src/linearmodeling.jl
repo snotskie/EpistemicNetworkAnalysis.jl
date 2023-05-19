@@ -222,8 +222,25 @@ function accumulate!(
         end
     end
 
-    # maybe drop rows with empty values
+    # normalize each unit, if requested
     edgeIDs = model.edges.edgeID
+    if model.config.sphereNormalize
+        for i in 1:nrow(model.accum)
+            vector = Vector{Float64}(model.accum[i, edgeIDs])
+            s = sqrt(sum(vector .^ 2))
+            if s != 0
+                model.accum[i, edgeIDs] = vector / s
+            end
+        end
+    # else, still scale it down to make plots easier to read
+    else
+        s = maximum(maximum(model.accum[!, r]) for r in edgeIDs)
+        for r in edgeIDs
+            model.accum[!, r] /= s
+        end
+    end
+
+    # maybe drop rows with empty values
     if model.config.dropEmpty
         droppedRows = map(eachrow(model.accum)) do unitRow
             return all(iszero.(values(unitRow[edgeIDs])))
@@ -243,17 +260,17 @@ function accumulate!(
 
         nonZeroRows = .!zeroRows
         N = sum(nonZeroRows)
-        meanPoint = transpose(sum(eachcol(model.accum[nonZeroRows, edgeIDs])) / N)
+        meanPoint = transpose(sum.(eachcol(model.accum[nonZeroRows, edgeIDs])) / N)
         model.accum[zeroRows, edgeIDs] .= meanPoint
     # else, maybe deflate the model so empty and the mean always align
     elseif model.config.deflateEmpty
-        meanAxis = transpose(sum(eachcol(model.accum[!, edgeIDs])))
+        meanAxis = sum.(eachcol(model.accum[!, edgeIDs]))
         s = sqrt(sum(meanAxis .^ 2))
         if s != 0
             meanAxis /= s
         end
 
-        meanPoints = Matrix{Float64}(model.accum[!, edgeIDs]) * Vector{Float64}(meanAxis)
+        meanPoints = Matrix{Float64}(model.accum[!, edgeIDs]) * meanAxis
         for edge in edgeIDs
             edgeAxis = [edge == edgep ? 1 : 0 for edgep in edgeIDs]
             scalar = dot(edgeAxis, meanAxis) / dot(meanAxis, meanAxis)
@@ -261,20 +278,21 @@ function accumulate!(
         end
     end
 
-    # normalize each unit, if requested
-    if model.config.sphereNormalize
-        for i in 1:nrow(model.accum)
-            vector = Vector{Float64}(model.accum[i, edgeIDs])
-            s = sqrt(sum(vector .^ 2))
-            if s != 0
-                model.accum[i, edgeIDs] = vector / s
+    # renormalize if some of the above happened
+    if model.config.deflateEmpty
+        if model.config.sphereNormalize
+            for i in 1:nrow(model.accum)
+                vector = Vector{Float64}(model.accum[i, edgeIDs])
+                s = sqrt(sum(vector .^ 2))
+                if s != 0
+                    model.accum[i, edgeIDs] = vector / s
+                end
             end
-        end
-    # else, still scale it down to make plots easier to read
-    else
-        s = maximum(maximum(model.accum[!, r]) for r in edgeIDs)
-        for r in edgeIDs
-            model.accum[!, r] /= s
+        else
+            s = maximum(maximum(model.accum[!, r]) for r in edgeIDs)
+            for r in edgeIDs
+                model.accum[!, r] /= s
+            end
         end
     end
 end

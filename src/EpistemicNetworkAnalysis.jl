@@ -37,15 +37,13 @@ include("./linearplotting.jl")
 include("./utils.jl")
 
 # Rotations
+include("./rotations/ManualRotation.jl")
 include("./rotations/SVDRotation.jl")
-include("./rotations/ModeratedRotation.jl")
+include("./rotations/FormulaRotation.jl")
 include("./rotations/MeansRotation.jl")
 # include("./rotations/LDARotation.jl")
 # include("./rotations/MulticlassRotation.jl")
-# include("./rotations/FormulaRotation.jl")
-# include("./rotations/Formula2Rotation.jl")
-# include("./rotations/Means2Rotation.jl")
-# include("./rotations/ThematicRotation.jl")
+include("./rotations/TopicRotation.jl")
 
 # Models
 include("./models/ENAModel.jl")
@@ -59,14 +57,12 @@ export BiplotENAModel
 # export NonlinearENAModel
 export plot
 export SVDRotation
-export ModeratedRotation
+export ManualRotation
 # export LDARotation
 # export MulticlassRotation
 export MeansRotation
-# export Means2Rotation
-# export FormulaRotation
-# export Formula2Rotation
-# export ThematicRotation
+export FormulaRotation
+export TopicRotation
 # export UMAPRotation
 export loadExample
 # export derivedAnyCode!

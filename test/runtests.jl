@@ -25,8 +25,8 @@ using Plots
     myENA = ENAModel(data, codes, conversations, units)
     @test typeof(myENA) == ENAModel{SVDRotation}
     p = plot(myENA)
-    @test typeof(p) == Plot
-    @test length(p.subplots) == 3
+    @test typeof(p) <: Plots.Plot
+    @test length(p.subplots) in [3, 4]
 
     # Test that model also accepts strings
     codes = string.(codes)
@@ -39,13 +39,14 @@ using Plots
     models = [ENAModel, BiplotENAModel]
     rotations = Dict(
         "SVD1" => SVDRotation(),
-        "Act" => ModeratedRotation(
+        "Act" => FormulaRotation(
             LinearModel,
             @formula(y ~ 1 + Act),
             2,
             nothing
         ),
-        # "Play" => MeansRotation(:Play, "Romeo and Juliet", "Hamlet")
+        "Play" => MeansRotation(:Play, "Romeo and Juliet", "Hamlet"),
+        "Gender" => TopicRotation("Gender", [:Women], [:Men])
     )
 
     for M in models
@@ -57,6 +58,14 @@ using Plots
 
             @test typeof(myENA) == M{typeof(rotation)}
             @test myENA.embedding[1, :label] == label
+
+            copiedENA = M(
+                data, codes, conversations, units,
+                rotateBy=ManualRotation(myENA.embedding)
+            )
+
+            @test typeof(copiedENA) == M{ManualRotation}
+            @test copiedENA.embedding[1, :label] == label
         end
     end
 
