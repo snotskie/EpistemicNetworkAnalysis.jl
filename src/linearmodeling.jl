@@ -326,8 +326,6 @@ function approximate!(
         end
     end
 
-    println(model.edges)
-
     ## run partial regression
     X = (transpose(X) * X)^-1 * transpose(X)
 
