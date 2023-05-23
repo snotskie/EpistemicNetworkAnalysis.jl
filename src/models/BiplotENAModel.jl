@@ -12,12 +12,14 @@ function defaultmodelkwargs(
     kwargs = NamedTuple(kwargs)
     super = modelsupertype(M, AbstractBiplotENAModel)
     parentdefaults = defaultmodelkwargs(super; kwargs...)
-    defaults = (
-        edgeFilter=(row)->(row[:kind] == :count),
+    definitivedefaults = (
+        edgeFilter=(row)->(
+            row[:kind] == :count #&& parentdefaults.edgeFilter(row)
+        ),
         windowSize=1
     )
 
-    return merge(parentdefaults, defaults, kwargs)
+    return merge(parentdefaults, kwargs, definitivedefaults)
 end
 
 # let the parent handle it from there

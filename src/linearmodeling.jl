@@ -104,7 +104,12 @@ function populateENAfields(
     end
 
     # accum, accumHat, metadata: add to the data and group by unit ID
-    data = hcat(data, DataFrame(:unitID => unitIDs))
+    if :unitID in Symbol.(names(data))
+        data.unitIDs .= unitIDs
+    else
+        data = hcat(data, DataFrame(:unitID => unitIDs))
+    end
+
     tempAccum = combine(first, groupby(data, :unitID))
 
     # accum, accumHat, metadata: filter unused units
@@ -320,6 +325,8 @@ function approximate!(
             X[k, j] += unitRow[edge.edgeID] / 2
         end
     end
+
+    println(model.edges)
 
     ## run partial regression
     X = (transpose(X) * X)^-1 * transpose(X)

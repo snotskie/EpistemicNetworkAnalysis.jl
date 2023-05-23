@@ -68,7 +68,7 @@ macro enamodel(
             config::NamedTuple
         end
 
-        # make constructor
+        # make default constructor
         function $(esc(self))(
                 data::DataFrame,
                 codes::Array{<:Any,1},
@@ -83,6 +83,22 @@ macro enamodel(
                 $(esc(self)){R},
                 data, codes, conversations, units,
                 rotateBy; kwargs...
+            )
+        end
+
+        # make re-constructor
+        function $(esc(self))(
+                prev_model::AbstractENAModel;
+                rotateBy::R=$(esc(defaultrotation))(),
+                kwargs...
+            ) where {R<:$(esc(rotationtype))}
+
+            # call common ENA re-constructor
+            return reconstructENA(
+                $(esc(self)){R},
+                prev_model,
+                rotateBy;
+                kwargs...
             )
         end
     end
@@ -124,6 +140,34 @@ function constructENA(
     model = M(
         populateENAfields(
             M, data, codes, conversations, units, rotation;
+            kwargs...
+        )...
+    )
+
+    accumulate!(M, model)
+    approximate!(M, model)
+    rotate!(M, model)
+    return model
+end
+
+# Base re-constructor
+function reconstructENA(
+        ::Type{M},
+        prev_model::AbstractENAModel,
+        rotation::AbstractENARotation;
+        kwargs...
+    ) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
+
+    kwargs = merge(prev_model.config, NamedTuple(kwargs))
+    kwargs = defaultmodelkwargs(M; kwargs...)
+    model = M(
+        populateENAfields(
+            M,
+            copy(prev_model.data),
+            copy(prev_model.codes),
+            copy(prev_model.conversations),
+            copy(prev_model.units),
+            rotation;
             kwargs...
         )...
     )
