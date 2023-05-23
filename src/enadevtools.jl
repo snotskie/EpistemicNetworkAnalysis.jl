@@ -185,8 +185,6 @@ function reconstructENA(
         )...
     )
 
-    println("not here")
-
     accumulate!(M, model)
     approximate!(M, model)
     rotate!(M, model)
