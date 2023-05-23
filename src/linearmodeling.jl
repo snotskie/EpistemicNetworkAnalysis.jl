@@ -7,7 +7,7 @@ function defaultmodelkwargs(
         sphereNormalize::Bool=true,
         dropEmpty::Bool=false,
         recenterEmpty::Bool=false,
-        deflateEmpty::Bool=false,
+        # deflateEmpty::Bool=false,
         rotateBy::AbstractLinearENARotation=SVDRotation(),
         kwargs...
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
@@ -20,7 +20,7 @@ function defaultmodelkwargs(
         sphereNormalize=sphereNormalize,
         dropEmpty=dropEmpty,
         recenterEmpty=recenterEmpty,
-        deflateEmpty=deflateEmpty,
+        # deflateEmpty=deflateEmpty,
         rotateBy=rotateBy,
         kwargs...
     )
@@ -192,7 +192,7 @@ function accumulate!(
             end
         end
 
-        # count how recently codes occured
+        # count how recently codes occured: increment everyone
         for nodeID in model.nodes.nodeID
             howrecents[nodeID] += 1
         end
@@ -220,7 +220,7 @@ function accumulate!(
             end
         end
 
-        # count how recently codes occured
+        # count how recently codes occured: reset the found ones
         for nodeID in model.nodes.nodeID
             if line[nodeID] > 0
                 howrecents[nodeID] = 0
@@ -269,38 +269,38 @@ function accumulate!(
         meanPoint = transpose(sum.(eachcol(model.accum[nonZeroRows, edgeIDs])) / N)
         model.accum[zeroRows, edgeIDs] .= meanPoint
     # else, maybe deflate the model so empty and the mean always align
-    elseif model.config.deflateEmpty
-        meanAxis = sum.(eachcol(model.accum[!, edgeIDs]))
-        s = sqrt(sum(meanAxis .^ 2))
-        if s != 0
-            meanAxis /= s
-        end
+    # elseif model.config.deflateEmpty
+    #     meanAxis = sum.(eachcol(model.accum[!, edgeIDs]))
+    #     s = sqrt(sum(meanAxis .^ 2))
+    #     if s != 0
+    #         meanAxis /= s
+    #     end
 
-        meanPoints = Matrix{Float64}(model.accum[!, edgeIDs]) * meanAxis
-        for edge in edgeIDs
-            edgeAxis = [edge == edgep ? 1 : 0 for edgep in edgeIDs]
-            scalar = dot(edgeAxis, meanAxis) / dot(meanAxis, meanAxis)
-            model.accum[!, edge] .-= scalar * meanPoints
-        end
+    #     meanPoints = Matrix{Float64}(model.accum[!, edgeIDs]) * meanAxis
+    #     for edge in edgeIDs
+    #         edgeAxis = [edge == edgep ? 1 : 0 for edgep in edgeIDs]
+    #         scalar = dot(edgeAxis, meanAxis) / dot(meanAxis, meanAxis)
+    #         model.accum[!, edge] .-= scalar * meanPoints
+    #     end
     end
 
     # renormalize if some of the above happened
-    if model.config.deflateEmpty
-        if model.config.sphereNormalize
-            for i in 1:nrow(model.accum)
-                vector = Vector{Float64}(model.accum[i, edgeIDs])
-                s = sqrt(sum(vector .^ 2))
-                if s != 0
-                    model.accum[i, edgeIDs] = vector / s
-                end
-            end
-        else
-            s = maximum(maximum(model.accum[!, r]) for r in edgeIDs)
-            for r in edgeIDs
-                model.accum[!, r] /= s
-            end
-        end
-    end
+    # if model.config.deflateEmpty
+    #     if model.config.sphereNormalize
+    #         for i in 1:nrow(model.accum)
+    #             vector = Vector{Float64}(model.accum[i, edgeIDs])
+    #             s = sqrt(sum(vector .^ 2))
+    #             if s != 0
+    #                 model.accum[i, edgeIDs] = vector / s
+    #             end
+    #         end
+    #     else
+    #         s = maximum(maximum(model.accum[!, r]) for r in edgeIDs)
+    #         for r in edgeIDs
+    #             model.accum[!, r] /= s
+    #         end
+    #     end
+    # end
 end
 
 function approximate!(
@@ -415,24 +415,6 @@ function rotate!(
             X[:, j] -= scalar * col
         end
     end
-
-    # C = Matrix{Float64}(controlModel)
-    # for i in 1:size(C)[2]
-    #     ccol = C[:, i]
-    #     ccol = ccol .- mean(ccol) # mean center
-    #     C[:, i] = ccol
-    #     for j in 1:size(X)[2] # deflate
-    #         xcol = X[:, j]
-    #         scalar = dot(xcol, ccol) / dot(ccol, ccol)
-    #         xcol -= scalar * ccol
-    #         X[:, j] = xcol
-    #     end
-    # end
-
-    # TODO BUG can't figure out why the existing dims
-    # aren't being deflated for SVD the way I expect,
-    # the way they used to be in the previous version
-    # of jENA
 
     # then, once we've deflated or not, we run SVD on the data, then add to the model
     svd = transpose(projection(fit(PCA, X', pratio=1.0)))

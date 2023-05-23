@@ -39,14 +39,14 @@ model = EpistemicNetworkAnalysis.ENAModel(
     data, codes, conversations, units,
     windowSize=4,
     # rotateBy=rotation,
-    # recenterEmpty=true,
-    dropEmpty=true,
-    # deflateEmpty=true,
+    recenterEmpty=true,
+    # dropEmpty=true,
 )
 
 # model2 = EpistemicNetworkAnalysis.BiplotENAModel(model)
-model2 = EpistemicNetworkAnalysis.ENAModel(model, rotateBy=rotation)
+model2 = EpistemicNetworkAnalysis.BiplotENAModel(model, rotateBy=rotation)
+# model2 = EpistemicNetworkAnalysis.ENAModel(model, rotateBy=rotation)
 
-p = EpistemicNetworkAnalysis.plot(model2, weakLinks=false) #, groupBy=group)
+p = EpistemicNetworkAnalysis.plot(model2, showWeakEdges=false) #, groupBy=group)
 # p = EpistemicNetworkAnalysis.plot(model, groupBy=group, lims=2)
 # p = EpistemicNetworkAnalysis.plot(model, groupBy=group, x=3, y=4)

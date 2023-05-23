@@ -27,7 +27,7 @@ function defaultplotkwargs(
         size::Real=600,
         meanCenter::Bool=model.config.sphereNormalize,
         origin::Array{<:Real}=(meanCenter ?  [mean(model.points[x, :]), mean(model.points[y, :])] : [0,0]),
-        lims::Real=1,
+        lims::Real=1.618, # golden ratio
         flipX::Bool=false,
         flipY::Bool=false,
         xticks::Array{<:Real}=(
@@ -58,7 +58,7 @@ function defaultplotkwargs(
         showMeans::Bool=true,
         showWarps::Bool=false,
         fitNodesToCircle::Bool=false,
-        weakLinks::Bool=true,
+        showWeakEdges::Bool=true,
         # TODO the options I cut from the model type
         kwargs...
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
@@ -96,7 +96,7 @@ function defaultplotkwargs(
         showMeans=showMeans,
         showWarps=showWarps,
         fitNodesToCircle=fitNodesToCircle,
-        weakLinks=weakLinks,
+        showWeakEdges=showWeakEdges,
         kwargs...
     )
 
@@ -402,7 +402,7 @@ function paint_edges!(
                 pearson = 0
             end
 
-            if !plotconfig.weakLinks && abs(pearson) < 0.3
+            if !plotconfig.showWeakEdges && abs(pearson) < 0.3
                 slope = 0
             end
 
@@ -1061,7 +1061,7 @@ end
 # ### Helper - Draw the predictive lines
 # function plot_predictive!(p::Plot, ena::AbstractENAModel, targetCol::Symbol;
 # negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
-# flipX::Bool=false, flipY::Bool=false, weakLinks::Bool=true, showWarps::Bool=false,
+# flipX::Bool=false, flipY::Bool=false, showWeakEdges::Bool=true, showWarps::Bool=false,
 # showCodeLabels::Bool=true, showArrows::Bool=false, reverseLineSort::Bool=false,
 # rotateCodeLabels::Bool=false,
 # kwargs...)
@@ -1134,7 +1134,7 @@ end
 #     codeWidths[k] += networkRow[:width]
 
 #     ### ...and if that line should be shown...
-#     if weakLinks || abs(networkRow[:pearson]) >= 0.3
+#     if showWeakEdges || abs(networkRow[:pearson]) >= 0.3
 #         ### ...plot it in the right width and color
 #         codeVisible[j] = true
 #         codeVisible[k] = true
@@ -1199,7 +1199,7 @@ end
 # ### Helper - Draw the subtraction lines (nearly identical to plot_predictive)
 # function plot_subtraction!(p::Plot, ena::AbstractENAModel, groupVar::Symbol, negGroup::Any, posGroup::Any;
 # negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
-# flipX::Bool=false, flipY::Bool=false, weakLinks::Bool=true, showWarps::Bool=false,
+# flipX::Bool=false, flipY::Bool=false, showWeakEdges::Bool=true, showWarps::Bool=false,
 # showCodeLabels::Bool=true, showArrows::Bool=false, reverseLineSort::Bool=false,
 # rotateCodeLabels::Bool=false,
 # kwargs...)
@@ -1287,7 +1287,7 @@ end
 #     codeWidths[k] += networkRow[:width]
 
 #     ### ...and if that line should be shown...
-#     if weakLinks || abs(networkRow[:pearson]) >= 0.3
+#     if showWeakEdges || abs(networkRow[:pearson]) >= 0.3
 #         ### ...plot it in the right width and color
 #         codeVisible[j] = true
 #         codeVisible[k] = true
