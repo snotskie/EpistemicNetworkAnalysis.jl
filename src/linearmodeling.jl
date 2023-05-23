@@ -1,5 +1,6 @@
 function defaultmodelkwargs(
         ::Type{M};
+        prev_config::NamedTuple=NamedTuple(),
         unitFilter::Function=x->true,
         edgeFilter::Function=x->true,
         windowSize::Real=Inf,
@@ -24,7 +25,7 @@ function defaultmodelkwargs(
         kwargs...
     )
 
-    return merge(defaults, kwargs)
+    return merge(defaults, prev_config, kwargs)
 end
 
 function populateENAfields(

@@ -44,7 +44,8 @@ model = EpistemicNetworkAnalysis.ENAModel(
     # deflateEmpty=true,
 )
 
-model2 = EpistemicNetworkAnalysis.BiplotENAModel(model)
+# model2 = EpistemicNetworkAnalysis.BiplotENAModel(model)
+model2 = EpistemicNetworkAnalysis.ENAModel(model, rotateBy=rotation)
 
 p = EpistemicNetworkAnalysis.plot(model2, weakLinks=false) #, groupBy=group)
 # p = EpistemicNetworkAnalysis.plot(model, groupBy=group, lims=2)

@@ -101,6 +101,20 @@ macro enamodel(
                 kwargs...
             )
         end
+
+        # make re-rotator
+        function $(esc(self))(
+                prev_model::$(esc(self));
+                rotateBy::R=$(esc(defaultrotation))()
+            ) where {R<:$(esc(rotationtype))}
+
+            # call common ENA re-rerotator
+            return rerotateENA(
+                $(esc(self)){R},
+                prev_model,
+                rotateBy
+            )
+        end
     end
 end
 
@@ -158,8 +172,7 @@ function reconstructENA(
         kwargs...
     ) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
 
-    kwargs = merge(prev_model.config, NamedTuple(kwargs))
-    kwargs = defaultmodelkwargs(M; kwargs...)
+    kwargs = defaultmodelkwargs(M; prev_config=prev_model.config, kwargs...)
     model = M(
         populateENAfields(
             M,
@@ -172,8 +185,39 @@ function reconstructENA(
         )...
     )
 
+    println("not here")
+
     accumulate!(M, model)
     approximate!(M, model)
+    rotate!(M, model)
+    return model
+end
+
+# Base re-rotator
+function rerotateENA(
+        ::Type{M},
+        prev_model::AbstractENAModel,
+        rotation::AbstractENARotation
+    ) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
+
+    model = M(
+        copy(prev_model.data),
+        copy(prev_model.codes),
+        copy(prev_model.conversations),
+        copy(prev_model.units),
+        rotation,
+        copy(prev_model.metadata),
+        similar(prev_model.points, 0),
+        similar(prev_model.pointsHat, 0),
+        similar(prev_model.pointsNodes, 0),
+        copy(prev_model.accum),
+        copy(prev_model.accumHat),
+        copy(prev_model.edges),
+        copy(prev_model.nodes),
+        similar(prev_model.embedding, 0),
+        prev_model.config
+    )
+
     rotate!(M, model)
     return model
 end
