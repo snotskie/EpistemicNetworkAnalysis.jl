@@ -86,15 +86,15 @@ macro enamodel(
             )
         end
 
-        # make re-constructor
+        # make re-modeler constructor
         function $(esc(self))(
                 prev_model::AbstractENAModel;
                 rotateBy::R=$(esc(defaultrotation))(),
                 kwargs...
             ) where {R<:$(esc(rotationtype))}
 
-            # call common ENA re-constructor
-            return reconstructENA(
+            # call common ENA re-modeler
+            return remodelENA(
                 $(esc(self)){R},
                 prev_model,
                 rotateBy;
@@ -102,7 +102,7 @@ macro enamodel(
             )
         end
 
-        # make re-rotator
+        # make re-rotator constructor
         function $(esc(self))(
                 prev_model::$(esc(self));
                 rotateBy::R=$(esc(defaultrotation))()
@@ -164,8 +164,8 @@ function constructENA(
     return model
 end
 
-# Base re-constructor
-function reconstructENA(
+# Re-model constructor
+function remodelENA(
         ::Type{M},
         prev_model::AbstractENAModel,
         rotation::AbstractENARotation;
@@ -191,7 +191,7 @@ function reconstructENA(
     return model
 end
 
-# Base re-rotator
+# Re-rotate constructor
 function rerotateENA(
         ::Type{M},
         prev_model::AbstractENAModel,

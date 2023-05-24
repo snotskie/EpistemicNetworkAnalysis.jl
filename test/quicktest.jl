@@ -50,3 +50,32 @@ model2 = EpistemicNetworkAnalysis.BiplotENAModel(model, rotateBy=rotation)
 p = EpistemicNetworkAnalysis.plot(model2, showWeakEdges=false) #, groupBy=group)
 # p = EpistemicNetworkAnalysis.plot(model, groupBy=group, lims=2)
 # p = EpistemicNetworkAnalysis.plot(model, groupBy=group, x=3, y=4)
+
+#=
+TODO:
+
+- [X] base models
+- [X] base rotations
+- [X] base plotting
+- [ ] trajectories and spectral
+- [ ] statistical tests
+- [ ] textual summaries
+- [ ] digraph model and plotting
+- [ ] LDA and Multiclass
+- [ ] default exports
+- [ ] volunteer testing
+- [ ] auto-docs
+- [ ] cleaner errors and warnings (see volunteer testing results)
+- [ ] front-facing documentation and citations
+- [ ] Pluto integration/demos
+- [ ] developer demos
+- [ ] test compatibility with other plot backends
+- [ ] test interaction with ML ecosystem
+- [ ] clean up old files
+- [ ] clean up comments
+- [ ] pin version
+- [ ] julia package
+- [ ] web presence and qehub
+- [ ] code-wise
+- [ ] nonlinear
+=#
