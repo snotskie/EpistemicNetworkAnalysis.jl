@@ -425,30 +425,6 @@ function rotate!(
     for i in (numExistingDims+1):nrow(model.embedding)
         addPointsToModelFromDim(model, i)
     end
-
-    # Now that we have the full embedding ready, run basic stats on it
-    total_variance = sum(var.(eachcol(model.accum[!, edgeIDs])))
-    for i in 1:nrow(model.embedding)
-        points = Vector(model.points[i, unitIDs])
-        pointsHat = Vector(model.pointsHat[i, unitIDs])
-        model.embedding[i, :variance_explained] = var(points) / total_variance
-        model.embedding[i, :pearson] = cor(points, pointsHat)
-        pointsDiffs = [
-            a - b
-            for a in points
-            for b in points
-        ]
-
-        pointsHatDiffs = [
-            a - b
-            for a in pointsHat
-            for b in pointsHat
-        ]
-
-        model.embedding[i, :coregistration] = cor(pointsDiffs, pointsHatDiffs)
-    end
-
-    # @assert sum(model.embedding.variance_explained) ≈ 1.0 "Var Exp does not add up to 100% as expected"
 end
 
 # function tests(

@@ -161,6 +161,7 @@ function constructENA(
     accumulate!(M, model)
     approximate!(M, model)
     rotate!(M, model)
+    test!(M, model)
     return model
 end
 
@@ -188,6 +189,7 @@ function remodelENA(
     accumulate!(M, model)
     approximate!(M, model)
     rotate!(M, model)
+    test!(M, model)
     return model
 end
 
@@ -217,6 +219,7 @@ function rerotateENA(
     )
 
     rotate!(M, model)
+    test!(M, model)
     return model
 end
 
@@ -263,9 +266,26 @@ function rotate!(::Type{M}, model::AbstractENAModel) where {R<:AbstractENARotati
     error("Unimplemented")
 end
 
-function summarize!(::Type{M}, model::AbstractENAModel) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
+function test!(::Type{M}, model::AbstractENAModel) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
     error("Unimplemented")
 end
+
+function test!(::Type{M}, model::AbstractENAModel, test::Type{<:HypothesisTests.HypothesisTest}; kwargs...) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
+    error("Unimplemented")
+end
+
+function summary(::Type{M}, model::AbstractENAModel) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
+    columns = [
+        :label,
+        setdiff(Symbol.(names(model.embedding)), [:label, model.edges.edgeID...])...
+    ]
+
+    return copy(model.embedding[!, columns])
+end
+
+# function summarize!(::Type{M}, model::AbstractENAModel) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
+#     error("Unimplemented")
+# end
 
 # in linear, do plot like the consruct helper, override its components under there
 function plot(::Type{M}, model::AbstractENAModel, plotconfig::NamedTuple) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
@@ -273,6 +293,10 @@ function plot(::Type{M}, model::AbstractENAModel, plotconfig::NamedTuple) where 
 end
 
 ## Wrapper Functions
+function summary(model::AbstractENAModel)
+    return summary(typeof(model), model)
+end
+
 function plot(model::AbstractENAModel; kwargs...)
     plotconfig = defaultplotkwargs(typeof(model), model; kwargs...)
     return plot(typeof(model), model, plotconfig)

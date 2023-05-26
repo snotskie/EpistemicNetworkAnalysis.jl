@@ -26,11 +26,11 @@ codes = [
    :Women
 ]
 group = :Play
-# rotation = EpistemicNetworkAnalysis.MeansRotation(
-#     # :Play, "Romeo and Juliet", "Hamlet",
-#     :Act, 1, 5,
-#     # moderated=true
-# )
+rotation = EpistemicNetworkAnalysis.MeansRotation(
+    # :Play, "Romeo and Juliet", "Hamlet",
+    :Act, 1, 5,
+    # moderated=true
+)
 
 # rotation = EpistemicNetworkAnalysis.TopicRotation(
 #     "My Topic",
@@ -38,9 +38,9 @@ group = :Play
 #     [:Men]
 # )
 
-rotation = EpistemicNetworkAnalysis.FormulaRotation(
-    LinearModel, @formula(y ~ 1 + rand), 2, nothing
-)
+# rotation = EpistemicNetworkAnalysis.FormulaRotation(
+#     LinearModel, @formula(y ~ 1 + rand), 2, nothing
+# )
 
 model = EpistemicNetworkAnalysis.ENAModel(
     data, codes, conversations, units,
@@ -50,19 +50,30 @@ model = EpistemicNetworkAnalysis.ENAModel(
     dropEmpty=true,
 )
 
-model2 = EpistemicNetworkAnalysis.BiplotENAModel(model)
+model2 = EpistemicNetworkAnalysis.ENAModel(
+    data, codes, conversations, units,
+    windowSize=10,
+    rotateBy=EpistemicNetworkAnalysis.ManualRotation(model.embedding),
+    # recenterEmpty=true,
+    dropEmpty=true,
+)
+
+display(EpistemicNetworkAnalysis.summary(model2))
+
+# model2 = EpistemicNetworkAnalysis.BiplotENAModel(model)
 # model2 = EpistemicNetworkAnalysis.BiplotENAModel(model, rotateBy=rotation)
 # model2 = EpistemicNetworkAnalysis.ENAModel(model, rotateBy=rotation)
 
 p = EpistemicNetworkAnalysis.plot(
     model2,
     showWeakEdges=false,
-    trajectoryBy=:rand,
+    trajectoryBy=:Act,
+    # trajectoryBy=:rand,
     # groupBy=group,
+    # lims=2,
+    # x=3,
+    # y=4,
 )
-
-# p = EpistemicNetworkAnalysis.plot(model, groupBy=group, lims=2)
-# p = EpistemicNetworkAnalysis.plot(model, groupBy=group, x=3, y=4)
 
 #=
 TODO:
@@ -71,10 +82,12 @@ TODO:
 - [X] base rotations
 - [X] base plotting
 - [X] trajectories and spectral
-- [ ] statistical tests
+- [x] statistical tests
 - [ ] textual summaries
 - [ ] digraph model and plotting
+- [ ] xlsx import/export
 - [ ] LDA and Multiclass
+- [ ] ManualRotation statistical tests
 - [ ] default exports
 - [ ] volunteer testing
 - [ ] auto-docs

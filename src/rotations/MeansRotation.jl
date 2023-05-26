@@ -111,6 +111,21 @@ function rotate!(
     end
 end
 
+function test!(
+        ::Type{M}, model::AbstractLinearENAModel
+    ) where {R<:AbstractMeansRotation, M<:AbstractLinearENAModel{R}}
+
+    super = rotationsupertype(M, AbstractMeansRotation)
+    test!(super, model)
+    for (i, label) in enumerate(model.rotation.groupVars)
+        model.embedding[i, :label] = string(label)
+        test!(M, model, KruskalWallisTest, dim=i, groupVar=label, groups=[
+            model.rotation.controlGroups[i],
+            model.rotation.treatmentGroups[i]
+        ])
+    end
+end
+
 # insert colors and groups
 function defaultplotkwargs(
         ::Type{M},

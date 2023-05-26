@@ -35,6 +35,7 @@ using Pipe
 include("./enadevtools.jl")
 include("./linearmodeling.jl")
 include("./linearplotting.jl")
+include("./lineartesting.jl")
 include("./utils.jl")
 
 # Rotations
