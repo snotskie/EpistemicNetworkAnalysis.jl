@@ -89,7 +89,7 @@ macro enamodel(
         # make re-modeler constructor
         function $(esc(self))(
                 prev_model::AbstractENAModel;
-                rotateBy::R=$(esc(defaultrotation))(),
+                rotateBy::R=prev_model.rotation, #$(esc(defaultrotation))(),
                 kwargs...
             ) where {R<:$(esc(rotationtype))}
 
@@ -356,6 +356,9 @@ function layoutSubplots(ps::Array{Plot}, plotconfig::NamedTuple)
     while length(ps) < N*M
         push!(ps, plot(legend=false,grid=false,foreground_color_subplot=:white))
     end
+
+    # BUGFIX: divide the default arrow size by ceil(sqrt(number of plots in the multi plot)) = number of plots on the first row
+    GR.setarrowsize(1/N)
 
     return plot(ps..., size=(plotconfig.size*M, plotconfig.size*N), layout=layout)
 end

@@ -16,6 +16,7 @@ using DataFrames
 using CSV
 
 ## Math
+using StatsBase
 using Statistics
 using LinearAlgebra
 using MultivariateStats

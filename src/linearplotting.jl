@@ -52,6 +52,8 @@ function defaultplotkwargs(
         groupBy::Union{Symbol,Nothing}=nothing,
         innerGroupBy::Union{Symbol,Nothing}=nothing,
         spectralColorBy::Union{Symbol,Nothing}=nothing,
+        trajectoryBy::Union{Symbol,Nothing}=nothing,
+        trajectoryBins::Int=5,
         showExtras::Bool=false,
         showNetworks::Bool=true,
         showUnits::Bool=true,
@@ -90,6 +92,8 @@ function defaultplotkwargs(
         groupBy=groupBy,
         innerGroupBy=innerGroupBy,
         spectralColorBy=spectralColorBy,
+        trajectoryBy=trajectoryBy,
+        trajectoryBins=trajectoryBins,
         showExtras=showExtras,
         showNetworks=showNetworks,
         showUnits=showUnits,
@@ -114,7 +118,7 @@ function plot(
     plot_trends!(M, ps, model, plotconfig)
     plot_groups!(M, ps, model, plotconfig)
     plot_subtractions!(M, ps, model, plotconfig)
-    # plot_extras!(M, ps, model, plotconfig)
+    plot_extras!(M, ps, model, plotconfig)
     return layoutSubplots(ps, plotconfig)
 end
 
@@ -439,6 +443,48 @@ function paint_edges!(
     paintSortedNetwork!(p, model, plotconfig, edgeWidths, edgeColors, nodeWidths)
 end
 
+struct NodesOnlyLinearEdgePainter <: AbstractLinearEdgePainter end
+function paint_edges!(
+        p::Plot,
+        edgePainter::NodesOnlyLinearEdgePainter,
+        model::AbstractLinearENAModel,
+        plotconfig::NamedTuple,
+        displayRows::BitVector=BitVector(repeat([true], nrow(model.accum)))
+    )
+
+    # Find widths
+    allEdgeWidths, allNodeWidths = computeNetworkDensities(model)
+    edgeWidths, nodeWidths = computeNetworkDensities(model, displayRows)
+
+    # Rescale
+    s = maximum(values(allEdgeWidths))
+    if s != 0
+        for edgeID in model.edges.edgeID
+            edgeWidths[edgeID] *= GLOBAL_MAX_EDGE_SIZE / s
+        end
+    end
+
+    s = maximum(values(allNodeWidths))
+    if s != 0
+        for nodeID in model.nodes.nodeID
+            nodeWidths[nodeID] *= GLOBAL_MAX_NODE_SIZE / s
+        end
+    end
+
+    # "zero-out" the edges
+    edgeWidths = Dict(
+        edgeID => 0.0
+        for edgeID in model.edges.edgeID
+    )
+
+    edgeColors = Dict(
+        edgeID => colorant"transparent"
+        for edgeID in model.edges.edgeID
+    )
+
+    paintSortedNetwork!(p, model, plotconfig, edgeWidths, edgeColors, nodeWidths)
+end
+
 # Subplots
 function plot_omnibus!(
         ::Type{M}, ps::Array{Plot}, model::AbstractLinearENAModel, plotconfig::NamedTuple
@@ -557,6 +603,55 @@ function plot_subtractions!(
     end
 end
 
+function plot_extras!(
+        ::Type{M}, ps::Array{Plot}, model::AbstractLinearENAModel, plotconfig::NamedTuple
+    ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
+
+    if isnothing(plotconfig.trajectoryBy)
+        return
+    end
+
+    p = plot(
+        leg=plotconfig.leg,
+        margin=plotconfig.margin,
+        size=(plotconfig.size, plotconfig.size)
+    )
+
+    letter = DEFAULT_ALPHABET[length(ps)+1]
+    title!(p, "($(letter)) Trajectory by $(plotconfig.trajectoryBy)")
+    plot_network!(M, p, model, NodesOnlyLinearEdgePainter(), plotconfig)
+    plot_units!(M, p, model, merge(
+        plotconfig,
+        (
+            spectralColorBy=plotconfig.trajectoryBy,
+            groupBy=nothing
+        )
+    ))
+
+    plot_trajectories!(M, p, model, plotconfig)
+    push!(ps, p)
+
+    #### Optional: illustrate a trajectory by a continuous, non-repeating value
+    
+
+    # groupColors = getGroupColorMap(model, plotconfig)
+    # for group in keys(groupColors)
+    #     p = plot(
+    #         leg=plotconfig.leg,
+    #         margin=plotconfig.margin,
+    #         size=(plotconfig.size, plotconfig.size)
+    #     )
+
+    #     letter = DEFAULT_ALPHABET[length(ps)+1]
+    #     title!(p, "($(letter)) $(group)")
+    #     groupRows = model.metadata[!, plotconfig.groupBy] .== group
+    #     plot_network!(M, p, model, NodesOnlyLinearEdgePainter(), plotconfig, groupRows)
+    #     plot_units!(M, p, model, plotconfig, groupRows)
+    #     plot_means!(M, p, model, plotconfig, groupRows)
+    #     push!(ps, p)
+    # end
+end
+
 # Plot Elements
 function plot_network!(
         ::Type{M},
@@ -573,30 +668,6 @@ function plot_network!(
 
     # Just pass the work off to the edge painter
     paint_edges!(p, edgePainter, model, plotconfig, displayRows)
-
-    # TODO move to plot_extras or _trends or _groups or idk?
-    # #### Optional: illustrate a trajectory by a continuous, non-repeating value
-    # if !isnothing(showTrajectoryBy)
-    #     smoothingData = innerjoin(ena.accumModel[displayRows, :], ena.metadata[displayRows, :], on=:unitID)
-    #     if showTrajectoryBy in Symbol.(names(smoothingData))
-    #         smoothingData = combine(
-    #             groupby(smoothingData, showTrajectoryBy),
-    #             showTrajectoryBy => mean => showTrajectoryBy,
-    #             :pos_x => mean => :pos_x,
-    #             :pos_y => mean => :pos_y
-    #         )
-                
-    #         if nrow(smoothingData) > 3
-    #             smoothingData = sort(smoothingData, showTrajectoryBy)
-    #             ts = smoothingData[!, showTrajectoryBy]
-    #             ps = transpose(Matrix{Float64}(smoothingData[!, [:pos_x, :pos_y]]))
-    #             bspline = ParametricSpline(ts, ps, k=3, bc="nearest")
-    #             smooth_ts = range(ts[1], stop=ts[end], length=500)
-    #             smooth_ps = transpose(bspline(smooth_ts))
-    #             plot!(p, smooth_ps[:, 1] * (flipX ? -1 : 1), smooth_ps[:, 2] * (flipY ? -1 : 1), linecolor=:black, arrow=:closed)
-    #         end
-    #     end 
-    # end
 end
 
 function plot_units!(
@@ -622,7 +693,8 @@ function plot_units!(
 
     # Optionally, color spectrally
     if !isnothing(plotconfig.spectralColorBy)
-        label = string(plotconfig.spectralColorBy)
+        # label = string(plotconfig.spectralColorBy) # TODO show a scale, not one random color
+        label = nothing
         if plotconfig.spectralColorBy in Symbol.(names(model.accum))
             colVals = Vector{Real}(model.accum[displayRows, plotconfig.spectralColorBy])
             allColVals = colVals = Vector{Real}(model.accum[!, plotconfig.spectralColorBy])
@@ -711,6 +783,62 @@ function plot_means!(
             end
         end
     end
+end
+
+function plot_trajectories!(
+        ::Type{M},
+        p::Plot,
+        model::AbstractLinearENAModel,
+        plotconfig::NamedTuple,
+        displayRows::BitVector=BitVector(repeat([true], nrow(model.accum)))
+    ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
+
+    if isnothing(plotconfig.trajectoryBy)
+        return
+    end
+
+    tempPositions = DataFrame(Dict(
+        :unitID => model.accum.unitID,
+        :pos_x => [fixX(model.points[plotconfig.x, unitID], model, plotconfig) for unitID in model.accum.unitID],
+        :pos_y => [fixY(model.points[plotconfig.y, unitID], model, plotconfig) for unitID in model.accum.unitID]
+    ))
+
+    smoothingData = innerjoin(model.accum[displayRows, :], model.metadata[displayRows, :], on=:unitID)
+    smoothingData = innerjoin(smoothingData, tempPositions, on=:unitID)
+    if plotconfig.trajectoryBy in Symbol.(names(smoothingData))
+        tb = plotconfig.trajectoryBy
+        if length(unique(smoothingData[!, plotconfig.trajectoryBy])) > plotconfig.trajectoryBins
+            tb = :TIEDRANK
+            ranks = tiedrank(smoothingData[!, plotconfig.trajectoryBy])
+            ranks /= maximum(ranks) + 1
+            ranks *= plotconfig.trajectoryBins
+            smoothingData[!, tb] = floor.(ranks)
+        end
+
+        smoothingData = combine(
+            groupby(smoothingData, tb),
+            tb => median => tb,
+            :pos_x => median => :pos_x,
+            :pos_y => median => :pos_y
+        )
+            
+        if nrow(smoothingData) > 3
+            smoothingData = sort(smoothingData, tb)
+            ts = smoothingData[!, tb]
+            ps = transpose(Matrix{Float64}(smoothingData[!, [:pos_x, :pos_y]]))
+            bspline = ParametricSpline(ts, ps, k=3, bc="nearest")
+            smooth_ts = range(ts[1], stop=ts[end], length=500)
+            smooth_ps = transpose(bspline(smooth_ts))
+            plot!(
+                p,
+                smooth_ps[:, 1],
+                smooth_ps[:, 2],
+                linecolor=:black,
+                arrow=:closed,
+                label=nothing
+            )
+        end
+    end 
 end
 
 # TODO below here
