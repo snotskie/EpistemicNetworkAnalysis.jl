@@ -283,9 +283,24 @@ function summary(::Type{M}, model::AbstractENAModel) where {R<:AbstractENARotati
     return copy(model.embedding[!, columns])
 end
 
-# function summarize!(::Type{M}, model::AbstractENAModel) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
-#     error("Unimplemented")
-# end
+function show(io::IO, model::AbstractENAModel)
+    details = (
+        ENATool="EpistemicNetworkAnalysis.jl",
+        ToolVersion=pkgversion(EpistemicNetworkAnalysis),
+        ModelConfig=(
+            codes=model.codes,
+            conversations=model.conversations,
+            units=model.units,
+            model.config...
+        ),
+        NumberOfUnits=nrow(model.metadata),
+        RotationType=string(nameof(typeof(model.rotation))),
+        RotationConfig=namedtuple(propertynames(model.rotation), fieldvalues(model.rotation)),
+        Results=Tables.rowtable(summary(model))
+    )
+
+    pprint(io, details)
+end
 
 # in linear, do plot like the consruct helper, override its components under there
 function plot(::Type{M}, model::AbstractENAModel, plotconfig::NamedTuple) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
@@ -296,6 +311,10 @@ end
 function summary(model::AbstractENAModel)
     return summary(typeof(model), model)
 end
+
+# function show(model::AbstractENAModel)
+#     return show(typeof(model), model)
+# end
 
 function plot(model::AbstractENAModel; kwargs...)
     plotconfig = defaultplotkwargs(typeof(model), model; kwargs...)

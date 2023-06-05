@@ -8,7 +8,6 @@ function defaultmodelkwargs(
         dropEmpty::Bool=false,
         recenterEmpty::Bool=false,
         # deflateEmpty::Bool=false,
-        rotateBy::AbstractLinearENARotation=SVDRotation(),
         kwargs...
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
@@ -21,7 +20,6 @@ function defaultmodelkwargs(
         dropEmpty=dropEmpty,
         recenterEmpty=recenterEmpty,
         # deflateEmpty=deflateEmpty,
-        rotateBy=rotateBy,
         kwargs...
     )
 
@@ -134,7 +132,7 @@ function populateENAfields(
     embedding = DataFrame(Dict(
         :label=>String[],
         :variance_explained=>Real[],
-        :pearson=>Real[],
+        # :pearson=>Real[],
         :coregistration=>Real[],
         (edgeID=>Real[] for edgeID in edgeIDs)...
     ))

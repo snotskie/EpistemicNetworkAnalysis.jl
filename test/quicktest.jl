@@ -59,6 +59,7 @@ model2 = EpistemicNetworkAnalysis.ENAModel(
 )
 
 display(EpistemicNetworkAnalysis.summary(model2))
+show(model)
 
 # model2 = EpistemicNetworkAnalysis.BiplotENAModel(model)
 # model2 = EpistemicNetworkAnalysis.BiplotENAModel(model, rotateBy=rotation)

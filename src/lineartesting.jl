@@ -10,7 +10,7 @@ function test!(
         points = Vector(model.points[i, unitIDs])
         pointsHat = Vector(model.pointsHat[i, unitIDs])
         model.embedding[i, :variance_explained] = var(points) / total_variance
-        model.embedding[i, :pearson] = cor(points, pointsHat)
+        # model.embedding[i, :pearson] = cor(points, pointsHat)
         pointsDiffs = [
             a - b
             for a in points

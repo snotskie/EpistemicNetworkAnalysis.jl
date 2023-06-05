@@ -23,6 +23,12 @@ using MultivariateStats
 using HypothesisTests
 using GLM
 
+## Printing
+using NamedTupleTools
+using PrettyPrinting
+using Tables
+import Base.show
+
 ## Nonlinear
 # using Random
 # using Distances
