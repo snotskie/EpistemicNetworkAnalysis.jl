@@ -286,7 +286,8 @@ end
 function show(io::IO, model::AbstractENAModel)
     details = (
         ENATool="EpistemicNetworkAnalysis.jl",
-        ToolVersion=pkgversion(EpistemicNetworkAnalysis),
+        ToolVersion=PkgVersion.Version(EpistemicNetworkAnalysis),
+        ToolAuthor=PkgVersion.Author(EpistemicNetworkAnalysis),
         ModelConfig=(
             codes=model.codes,
             conversations=model.conversations,
@@ -296,7 +297,7 @@ function show(io::IO, model::AbstractENAModel)
         NumberOfUnits=nrow(model.metadata),
         RotationType=string(nameof(typeof(model.rotation))),
         RotationConfig=namedtuple(propertynames(model.rotation), fieldvalues(model.rotation)),
-        Results=Tables.rowtable(summary(model))
+        Dimensions=Tables.rowtable(summary(model))
     )
 
     pprint(io, details)

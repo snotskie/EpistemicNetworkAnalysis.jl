@@ -24,6 +24,7 @@ using HypothesisTests
 using GLM
 
 ## Printing
+using PkgVersion
 using NamedTupleTools
 using PrettyPrinting
 using Tables

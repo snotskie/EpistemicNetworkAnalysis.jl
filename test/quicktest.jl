@@ -58,8 +58,8 @@ model2 = EpistemicNetworkAnalysis.ENAModel(
     dropEmpty=true,
 )
 
-display(EpistemicNetworkAnalysis.summary(model2))
-show(model)
+@show(EpistemicNetworkAnalysis.summary(model2))
+@show(model)
 
 # model2 = EpistemicNetworkAnalysis.BiplotENAModel(model)
 # model2 = EpistemicNetworkAnalysis.BiplotENAModel(model, rotateBy=rotation)
@@ -76,6 +76,8 @@ p = EpistemicNetworkAnalysis.plot(
     # y=4,
 )
 
+display(p)
+
 #=
 TODO:
 
@@ -83,7 +85,7 @@ TODO:
 - [X] base rotations
 - [X] base plotting
 - [X] trajectories and spectral
-- [x] statistical tests
+- [X] statistical tests
 - [ ] textual summaries
 - [ ] digraph model and plotting
 - [ ] xlsx import/export
