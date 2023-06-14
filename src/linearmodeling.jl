@@ -305,12 +305,10 @@ function approximate!(
         ::Type{M}, model::AbstractLinearENAModel
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
-    # compute densities
-    # edgeDensityDict, nodeDensityDict = computeNetworkDensities(model)
-
     # Regression model for placing the code dots into the approximated high-dimensional space
     ## start with a small amount of noise to prevent colinearity issues
-    X = Matrix{Float64}(rand(nrow(model.accum), nrow(model.nodes)) / 1000000000)
+    # X = Matrix{Float64}(rand(nrow(model.accum), nrow(model.nodes)) / 1000000000)
+    X = Matrix{Float64}(zeros(nrow(model.accum), nrow(model.nodes)))
     nodeIndexMap = Dict(
         nodeID => i
         for (i, nodeID) in enumerate(model.nodes.nodeID)

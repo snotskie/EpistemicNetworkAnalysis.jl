@@ -43,6 +43,7 @@ function test!(
     if !(:KruskalWallis_H in Symbol.(names(model.embedding)))
         filler = repeat(Union{Float64,Missing}[missing], nrow(model.embedding))
         filler2 = repeat(Union{Symbol,Missing}[missing], nrow(model.embedding))
+        filler3 = repeat(Any[missing], nrow(model.embedding))
         model.embedding[!, :KruskalWallis_H] = copy(filler)
         model.embedding[!, :KruskalWallis_p] = copy(filler)
         model.embedding[!, :KruskalWallis_GroupBy] = copy(filler2)
@@ -54,7 +55,7 @@ function test!(
         end
 
         for name_col in name_cols
-            model.embedding[!, name_col] = copy(filler)
+            model.embedding[!, name_col] = copy(filler3)
         end
 
         for n_col in n_cols

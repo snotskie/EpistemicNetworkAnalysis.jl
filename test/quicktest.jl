@@ -27,8 +27,8 @@ codes = [
 ]
 group = :Play
 rotation = EpistemicNetworkAnalysis.MeansRotation(
-    # :Play, "Romeo and Juliet", "Hamlet",
-    :Act, 1, 5,
+    :Play, "Romeo and Juliet", "Hamlet",
+    # :Act, 1, 5,
     # moderated=true
 )
 
@@ -50,16 +50,17 @@ model = EpistemicNetworkAnalysis.ENAModel(
     dropEmpty=true,
 )
 
-model2 = EpistemicNetworkAnalysis.ENAModel(
+model2 = EpistemicNetworkAnalysis.DigraphENAModel(
     data, codes, conversations, units,
     windowSize=10,
-    rotateBy=EpistemicNetworkAnalysis.ManualRotation(model.embedding),
+    # rotateBy=EpistemicNetworkAnalysis.ManualRotation(model.embedding),
     # recenterEmpty=true,
+    rotateBy=rotation,
     dropEmpty=true,
 )
 
 @show(EpistemicNetworkAnalysis.summary(model2))
-@show(model)
+@show(model2)
 
 # model2 = EpistemicNetworkAnalysis.BiplotENAModel(model)
 # model2 = EpistemicNetworkAnalysis.BiplotENAModel(model, rotateBy=rotation)
@@ -68,7 +69,8 @@ model2 = EpistemicNetworkAnalysis.ENAModel(
 p = EpistemicNetworkAnalysis.plot(
     model2,
     showWeakEdges=false,
-    trajectoryBy=:Act,
+    zoom=2,
+    # trajectoryBy=:Act,
     # trajectoryBy=:rand,
     # groupBy=group,
     # lims=2,
@@ -86,12 +88,13 @@ TODO:
 - [X] base plotting
 - [X] trajectories and spectral
 - [X] statistical tests
-- [ ] textual summaries
-- [ ] digraph model and plotting
+- [X] textual summaries
+- [X] digraph model and plotting
 - [ ] xlsx import/export
 - [ ] LDA and Multiclass
 - [ ] ManualRotation statistical tests
 - [ ] default exports
+- [ ] plot tweaks (eg. arrow sizes)
 - [ ] volunteer testing
 - [ ] auto-docs
 - [ ] cleaner errors and warnings (see volunteer testing results)

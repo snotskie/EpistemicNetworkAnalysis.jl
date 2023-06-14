@@ -296,7 +296,10 @@ function show(io::IO, model::AbstractENAModel)
         ),
         NumberOfUnits=nrow(model.metadata),
         RotationType=string(nameof(typeof(model.rotation))),
-        RotationConfig=namedtuple(propertynames(model.rotation), fieldvalues(model.rotation)),
+        RotationConfig=
+            length(propertynames(model.rotation)) > 0 ?
+            namedtuple(propertynames(model.rotation), fieldvalues(model.rotation)) :
+            (),
         Dimensions=Tables.rowtable(summary(model))
     )
 

@@ -27,7 +27,8 @@ function defaultplotkwargs(
         size::Real=600,
         meanCenter::Bool=model.config.sphereNormalize,
         origin::Array{<:Real}=(meanCenter ?  [mean(model.points[x, :]), mean(model.points[y, :])] : [0,0]),
-        lims::Real=1.618, # golden ratio
+        zoom::Real=1,
+        lims::Real=1/zoom,
         flipX::Bool=false,
         flipY::Bool=false,
         xticks::Array{<:Real}=(
@@ -73,6 +74,7 @@ function defaultplotkwargs(
         size=size,
         meanCenter=meanCenter,
         origin=origin,
+        zoom=zoom,
         lims=lims,
         xticks=xticks,
         yticks=yticks,
@@ -241,7 +243,7 @@ function paintSortedNetwork!(
 
         if edge.kind == :count
             push!(edgePoints[edge.edgeID], fixPoint([0, 0], model, plotconfig))
-        elseif edge.kind in [:undirected, :undirected]
+        elseif edge.kind in [:undirected, :directed]
             if plotconfig.showWarps
                 pointT = fixPoint([
                     model.embedding[plotconfig.x, edge.edgeID],
@@ -271,13 +273,13 @@ function paintSortedNetwork!(
 
     for edgeID in edgeOrder
         edge = model.edges[edgeMap[edgeID], :]
-        if edgeWidths[edgeID] > 0
+        if edgeWidths[edgeID] > 0 && edge.kind != :directed
             plot!(p,
                 first.(edgePoints[edgeID]), # xs
                 last.(edgePoints[edgeID]), # ys
                 label=nothing,
                 seriestype=:curves,
-                arrows=(edge.kind == :directed),
+                arrows=false,
                 linewidth=edgeWidths[edgeID],
                 linecolor=edgeColors[edgeID]
             )
@@ -313,6 +315,21 @@ function paintSortedNetwork!(
                 markersize=[nodeWidths[nodeID]],
                 markercolor=:black,
                 markerstrokewidth=0
+            )
+        end
+    end
+
+    for edgeID in reverse(edgeOrder)
+        edge = model.edges[edgeMap[edgeID], :]
+        if edgeWidths[edgeID] > 0 && edge.kind == :directed
+            plot!(p,
+                first.(edgePoints[edgeID]), # xs
+                last.(edgePoints[edgeID]), # ys
+                label=nothing,
+                seriestype=:curves,
+                arrows=true,
+                linewidth=edgeWidths[edgeID],
+                linecolor=edgeColors[edgeID]
             )
         end
     end

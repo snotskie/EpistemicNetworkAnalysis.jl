@@ -56,13 +56,13 @@ include("./rotations/TopicRotation.jl")
 
 # Models
 include("./models/ENAModel.jl")
-# include("./models/DigraphENAModel.jl")
+include("./models/DigraphENAModel.jl")
 include("./models/BiplotENAModel.jl")
 
 # Exports
 export ENAModel
 export BiplotENAModel
-# export DigraphENAModel
+export DigraphENAModel
 # export NonlinearENAModel
 export plot
 export SVDRotation
