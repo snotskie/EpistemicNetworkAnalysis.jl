@@ -90,9 +90,10 @@ TODO:
 - [X] statistical tests
 - [X] textual summaries
 - [X] digraph model and plotting
-- [ ] xlsx import/export
+- [X] xlsx export
+- [ ] xlsx import
 - [ ] LDA and Multiclass
-- [ ] ManualRotation statistical tests
+- [ ] ManualRotation/CopyRotation statistical tests
 - [ ] default exports
 - [ ] plot tweaks (eg. arrow sizes)
 - [ ] volunteer testing

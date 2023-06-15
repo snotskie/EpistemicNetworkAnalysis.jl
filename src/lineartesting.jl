@@ -1,6 +1,6 @@
 function test!(
         ::Type{M},
-        model::AbstractLinearENAModel;
+        model::AbstractLinearENAModel
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
     
     edgeIDs = model.edges.edgeID

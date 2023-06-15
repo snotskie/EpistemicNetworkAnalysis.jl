@@ -325,6 +325,65 @@ function plot(model::AbstractENAModel; kwargs...)
     return plot(typeof(model), model, plotconfig)
 end
 
+# Serialization
+function to_xlsx(model::AbstractENAModel, filename::AbstractString)
+    i = 1
+    namesheet(xf, sheetname) = begin
+        if i == 1
+            XLSX.rename!(xf[1], sheetname)
+        else
+            XLSX.addsheet!(xf, sheetname)
+        end
+    end
+
+    fixcelltype(x) = begin
+        if typeof(x) <: Symbol
+            return string(x)
+        elseif typeof(x) <: Function
+            return join(string.(code_lowered(x)[1].code), "; ")
+        else
+            return x
+        end
+    end
+
+    fixcelltypes(col) = fixcelltype.(col)
+    prepare(df) = fixcelltypes.(eachcol(df))
+    putsheet(xf, df, sheetname) = begin
+        namesheet(xf, sheetname)
+        XLSX.writetable!(xf[i], prepare(df), names(df))
+        i += 1
+    end
+
+    putvector(xf, pair, sheetname) = begin
+        namesheet(xf, sheetname)
+        XLSX.writetable!(xf[i], [fixcelltypes(last(pair))], [first(pair)])
+        i += 1
+    end
+
+    puttuple(xf, tp, sheetname) = begin
+        namesheet(xf, sheetname)
+        XLSX.writetable!(xf[i], fixcelltypes.([[x] for x in values(tp)]), keys(tp))
+        i += 1
+    end
+
+    XLSX.openxlsx(filename, mode="w") do xf
+        putsheet(xf, model.data, "Data")
+        putvector(xf, "Codes" => model.codes, "Codes")
+        putvector(xf, "Conversations" => model.conversations, "Conversations")
+        putvector(xf, "Units" => model.units, "Units")
+        puttuple(xf, model.config, "Config")
+        putsheet(xf, model.metadata, "Metadata")
+        putsheet(xf, model.accum, "Accum")
+        putsheet(xf, model.points, "Points")
+        putsheet(xf, model.edges, "Edges")
+        putsheet(xf, model.embedding, "Embedding")
+        putsheet(xf, model.nodes, "Nodes")
+        putsheet(xf, model.pointsNodes, "PointsNodes")
+        putsheet(xf, model.accumHat, "AccumHat")
+        putsheet(xf, model.pointsHat, "PointsHat")
+    end
+end
+
 # Helpers
 
 function computeNetworkDensities(model, rows=!; normalize=false)

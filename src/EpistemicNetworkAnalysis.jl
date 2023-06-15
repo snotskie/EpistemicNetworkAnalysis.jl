@@ -30,6 +30,9 @@ using PrettyPrinting
 using Tables
 import Base.show
 
+## Serialization
+using XLSX
+
 ## Nonlinear
 # using Random
 # using Distances
