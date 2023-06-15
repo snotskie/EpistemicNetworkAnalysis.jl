@@ -337,12 +337,12 @@ function to_xlsx(model::AbstractENAModel, filename::AbstractString)
     end
 
     fixcelltype(x) = begin
-        if typeof(x) <: Symbol
-            return string(x)
+        if typeof(x) <: Union{Missing, Bool, Float64, Int64, Dates.Date, Dates.DateTime, Dates.Time, String}
+            return x
         elseif typeof(x) <: Function
             return join(string.(code_lowered(x)[1].code), "; ")
         else
-            return x
+            return string(x)
         end
     end
 
@@ -366,12 +366,24 @@ function to_xlsx(model::AbstractENAModel, filename::AbstractString)
         i += 1
     end
 
+    putrotation(xf, rotation, sheetname) = begin
+        namesheet(xf, sheetname)
+        cols = ["RotationType", propertynames(rotation)...]
+        vals = [string(nameof(typeof(rotation))), fixcelltypes.(fieldvalues(rotation))...]
+        XLSX.writetable!(xf[i], [[x] for x in vals], cols)
+        i += 1
+    end
+
     XLSX.openxlsx(filename, mode="w") do xf
         putsheet(xf, model.data, "Data")
         putvector(xf, "Codes" => model.codes, "Codes")
         putvector(xf, "Conversations" => model.conversations, "Conversations")
         putvector(xf, "Units" => model.units, "Units")
-        puttuple(xf, model.config, "Config")
+        puttuple(xf, (
+            ModelType=string(nameof(typeof(model))),
+            model.config...
+        ), "Model")
+        putrotation(xf, model.rotation, "Rotation")
         putsheet(xf, model.metadata, "Metadata")
         putsheet(xf, model.accum, "Accum")
         putsheet(xf, model.points, "Points")

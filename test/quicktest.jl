@@ -61,6 +61,7 @@ model2 = EpistemicNetworkAnalysis.DigraphENAModel(
 
 @show(EpistemicNetworkAnalysis.summary(model2))
 @show(model2)
+EpistemicNetworkAnalysis.to_xlsx(model2, "test/temp.xlsx")
 
 # model2 = EpistemicNetworkAnalysis.BiplotENAModel(model)
 # model2 = EpistemicNetworkAnalysis.BiplotENAModel(model, rotateBy=rotation)
@@ -91,7 +92,7 @@ TODO:
 - [X] textual summaries
 - [X] digraph model and plotting
 - [X] xlsx export
-- [ ] xlsx import
+- [ ] xlsx import - for filters, do something like x -> x.id in model.whatever.ids ?
 - [ ] LDA and Multiclass
 - [ ] ManualRotation/CopyRotation statistical tests
 - [ ] default exports
