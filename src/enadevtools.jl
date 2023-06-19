@@ -375,6 +375,23 @@ function to_xlsx(model::AbstractENAModel, filename::AbstractString)
     end
 
     XLSX.openxlsx(filename, mode="w") do xf
+        putsheet(xf, DataFrame([
+            "Data"          "The original data given to the ENA model";
+            "Codes"         "A list of the column names defining the qualitative codes used in the model";
+            "Conversations" "A list of the column names used to distinguish conversations";
+            "Units"         "A list of the column names used to distinguish units of analysis";
+            "Model"         "A row recording the configuration of the model used";
+            "Rotation"      "A row recording the configuration of the rotation used";
+            "Metadata"      "The metadata associated with each unit of analysis";
+            "Accum"         "The normalized accumulated connection weights for each unit of analysis"
+            "Points"        "The plotted unit points, one column per unit of analysis, one row per dimension. By default, the first row is the X-axis and the second row is the Y-axis";
+            "Edges"         "The edges used in the model";
+            "Embedding"     "The embedding arrived at by the model, one column per edge, one row per dimension. Rows are sorted in parallel to the Points sheet";
+            "Nodes"         "The pseudo-accumulated weights for each node, found by fitting nodes to each column of Accum, and used to calculate PointsNodes";
+            "PointsNodes"   "The plotted node points, one column per node, one row per dimension, found by Embedding * Nodes. Rows are sorted in parallel to the Points sheet";
+            "AccumHat"      "The approximated unit weights, used to calculate PointsHat";
+            "PointsHat"     "The approximated plotted unit points (aka 'centroids'), found by Embedding * AccumHat, used to calculate model goodness of fit"
+        ], ["Sheet", "Description"]), "Documentation")
         putsheet(xf, model.data, "Data")
         putvector(xf, "Codes" => model.codes, "Codes")
         putvector(xf, "Conversations" => model.conversations, "Conversations")
