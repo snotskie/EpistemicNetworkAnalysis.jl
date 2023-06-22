@@ -413,6 +413,70 @@ function to_xlsx(model::AbstractENAModel, filename::AbstractString)
     end
 end
 
+# function from_xlsx(filename::AbstractString)
+#     xf = XLSX.readxlsx(filename)
+#     sheetnames = XLSX.sheetnames(xf)
+#     expected = [
+#         "Data",
+#         "Codes",
+#         "Conversations",
+#         "Units",
+#         "Model",
+#         "Rotation",
+#         "Metadata",
+#         "Accum",
+#         "Points",
+#         "Edges",
+#         "Embedding",
+#         "Nodes",
+#         "PointsNodes",
+#         "AccumHat",
+#         "PointsHat"
+#     ]
+
+#     for sheetname in expected
+#         @assert(sheetname in sheetnames,
+#             "Expected sheet named '$sheetname' not found in the spreadsheet: $filename")
+#     end
+
+#     # Helper
+#     df(sheetname) = DataFrame(XLSX.gettable(xf[sheetname]))
+
+#     # Basic config
+#     data = df("Data")
+#     conversations = df("Conversations").Conversations
+#     units = df("Units").Units
+#     codes = df("Codes").Codes
+
+#     # Rotation
+#     rotationTypeName = df("Rotation").RotationType[1]
+#     rotationType = try
+#         getfield(@__MODULE__, Symbol(rotationTypeName))
+#     catch UndefVarError
+#         @error "Unknown rotation type: $rotationTypeName"
+#     end
+
+#     @assert(rotationType <: AbstractENARotation,
+#         "Invalid rotation type: $rotationTypeName")
+    
+#     rotationArgs = df("Rotation")[1, 2:end]
+#     rotation = rotationType(rotationArgs...)
+#     # This is the tricky part, zero-knowledge type conversion
+#     # from whatever type XLSX and DataFrame comes up with,
+#     # to whatever type (or array type) the rotation requires
+    
+#     # Module components
+#     # Should be mostly just loading in dataframes
+
+#     # Module config
+#     # Same trickiness as the rotation
+
+#     # Model re-construction
+#     # The idea is to just call the underlying struct directly
+
+#     return xf # TODO return the reconstructed model
+# end
+
 # Helpers
 
 function computeNetworkDensities(model, rows=!; normalize=false)
