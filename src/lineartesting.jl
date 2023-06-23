@@ -39,6 +39,10 @@ function test!(
         groups::Array=[],
         kwargs...
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
+    
+    mdn_cols = [Symbol("KruskalWallis_Median_$(i)") for i in 1:length(groups)]
+    name_cols = [Symbol("KruskalWallis_Name_$(i)") for i in 1:length(groups)]
+    n_cols = [Symbol("KruskalWallis_N_$(i)") for i in 1:length(groups)]
 
     if !(:KruskalWallis_H in Symbol.(names(model.embedding)))
         filler = repeat(Union{Float64,Missing}[missing], nrow(model.embedding))
@@ -47,9 +51,6 @@ function test!(
         model.embedding[!, :KruskalWallis_H] = copy(filler)
         model.embedding[!, :KruskalWallis_p] = copy(filler)
         model.embedding[!, :KruskalWallis_GroupBy] = copy(filler2)
-        mdn_cols = [Symbol("KruskalWallis_Median_$(i)") for i in 1:length(groups)]
-        name_cols = [Symbol("KruskalWallis_Name_$(i)") for i in 1:length(groups)]
-        n_cols = [Symbol("KruskalWallis_N_$(i)") for i in 1:length(groups)]
         for mdn_col in mdn_cols
             model.embedding[!, mdn_col] = copy(filler)
         end

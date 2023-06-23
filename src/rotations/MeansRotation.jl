@@ -118,7 +118,6 @@ function test!(
     super = rotationsupertype(M, AbstractMeansRotation)
     test!(super, model)
     for (i, label) in enumerate(model.rotation.groupVars)
-        model.embedding[i, :label] = string(label)
         test!(M, model, KruskalWallisTest, dim=i, groupVar=label, groups=[
             model.rotation.controlGroups[i],
             model.rotation.treatmentGroups[i]

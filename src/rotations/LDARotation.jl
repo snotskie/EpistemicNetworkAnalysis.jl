@@ -1,131 +1,72 @@
+abstract type AbstractLDARotation <: AbstractLinearENARotation end
 struct LDARotation <: AbstractLDARotation
     groupVar::Symbol
-    dim1::Integer
-    dim2::Integer
 end
 
-# Simplified constructor
-function LDARotation(groupVar::Symbol, dim1::Integer=1)
-    return LDARotation(groupVar, dim1, dim1+1)
-end
-
-# Implement rotation
-function rotate!(rotation::AbstractLDARotation, networkModel::DataFrame, codeModel::DataFrame, metadata::DataFrame, subspaceModel::DataFrame)
-
-    # Check assumptions
-    # if nrow(subspaceModel) != nrow(metadata)
-    #     error("Cannot perform LDA rotation when rotateOn=:codeModel")
-    # end
+function rotate!(
+        ::Type{M}, model::AbstractLinearENAModel
+    ) where {R<:AbstractLDARotation, M<:AbstractLinearENAModel{R}}
 
     # Prepare the data
-    groups = sort(unique(metadata[!, rotation.groupVar]))
+    groups = sort(unique(model.metadata[!, model.rotation.groupVar]))
     groupMap = Dict(group => i for (i, group) in enumerate(groups))
     nc = length(groups)
-    X = Matrix{Float64}(transpose(Matrix{Float64}(subspaceModel[!, networkModel[!, :relationship]])))
+    X = Matrix{Float64}(transpose(Matrix{Float64}(model.accum[!, model.edges.edgeID])))
     for j in 1:size(X, 2)
         X[:, j] = X[:, j] .- mean(X[:, j])
     end
 
-    y = map(metadata[!, rotation.groupVar]) do group
+    y = map(model.metadata[!, model.rotation.groupVar]) do group
         return groupMap[group]
     end
 
     ## Run the LDA
-    ldaModel = projection(fit(MulticlassLDA, nc, X, y))
-    networkModel[!, :weight_x] = ldaModel[:, rotation.dim1]
-    if rotation.dim2 == 0
-        help_one_vector(networkModel, subspaceModel)
-    else
-        networkModel[!, :weight_y] = ldaModel[:, rotation.dim2]
-        help_two_vectors(networkModel)
+    ldaModel = projection(fit(MulticlassLDA, X, y))
+
+    ## Add to the model
+    ns = size(ldaModel)[2]
+    embedding = similar(model.embedding, ns)
+    for i in 1:ns
+        embedding[i, :label] = "LDA$(i)"
+        embedding[i, model.edges.edgeID] = ldaModel[:, i]
     end
 
-    # if size(ldaModel, 2) >= 2
-    #     networkModel[!, :weight_x] = ldaModel[:, rotation.dim1]
-    #     networkModel[!, :weight_y] = ldaModel[:, rotation.dim2]
+    append!(model.embedding, embedding)
 
-    #     ## Normalize the axis weights
-    #     s = sqrt(sum(networkModel[!, :weight_x] .^ 2))
-    #     if s != 0
-    #         networkModel[!, :weight_x] /= s
-    #     end
-
-    #     s = sqrt(sum(networkModel[!, :weight_y] .^ 2))
-    #     if s != 0
-    #         networkModel[!, :weight_y] /= s
-    #     end
-    # else
-    #     ## Try to use MR1's x-axis as my approximate y-axis
-    #     groups = unique(metadata[!, rotation.groupVar])
-    #     rotate!(MeansRotation(rotation.groupVar, groups[1], groups[2]), networkModel, subspaceModel, metadata)
-    #     networkModel[!, :weight_y] = networkModel[!, :weight_x]
-    #     networkModel[!, :weight_x] = ldaModel[:, 1]
-    #     help_two_vectors(networkModel)
-    # end
+    # let parent handle the rest
+    super = rotationsupertype(M, AbstractLDARotation)
+    rotate!(super, model)
 end
 
-# Override plotting pieces
-## Base - Inject a groupBy and some labels when none are given
-function plot(ena::AbstractENAModel{<:AbstractLDARotation};
-    negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
-    extraColors::Array{<:Colorant,1}=DEFAULT_EXTRA_COLORS,
-    groupBy=nothing,
-    xlabel=nothing, ylabel=nothing,
-    kwargs...)
+function test!(
+        ::Type{M}, model::AbstractLinearENAModel
+    ) where {R<:AbstractLDARotation, M<:AbstractLinearENAModel{R}}
 
-    if isnothing(groupBy) || groupBy == ena.rotation.groupVar
-        groupBy = ena.rotation.groupVar
-    end
+    super = rotationsupertype(M, AbstractLDARotation)
+    test!(super, model)
 
-    if isnothing(xlabel)
-        xlabel = string("LDA", ena.rotation.dim1)
-    end
-
-    if isnothing(ylabel)
-        if ena.rotation.dim2 == 0
-            ylabel = "SVD"
-        else
-            ylabel = string("LDA", ena.rotation.dim2)
+    groups = sort(unique(model.metadata[!, model.rotation.groupVar]))
+    for i in 1:nrow(model.embedding)
+        if model.embedding[i, :label] == "LDA$(i)"
+            test!(M, model, KruskalWallisTest, dim=i, groupVar=model.rotation.groupVar, groups=groups)
         end
     end
-
-    return invoke(plot, Tuple{AbstractENAModel{<:AbstractLinearENARotation}}, ena;
-                  negColor=negColor, posColor=posColor, extraColors=extraColors,
-                  groupBy=groupBy, xlabel=xlabel, ylabel=ylabel, kwargs...)
 end
 
-# function test(ena::AbstractENAModel{<:AbstractLDARotation})
-#     results = invoke(test, Tuple{AbstractENAModel}, ena)
+# insert groups
+function defaultplotkwargs(
+        ::Type{M},
+        model::AbstractLinearENAModel;
+        groupBy::Union{Symbol,Nothing}=model.rotation.groupVar,
+        kwargs...
+    ) where {R<:AbstractLDARotation, M<:AbstractLinearENAModel{R}}
 
-#     ## 99% copy pasta from rotation function, since I don't have the best way to de-dup this work just yet
-#     groups = sort(unique(ena.metadata[!, ena.rotation.groupVar]))
-#     groupMap = Dict(group => i for (i, group) in enumerate(groups))
-#     nc = length(groups)
-#     subspaceModel = ena.centroidModel
-#     if ena.rotateOn == :accumModel
-#         subspaceModel = ena.accumModel
-#     end
+    kwargs = NamedTuple(kwargs)
+    defaults = (
+        groupBy=groupBy,
+        kwargs...
+    )
 
-#     X = Matrix{Float64}(transpose(Matrix{Float64}(subspaceModel[!, ena.networkModel[!, :relationship]])))
-#     for j in 1:size(X, 2)
-#         X[:, j] = X[:, j] .- mean(X[:, j])
-#     end
-
-#     y = map(ena.metadata[!, ena.rotation.groupVar]) do group
-#         return groupMap[group]
-#     end
-
-
-#     ## Run SNR test
-#     try
-#         ldaModel = fit(MulticlassLDA, nc, X, y)
-#         W = MultivariateStats.withclass_scatter(ldaModel)
-#         B = MultivariateStats.betweenclass_scatter(ldaModel)
-#         snr = sum(diag(inv(W) * B))
-#         results[:signal_to_noise_ratio] = snr
-#     catch e
-#         # do nothing
-#     end
-
-#     return results
-# end
+    super = rotationsupertype(M, AbstractLDARotation)
+    return defaultplotkwargs(super, model, merge(defaults, kwargs))
+end

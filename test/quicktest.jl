@@ -27,10 +27,15 @@ codes = [
    :Women
 ]
 group = :Play
-rotation = EpistemicNetworkAnalysis.MeansRotation(
-    :Play, "Romeo and Juliet", "Hamlet",
-    # :Act, 1, 5,
-    # moderated=true
+# rotation = EpistemicNetworkAnalysis.MeansRotation(
+#     :Play, "Romeo and Juliet", "Hamlet",
+#     # :Act, 1, 5,
+#     # moderated=true
+# )
+
+rotation = EpistemicNetworkAnalysis.LDARotation(
+    # :Play
+    :Act
 )
 
 # rotation = EpistemicNetworkAnalysis.TopicRotation(
@@ -51,18 +56,18 @@ model = EpistemicNetworkAnalysis.ENAModel(
     dropEmpty=true,
 )
 
-model2 = EpistemicNetworkAnalysis.DigraphENAModel(
-    data, codes, conversations, units,
-    windowSize=10,
-    # rotateBy=EpistemicNetworkAnalysis.ManualRotation(model.embedding),
-    # recenterEmpty=true,
-    rotateBy=rotation,
-    dropEmpty=true,
-)
+# model2 = EpistemicNetworkAnalysis.DigraphENAModel(
+#     data, codes, conversations, units,
+#     windowSize=10,
+#     # rotateBy=EpistemicNetworkAnalysis.ManualRotation(model.embedding),
+#     # recenterEmpty=true,
+#     rotateBy=rotation,
+#     dropEmpty=true,
+# )
 
-@show(EpistemicNetworkAnalysis.summary(model2))
-@show(model2)
-EpistemicNetworkAnalysis.to_xlsx(model2, "test/temp.xlsx")
+@show(EpistemicNetworkAnalysis.summary(model))
+@show(model)
+EpistemicNetworkAnalysis.to_xlsx(model, "test/temp.xlsx")
 serialize("test/temp.ena", model)
 modeldes = deserialize("test/temp.ena")
 @show(modeldes)
@@ -75,13 +80,12 @@ modeldes = deserialize("test/temp.ena")
 # model2 = EpistemicNetworkAnalysis.ENAModel(model, rotateBy=rotation)
 
 p = EpistemicNetworkAnalysis.plot(
-    model2,
+    model,
     showWeakEdges=false,
-    zoom=2,
+    zoom=.75,
     # trajectoryBy=:Act,
     # trajectoryBy=:rand,
     # groupBy=group,
-    # lims=2,
     # x=3,
     # y=4,
 )
@@ -100,7 +104,7 @@ TODO:
 - [X] digraph model and plotting
 - [X] xlsx export
 - [~] xlsx import - for filters, do something like x -> x.id in model.whatever.ids ?
-- [ ] LDA and Multiclass
+- [ ] LDA and Multiclass rotations, plots, and stats tests
 - [ ] ManualRotation/CopyRotation statistical tests
 - [ ] default exports
 - [ ] plot tweaks (eg. arrow sizes)
