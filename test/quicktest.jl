@@ -33,9 +33,9 @@ group = :Play
 #     # moderated=true
 # )
 
-rotation = EpistemicNetworkAnalysis.LDARotation(
-    # :Play
-    :Act
+rotation = EpistemicNetworkAnalysis.MulticlassRotation(
+    :Play
+    # :Act
 )
 
 # rotation = EpistemicNetworkAnalysis.TopicRotation(
@@ -104,10 +104,10 @@ TODO:
 - [X] digraph model and plotting
 - [X] xlsx export
 - [~] xlsx import - for filters, do something like x -> x.id in model.whatever.ids ?
-- [ ] LDA and Multiclass rotations, plots, and stats tests
+- [X] LDA and Multiclass rotations, plots, and stats tests
 - [ ] ManualRotation/CopyRotation statistical tests
-- [ ] default exports
-- [ ] plot tweaks (eg. arrow sizes)
+- [ ] module exports
+- [ ] plot tweaks (eg. arrow sizes, cutoff label bugfix when many groups, etc.)
 - [ ] volunteer testing
 - [ ] auto-docs
 - [ ] cleaner errors and warnings (see volunteer testing results)

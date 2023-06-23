@@ -1,40 +1,31 @@
+abstract type AbstractMulticlassRotation <: AbstractGroupDifferenceRotation end
 struct MulticlassRotation <: AbstractMulticlassRotation
     groupVar::Symbol
-    dim1::Integer
-    dim2::Integer
 end
 
-# Simplified constructor
-function MulticlassRotation(groupVar::Symbol, dim1::Integer=1)
-    return MulticlassRotation(groupVar, dim1, dim1+1)
-end
+function rotate!(
+        ::Type{M}, model::AbstractLinearENAModel
+    ) where {R<:AbstractMulticlassRotation, M<:AbstractLinearENAModel{R}}
 
-# Implement rotation
-function rotate!(rotation::AbstractMulticlassRotation, networkModel::DataFrame, codeModel::DataFrame, metadata::DataFrame, subspaceModel::DataFrame)
-
-    # Prepare the data
-    ## Helpers
-    relationshipIds = networkModel[!, :relationship]
-    
-    ## Groups
-    groupNames = sort(unique(metadata[!, rotation.groupVar]))
+    edgeIDs = model.edges.edgeID
+    groupNames = sort(unique(model.metadata[!, model.rotation.groupVar]))
 
     ## Mean Vectors
-    all_rows = map(eachrow(subspaceModel)) do row
+    all_rows = map(eachrow(model.accum)) do row
         return false
     end
 
     group_ns = []
     group_vecs = []
     for g in groupNames
-        group_rows = metadata[!, rotation.groupVar] .== g
+        group_rows = model.metadata[!, model.rotation.groupVar] .== g
         all_rows = all_rows .| group_rows
-        group_vec = Vector{Float64}(mean.(subspaceModel[group_rows, col] for col in relationshipIds))
+        group_vec = Vector{Float64}(mean.(model.accum[group_rows, col] for col in edgeIDs))
         push!(group_vecs, group_vec)
         push!(group_ns, sum(group_rows))
     end
 
-    mean_vec = Vector{Float64}(mean.(subspaceModel[all_rows, col] for col in relationshipIds))
+    mean_vec = Vector{Float64}(mean.(model.accum[all_rows, col] for col in edgeIDs))
 
     ## Offset Vectors
     offset_vecs = []
@@ -53,47 +44,20 @@ function rotate!(rotation::AbstractMulticlassRotation, networkModel::DataFrame, 
     vals = eigvals(Sb)
     vecs = eigvecs(Sb)
 
-    ## Store Axes
-    R = real.(vecs[:, end-rotation.dim1+1]) # vecs are stored column-major, not row major
-    R /= sqrt(sum(R .^ 2))
-    networkModel[!, :weight_x] .= R
-    if rotation.dim2 == 0
-        help_one_vector(networkModel, subspaceModel)
-    else
-        R = real.(vecs[:, end-rotation.dim2+1]) # vecs are stored column-major, not row major
-        R /= sqrt(sum(R .^ 2))
-        networkModel[!, :weight_y] .= R
-        help_two_vectors(networkModel)
-    end
-        
-end
-
-# Override plotting pieces
-## Base - Inject a groupBy and some labels when none are given
-function plot(ena::AbstractENAModel{<:AbstractMulticlassRotation};
-    negColor::Colorant=DEFAULT_NEG_COLOR, posColor::Colorant=DEFAULT_POS_COLOR,
-    extraColors::Array{<:Colorant,1}=DEFAULT_EXTRA_COLORS,
-    groupBy=nothing,
-    xlabel=nothing, ylabel=nothing,
-    kwargs...)
-
-    if isnothing(groupBy) || groupBy == ena.rotation.groupVar
-        groupBy = ena.rotation.groupVar
+    ## Add to the model
+    ns = size(vecs)[2]
+    embedding = similar(model.embedding, ns)
+    for i in 1:ns
+        embedding[i, :label] = "MCMR$(i)"
+        # vecs are stored column-major, from least to most discrimination
+        axis = real.(vecs[:, end-i+1])
+        axis /= sqrt(sum(axis .^ 2))
+        embedding[i, model.edges.edgeID] = axis
     end
 
-    if isnothing(xlabel)
-        xlabel = string("MCR", ena.rotation.dim1)
-    end
+    append!(model.embedding, embedding)
 
-    if isnothing(ylabel)
-        if ena.rotation.dim2 == 0
-            ylabel = "SVD"
-        else
-            ylabel = string("MCR", ena.rotation.dim2)
-        end
-    end
-
-    return invoke(plot, Tuple{AbstractENAModel{<:AbstractLinearENARotation}}, ena;
-                  negColor=negColor, posColor=posColor, extraColors=extraColors,
-                  groupBy=groupBy, xlabel=xlabel, ylabel=ylabel, kwargs...)
+    # let parent handle the rest
+    super = rotationsupertype(M, AbstractMulticlassRotation)
+    rotate!(super, model)
 end

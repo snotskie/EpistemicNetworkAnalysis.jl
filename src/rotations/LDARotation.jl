@@ -1,4 +1,4 @@
-abstract type AbstractLDARotation <: AbstractLinearENARotation end
+abstract type AbstractLDARotation <: AbstractGroupDifferenceRotation end
 struct LDARotation <: AbstractLDARotation
     groupVar::Symbol
 end
@@ -36,37 +36,4 @@ function rotate!(
     # let parent handle the rest
     super = rotationsupertype(M, AbstractLDARotation)
     rotate!(super, model)
-end
-
-function test!(
-        ::Type{M}, model::AbstractLinearENAModel
-    ) where {R<:AbstractLDARotation, M<:AbstractLinearENAModel{R}}
-
-    super = rotationsupertype(M, AbstractLDARotation)
-    test!(super, model)
-
-    groups = sort(unique(model.metadata[!, model.rotation.groupVar]))
-    for i in 1:nrow(model.embedding)
-        if model.embedding[i, :label] == "LDA$(i)"
-            test!(M, model, KruskalWallisTest, dim=i, groupVar=model.rotation.groupVar, groups=groups)
-        end
-    end
-end
-
-# insert groups
-function defaultplotkwargs(
-        ::Type{M},
-        model::AbstractLinearENAModel;
-        groupBy::Union{Symbol,Nothing}=model.rotation.groupVar,
-        kwargs...
-    ) where {R<:AbstractLDARotation, M<:AbstractLinearENAModel{R}}
-
-    kwargs = NamedTuple(kwargs)
-    defaults = (
-        groupBy=groupBy,
-        kwargs...
-    )
-
-    super = rotationsupertype(M, AbstractLDARotation)
-    return defaultplotkwargs(super, model, merge(defaults, kwargs))
 end

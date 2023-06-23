@@ -54,8 +54,9 @@ include("./rotations/ManualRotation.jl")
 include("./rotations/SVDRotation.jl")
 include("./rotations/FormulaRotation.jl")
 include("./rotations/MeansRotation.jl")
+include("./rotations/AbstractGroupDifferenceRotation.jl")
 include("./rotations/LDARotation.jl")
-# include("./rotations/MulticlassRotation.jl")
+include("./rotations/MulticlassRotation.jl")
 include("./rotations/TopicRotation.jl")
 
 # Models
