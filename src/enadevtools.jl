@@ -326,7 +326,7 @@ function plot(model::AbstractENAModel; kwargs...)
 end
 
 # Serialization
-function to_xlsx(model::AbstractENAModel, filename::AbstractString)
+function to_xlsx(filename::AbstractString, model::AbstractENAModel)
     i = 1
     namesheet(xf, sheetname) = begin
         if i == 1

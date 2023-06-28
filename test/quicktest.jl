@@ -26,22 +26,27 @@ codes = [
    :Men,
    :Women
 ]
-group = :Play
+# group = :Play
 # rotation = EpistemicNetworkAnalysis.MeansRotation(
 #     :Play, "Romeo and Juliet", "Hamlet",
 #     # :Act, 1, 5,
 #     # moderated=true
 # )
 
+# rotation = EpistemicNetworkAnalysis.LDARotation(
+#     :Play
+#     # :Act
+# )
+
 rotation = EpistemicNetworkAnalysis.MulticlassRotation(
-    :Play
-    # :Act
+    # :Play
+    :Act
 )
 
 # rotation = EpistemicNetworkAnalysis.TopicRotation(
-#     "My Topic",
-#     [:Women],
-#     [:Men]
+#     "Women-Death vs. Honor",
+#     [:Women, :Death],
+#     [:Honor]
 # )
 
 # rotation = EpistemicNetworkAnalysis.FormulaRotation(
@@ -53,6 +58,7 @@ model = EpistemicNetworkAnalysis.ENAModel(
     windowSize=4,
     rotateBy=rotation,
     # recenterEmpty=true,
+    unitFilter=row->row.Act in [1, 2, 5],
     dropEmpty=true,
 )
 
@@ -67,7 +73,7 @@ model = EpistemicNetworkAnalysis.ENAModel(
 
 @show(EpistemicNetworkAnalysis.summary(model))
 @show(model)
-EpistemicNetworkAnalysis.to_xlsx(model, "test/temp.xlsx")
+EpistemicNetworkAnalysis.to_xlsx("test/temp.xlsx", model)
 serialize("test/temp.ena", model)
 modeldes = deserialize("test/temp.ena")
 @show(modeldes)
@@ -81,16 +87,14 @@ modeldes = deserialize("test/temp.ena")
 
 p = EpistemicNetworkAnalysis.plot(
     model,
-    showWeakEdges=false,
-    zoom=.75,
+    # showWeakEdges=false,
+    # zoom=.6,
     # trajectoryBy=:Act,
     # trajectoryBy=:rand,
     # groupBy=group,
     # x=3,
     # y=4,
 )
-
-display(p)
 
 #=
 TODO:
