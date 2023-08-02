@@ -58,22 +58,23 @@ model = EpistemicNetworkAnalysis.ENAModel(
     windowSize=4,
     rotateBy=rotation,
     # recenterEmpty=true,
-    unitFilter=row->row.Act in [1, 2, 5],
+    # unitFilter=row->row.Act in [1, 2, 5],
     dropEmpty=true,
 )
 
-# model2 = EpistemicNetworkAnalysis.DigraphENAModel(
-#     data, codes, conversations, units,
-#     windowSize=10,
-#     # rotateBy=EpistemicNetworkAnalysis.ManualRotation(model.embedding),
-#     # recenterEmpty=true,
-#     rotateBy=rotation,
-#     dropEmpty=true,
-# )
+model2 = EpistemicNetworkAnalysis.ENAModel(
+    data, codes, conversations, units,
+    windowSize=10,
+    rotateBy=EpistemicNetworkAnalysis.TrainedRotation(model),
+    # recenterEmpty=true,
+    # rotateBy=rotation,
+    # unitFilter=row->row.Act in [1, 2, 5],
+    dropEmpty=true,
+)
 
-@show(EpistemicNetworkAnalysis.summary(model))
-@show(model)
-EpistemicNetworkAnalysis.to_xlsx("test/temp.xlsx", model)
+@show(EpistemicNetworkAnalysis.summary(model2))
+@show(model2)
+EpistemicNetworkAnalysis.to_xlsx("test/temp.xlsx", model2)
 serialize("test/temp.ena", model)
 modeldes = deserialize("test/temp.ena")
 @show(modeldes)
@@ -86,7 +87,7 @@ modeldes = deserialize("test/temp.ena")
 # model2 = EpistemicNetworkAnalysis.ENAModel(model, rotateBy=rotation)
 
 p = EpistemicNetworkAnalysis.plot(
-    model,
+    model2,
     # showWeakEdges=false,
     # zoom=.6,
     # trajectoryBy=:Act,
@@ -109,9 +110,9 @@ TODO:
 - [X] xlsx export
 - [~] xlsx import - for filters, do something like x -> x.id in model.whatever.ids ?
 - [X] LDA and Multiclass rotations, plots, and stats tests
-- [ ] ManualRotation/CopyRotation statistical tests
-- [ ] module exports
-- [ ] plot tweaks (eg. arrow sizes, cutoff label bugfix when many groups, etc.)
+- [X] CopyRotation statistical tests
+- [~] plot tweaks (eg. arrow sizes, cutoff label bugfix when many groups, etc.)
+- [X] module exports
 - [ ] volunteer testing
 - [ ] auto-docs
 - [ ] cleaner errors and warnings (see volunteer testing results)

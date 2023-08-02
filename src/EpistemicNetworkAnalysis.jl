@@ -50,7 +50,7 @@ include("./lineartesting.jl")
 include("./utils.jl")
 
 # Rotations
-include("./rotations/ManualRotation.jl")
+include("./rotations/TrainedRotation.jl")
 include("./rotations/SVDRotation.jl")
 include("./rotations/FormulaRotation.jl")
 include("./rotations/MeansRotation.jl")
@@ -71,9 +71,9 @@ export DigraphENAModel
 # export NonlinearENAModel
 export plot
 export SVDRotation
-export ManualRotation
-# export LDARotation
-# export MulticlassRotation
+export TrainedRotation
+export LDARotation
+export MulticlassRotation
 export MeansRotation
 export FormulaRotation
 export TopicRotation

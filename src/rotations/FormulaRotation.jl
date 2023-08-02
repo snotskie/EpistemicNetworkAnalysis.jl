@@ -95,15 +95,15 @@ function rotate!(
 end
 
 function test!(
-        ::Type{M}, model::AbstractLinearENAModel
+        ::Type{M}, trainmodel::AbstractLinearENAModel, testmodel::AbstractLinearENAModel
     ) where {R<:AbstractFormulaRotation, M<:AbstractLinearENAModel{R}}
 
     super = rotationsupertype(M, AbstractFormulaRotation)
-    test!(super, model)
-    for (i, formula) in enumerate(model.rotation.formulas)
-        test!(M, model, model.rotation.regression_models[i], dim=i,
+    test!(super, trainmodel, testmodel)
+    for (i, formula) in enumerate(trainmodel.rotation.formulas)
+        test!(M, trainmodel, testmodel, trainmodel.rotation.regression_models[i], dim=i,
             formula=formula,
-            contrasts=model.rotation.contrasts[i]
+            contrasts=trainmodel.rotation.contrasts[i]
         )
     end
 end

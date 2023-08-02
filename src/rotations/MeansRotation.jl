@@ -112,15 +112,15 @@ function rotate!(
 end
 
 function test!(
-        ::Type{M}, model::AbstractLinearENAModel
+        ::Type{M}, trainmodel::AbstractLinearENAModel, testmodel::AbstractLinearENAModel
     ) where {R<:AbstractMeansRotation, M<:AbstractLinearENAModel{R}}
 
     super = rotationsupertype(M, AbstractMeansRotation)
-    test!(super, model)
-    for (i, label) in enumerate(model.rotation.groupVars)
-        test!(M, model, KruskalWallisTest, dim=i, groupVar=label, groups=[
-            model.rotation.controlGroups[i],
-            model.rotation.treatmentGroups[i]
+    test!(super, trainmodel, testmodel)
+    for (i, label) in enumerate(trainmodel.rotation.groupVars)
+        test!(M, trainmodel, testmodel, KruskalWallisTest, dim=i, groupVar=label, groups=[
+            trainmodel.rotation.controlGroups[i],
+            trainmodel.rotation.treatmentGroups[i]
         ])
     end
 end

@@ -1,5 +1,6 @@
 function test!(
         ::Type{M},
+        ::AbstractLinearENAModel, # ignores the trainmodel, since we're just reporting summary statistics
         model::AbstractLinearENAModel
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
     
@@ -26,12 +27,13 @@ function test!(
         model.embedding[i, :coregistration] = cor(pointsDiffs, pointsHatDiffs)
     end
 
-    # NOTE this fails for ManualRotation
+    # NOTE this fails for CopyRotation
     # @assert sum(model.embedding.variance_explained) ≈ 1.0 "Var Exp does not add up to 100% as expected"
 end
 
 function test!(
         ::Type{M},
+        ::AbstractLinearENAModel, # ignores the trainmodel, since all the train info we need is given in the kwargs
         model::AbstractLinearENAModel,
         test::Type{KruskalWallisTest};
         dim::Int=1,
@@ -85,6 +87,7 @@ end
 
 function test!(
         ::Type{M},
+        ::AbstractLinearENAModel, # ignores the trainmodel, since all the info we need is given in the kwargs
         model::AbstractLinearENAModel,
         test::Type{<:RegressionModel};
         dim::Int=1,

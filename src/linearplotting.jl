@@ -510,6 +510,7 @@ function plot_omnibus!(
     p = plot(;
         leg=plotconfig.leg,
         margin=plotconfig.margin,
+        yrotation=90,
         size=(plotconfig.size, plotconfig.size),
         getAxisLabels(model, plotconfig)...
     )
@@ -529,12 +530,14 @@ function plot_trends!(
     px = plot(
         leg=plotconfig.leg,
         margin=plotconfig.margin,
+        yrotation=90,
         size=(plotconfig.size, plotconfig.size)
     )
 
     py = plot(
         leg=plotconfig.leg,
         margin=plotconfig.margin,
+        yrotation=90,
         size=(plotconfig.size, plotconfig.size)
     )
 
@@ -566,6 +569,7 @@ function plot_groups!(
         p = plot(
             leg=plotconfig.leg,
             margin=plotconfig.margin,
+            yrotation=90,
             size=(plotconfig.size, plotconfig.size)
         )
 
@@ -594,6 +598,7 @@ function plot_subtractions!(
                 p = plot(
                     leg=plotconfig.leg,
                     margin=plotconfig.margin,
+                    yrotation=90,
                     size=(plotconfig.size, plotconfig.size)
                 )
 
@@ -631,6 +636,7 @@ function plot_extras!(
     p = plot(
         leg=plotconfig.leg,
         margin=plotconfig.margin,
+        yrotation=90,
         size=(plotconfig.size, plotconfig.size)
     )
 
@@ -656,6 +662,7 @@ function plot_extras!(
     #     p = plot(
     #         leg=plotconfig.leg,
     #         margin=plotconfig.margin,
+    # yrotation=90,
     #         size=(plotconfig.size, plotconfig.size)
     #     )
 

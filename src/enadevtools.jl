@@ -267,10 +267,14 @@ function rotate!(::Type{M}, model::AbstractENAModel) where {R<:AbstractENARotati
 end
 
 function test!(::Type{M}, model::AbstractENAModel) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
+    test!(M, model, model)
+end
+
+function test!(::Type{M}, trainmodel::AbstractENAModel, testmodel::AbstractENAModel) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
     error("Unimplemented")
 end
 
-function test!(::Type{M}, model::AbstractENAModel, test::Type{<:HypothesisTests.HypothesisTest}; kwargs...) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
+function test!(::Type{M}, trainmodel::AbstractENAModel, testmodel::AbstractENAModel, test::Type{<:HypothesisTests.HypothesisTest}; kwargs...) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
     error("Unimplemented")
 end
 

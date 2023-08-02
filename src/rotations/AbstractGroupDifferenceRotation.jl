@@ -3,15 +3,15 @@ abstract type AbstractGroupDifferenceRotation <: AbstractLinearENARotation
 end
 
 function test!(
-        ::Type{M}, model::AbstractLinearENAModel
+        ::Type{M}, trainmodel::AbstractLinearENAModel, testmodel::AbstractLinearENAModel
     ) where {R<:AbstractGroupDifferenceRotation, M<:AbstractLinearENAModel{R}}
 
     super = rotationsupertype(M, AbstractGroupDifferenceRotation)
-    test!(super, model)
+    test!(super, trainmodel, testmodel)
 
-    groups = sort(unique(model.metadata[!, model.rotation.groupVar]))
-    for i in 1:nrow(model.embedding)
-        test!(M, model, KruskalWallisTest, dim=i, groupVar=model.rotation.groupVar, groups=groups)
+    groups = sort(unique(trainmodel.metadata[!, trainmodel.rotation.groupVar]))
+    for i in 1:nrow(testmodel.embedding)
+        test!(M, trainmodel, testmodel, KruskalWallisTest, dim=i, groupVar=trainmodel.rotation.groupVar, groups=groups)
     end
 end
 
