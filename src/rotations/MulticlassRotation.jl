@@ -3,6 +3,29 @@ struct MulticlassRotation <: AbstractMulticlassRotation
     groupVar::Symbol
 end
 
+"""
+    MulticlassRotation(
+        groupVar::Symbol
+    )
+
+Define a rotation for comparing multiple groups, by maximizing between-group variance
+
+See also: `MeansRotation` and `LDARotation`
+
+## Example
+
+```julia
+rotation = MulticlassRotation(:Act)
+```
+
+## Statistical Tests
+
+Models using an `MulticlassRotation` will run the following statistical tests:
+
+- `KruskalWallisTest` for each dimension
+"""
+MulticlassRotation
+
 function rotate!(
         ::Type{M}, model::AbstractLinearENAModel
     ) where {R<:AbstractMulticlassRotation, M<:AbstractLinearENAModel{R}}

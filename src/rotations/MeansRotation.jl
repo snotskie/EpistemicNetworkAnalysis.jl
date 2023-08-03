@@ -10,6 +10,41 @@ struct MeansRotation <: AbstractMeansRotation
     moderated::Bool
 end
 
+"""
+    MeansRotation(
+        # Required, groups to compare along the x-axis
+        groupVar1::Symbol,
+        controlGroup1::Any,
+        treatmentGroup1::Any,
+
+        # Optional, groups to compare along subsequent axes
+        args...;
+
+        # Optional, whether to moderate the interactions between group dimensions
+        moderated=false
+    )
+
+Define a rotation for comparing pairs of groups, by maximizing the variance between pairs
+
+See also: `LDARotation` and `MulticlassRotation`
+
+## Example
+
+```julia
+rotation = MeansRotation(
+    :Play, "Romeo and Juliet", "Hamlet",
+    :Act, 1, 5
+)
+```
+
+## Statistical Tests
+
+Models using a `MeansRotation` will run the following statistical tests:
+
+- `KruskalWallisTest` for each dimension with a group pair
+"""
+MeansRotation
+
 function MeansRotation(
         groupVar1::Symbol,
         controlGroup1::Any,

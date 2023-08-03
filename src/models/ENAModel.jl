@@ -1,5 +1,112 @@
 @enamodel ENAModel AbstractLinearENAModel SVDRotation AbstractLinearENARotation AbstractPlainENAModel
 
+# Documentation
+"""
+    ENAModel(
+        # Required
+        data::DataFrame,
+        codes::Array{Symbol,1},
+        conversations::Array{Symbol,1},
+        units::Array{Symbol,1};
+    
+        # Optional
+        rotation::AbstractLinearENARotation=SVDRotation(),
+        unitFilter::Function=unit->true,
+        edgeFilter::Function=edge->edge.kind == :undirected,
+        windowSize::Real=Inf,
+        sphereNormalize::Bool=true,
+        dropEmpty::Bool=false,
+        recenterEmpty::Bool=false
+    )
+
+Construct an undirected ENA model. Nodes are positioned to maximize goodness of fit between plotted points and units' weighted average of edge midpoints.
+
+## Arguments
+
+The minimum required arguments are:
+
+- `data`: DataFrame containing your qualitative data. Each row should represent one "line" or the smallest codable unit. Columns should include metadata information, the "text" or the qualitative unit itself, and binary-coded qualitative codes.
+- `codes`: Array listing names of columns to use as the qualitative codes in the model
+- `conversation`: As above, but for columns to use to distinguish "conversations," segments the model should not count connections between
+- `units`: As above, but for columns to use to distinguish "speakers" or your units of analysis
+
+The common optional arguments are:
+
+- `rotateBy`: "Rotation" or dimension reduction the model should use for determining axes for downstream plotting and analysis
+- `windowSize`: Size of the sliding window for counting connections, where a window size of 1 counts only connections occuring on the same line
+- `dropEmpty`: Whether the model should drop units of analysis that accumulated no connections
+
+Finally, the less common but occassionally useful optional arguments are:
+
+- `unitFilter`: Function for deciding which units of analysis to include in the model, such as based on its metadata
+- `edgeFilter`: As above, but for which edges to include in the model, such as based on which codes it connects. Ensure that only `:undirected` edges are included
+- `sphereNormalize`: Whether the model should normalize units of analysis so that, for example, speakers who talk more are still considered similar to those who talk less but about the same subjects
+- `recenterEmpty`: Whether the model should move empty units of analysis to the mean of all units, instead of leaving them at the zero origin
+
+## Fields
+
+Once the model is constructed, it will have the following fields:
+
+- `data`, `codes`, `conversations`, `units`, and `rotation`: Copies of the argument values given above
+- `metadata`: DataFrame of original non-code columns, each row corresponding to one unit of analysis. A `unitID` column is added to represent each unit's unique identifier
+- `points`: DataFrame, where rows correspond to plotted point dimensions and columns correspond to units of analysis
+- `pointsHat`: As above, but for approximate dimensions used for measuring model goodness of fit
+- `pointsNodes`: As above, but for the optimized node positions along each plotted dimension
+- `accum`: DataFrame, where rows correspond to units of analysis and columns correspond to edges, counting the (normalized) number of connections that unit accumulated for that edge
+- `accumHat`: As above, but for the approximated counts, used for measuring model goodness of fit
+- `edges`: DataFrame, where rows correspond to edges, with the following columns: `edgeID`, `kind`, `ground`, and `response`
+- `nodes`: DataFrame, where rows correspond to nodes and columns correspond to approximated counts for each edge, used for computing `pointsNodes`
+- `embedding`: DataFrame, where rows correspond to plotted point dimensions and columns correspond edges. Used for computing `points`, `pointsHat`, and `pointsNodes`. Additional columns may be added depending on the model's `rotation`, corresponding to statistical tests for each dimension
+- `config`: NamedTuple, storing additional configuration options, such as `unitFilter`, `sphereNormalize`, and so on
+
+## Example
+
+```julia
+using EpistemicNetworkAnalysis
+
+# Load example dataset
+data = loadExample("shakespeare")
+
+# Base settings
+codes = [:Love, :Death, :Honor, :Men, :Women]
+conversations = [:Play, :Act, :Scene]
+units = [:Play, :Speaker]
+
+# Rotation settings
+rotation = TopicRotation(
+    "Women-Death vs. Honor",
+    [:Women, :Death],
+    [:Honor]
+)
+
+# Construct model
+model = ENAModel(
+    data, codes, conversations, units,
+    windowSize=4,
+    rotateBy=rotation,
+    dropEmpty=false
+)
+
+# Display model overview
+show(model)
+
+# Display summary statistics
+show(summary(model))
+
+# Display and save plot
+p = plot(model)
+show(p)
+savefig(p, "example.svg")
+
+# Save model for later use in Julia
+serialize("example.ena", model)
+
+# Save model for easy sharing with collaborators
+to_xlsx("example.xlsx", model)
+```
+"""
+ENAModel
+
 # override default model constructor kwargs
 function defaultmodelkwargs(
         ::Type{M};

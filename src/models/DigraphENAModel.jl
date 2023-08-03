@@ -3,6 +3,33 @@
 # use macro helper to define a standard ENA struct with all the bells
 @enamodel DigraphENAModel AbstractLinearENAModel
 
+# Documentation
+"""
+    DigraphENAModel(
+        # Required
+        data::DataFrame,
+        codes::Array{Symbol,1},
+        conversations::Array{Symbol,1},
+        units::Array{Symbol,1};
+
+        # Optional
+        rotation::AbstractLinearENARotation=SVDRotation(),
+        unitFilter::Function=unit->true,
+        edgeFilter::Function=edge->edge.kind == :directed,
+        windowSize::Real=Inf,
+        sphereNormalize::Bool=true,
+        dropEmpty::Bool=false,
+        recenterEmpty::Bool=false
+    )
+
+Construct a directed ENA model. Nodes are positioned to maximize goodness of fit between plotted points and units' weighted average of edge vectors.
+
+`DigraphENAModel` follows the same argument and field structure as `ENAModel`.
+
+Ensure that `edgeFilter` only includes `:directed` edges.
+"""
+DigraphENAModel
+
 # override default model constructor kwargs
 function defaultmodelkwargs(
         ::Type{M};

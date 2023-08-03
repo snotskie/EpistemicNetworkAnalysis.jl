@@ -79,6 +79,7 @@ export FormulaRotation
 export TopicRotation
 # export UMAPRotation
 export loadExample
+export to_xlsx
 # export derivedAnyCode!
 # export derivedAllCode!
 

@@ -6,6 +6,57 @@ struct FormulaRotation <: AbstractFormulaRotation
     contrasts::Array{<:Union{Nothing,Dict}}
 end
 
+"""
+    FormulaRotation(
+        regression_model1::Type{T},
+        formula1::FormulaTerm,
+        coef_index1::Int,
+        contrast1::Union{Nothing,Dict},
+        args...
+    ) where {T <: RegressionModel}
+
+Define a rotation that uses regression models to determine axes most closely associated with some linear trend
+
+Note: `RegressionModel`s must be imported from other stats packages
+
+Note: [contrasts](https://juliastats.org/StatsModels.jl/stable/contrasts/) are used to model categorical data
+
+## Example
+
+```julia
+using GLM
+
+rotation = EpistemicNetworkAnalysis.FormulaRotation(
+    LinearModel, @formula(edge ~ 1 + FinalGrade), 2, nothing
+)
+```
+
+This will fit the x-axis to the `FinalGrade` metadata, because:
+
+1. We use `LinearModel` from the `GLM` package
+2. We use the formula `edge ~ 1 + FinalGrade`
+3. And we use the `2`nd coefficient of the `LinearModel` (in this case `FinalGrade`) to determine the values of the embedding
+4. We have no categorical data in the `LinearModel`, so we leave the contrasts as `nothing`
+
+Additional formulae may be used to define subsequent axes:
+
+```julia
+rotation = EpistemicNetworkAnalysis.FormulaRotation(
+    LinearModel, @formula(edge ~ 1 + PretestGrade + PosttestGrade), 2, nothing,
+    LinearModel, @formula(edge ~ 1 + PretestGrade + PosttestGrade), 3, nothing
+)
+```
+
+Note: When multiple formulae are given, `FormulaRotation` finds the *plane* of the effects in the `accum` space, rotating it such that the first formula aligns with the x-axis, and the second formula aligns *approximately* with the y-axis. Unless this approximation is strong, a warning will be raised describing possible issues.
+
+## Statistical Tests
+
+Models using a `MeansRotation` will run the following statistical tests:
+
+- R^2 and adjusted-R^2 for each dimension with a formula
+"""
+FormulaRotation
+
 function FormulaRotation(
         regression_model1::Type{T},
         formula1::FormulaTerm,

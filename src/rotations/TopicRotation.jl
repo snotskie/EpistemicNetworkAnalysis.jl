@@ -1,16 +1,36 @@
 abstract type AbstractTopicRotation <: AbstractLinearENARotation end
 struct TopicRotation <: AbstractTopicRotation
-    themeName::AbstractString
+    topicName::AbstractString
     controlNodes::Array{Symbol}
     treatmentNodes::Array{Symbol}
 end
+
+"""
+    TopicRotation(
+        topicName::AbstractString,
+        controlNodes::Array{Symbol},
+        treatmentNodes::Array{Symbol}
+    )
+
+Define a rotation that places its x-axis through the mean of `controlNodes` on the left and the mean of `treatmentNodes` on the right, ie., through an *a priori* defined topic
+
+## Example
+```julia
+rotation = TopicRotation(
+    "Women-Death vs. Honor",
+    [:Women, :Death],
+    [:Honor]
+)
+```
+"""
+TopicRotation
 
 function rotate!(
         ::Type{M}, model::AbstractLinearENAModel
     ) where {R<:AbstractTopicRotation, M<:AbstractLinearENAModel{R}}
 
     embedding = similar(model.embedding, 1)
-    embedding[1, :label] = model.rotation.themeName
+    embedding[1, :label] = model.rotation.topicName
 
     controlRows = map(model.nodes.nodeID) do nodeID
         return nodeID in model.rotation.controlNodes

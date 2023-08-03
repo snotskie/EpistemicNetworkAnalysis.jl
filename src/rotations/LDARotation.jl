@@ -3,11 +3,34 @@ struct LDARotation <: AbstractLDARotation
     groupVar::Symbol
 end
 
+"""
+    LDARotation(
+        groupVar::Symbol
+    )
+
+Define a rotation for comparing multiple groups, via [linear discriminant analysis](https://en.wikipedia.org/wiki/Linear_discriminant_analysis)
+
+See also: `MeansRotation` and `MulticlassRotation`
+
+## Example
+
+```julia
+rotation = LDARotation(:Act)
+```
+
+## Statistical Tests
+
+Models using an `LDARotation` will run the following statistical tests:
+
+- `KruskalWallisTest` for each dimension
+"""
+LDARotation
+
 function rotate!(
         ::Type{M}, model::AbstractLinearENAModel
     ) where {R<:AbstractLDARotation, M<:AbstractLinearENAModel{R}}
 
-    # Prepare the data
+    # Prepare the datalinear discriminant analysis
     groups = sort(unique(model.metadata[!, model.rotation.groupVar]))
     groupMap = Dict(group => i for (i, group) in enumerate(groups))
     nc = length(groups)

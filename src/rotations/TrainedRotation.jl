@@ -3,6 +3,26 @@ struct TrainedRotation{T<:AbstractLinearENAModel} <: AbstractTrainedRotation{T}
     trainmodel::T
 end
 
+"""
+    TrainedRotation(
+        trainmodel::AbstractLinearENAModel
+    )
+
+Define a rotation that copies the embedding of an existing "training" model for use in a second "testing" model
+
+## Example
+
+```julia
+trainmodel = ENAModel(traindata, codes, conversations, units, rotation=LDARotation(:Act))
+testmodel = ENAModel(testdata, codes, conversations, units, rotation=TrainedRotation(trainmodel))
+```
+
+## Statistical Tests
+
+Models using a `TrainedRotation` will run the same statistical tests as the `trainmodel`.
+"""
+TrainedRotation
+
 # BUGFIX for to_xlsx
 NamedTupleTools.fieldvalues(rotation::AbstractTrainedRotation) = [string(nameof(typeof(rotation.trainmodel)))]
 
