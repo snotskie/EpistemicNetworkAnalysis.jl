@@ -124,6 +124,90 @@ function plot(
     return layoutSubplots(ps, plotconfig)
 end
 
+# Documentation
+"""
+    plot(
+        model::AbstractLinearENAModel,
+        x::Int=1,
+        y::Int=2,
+        margin::PlotMeasures.AbsoluteLength=10mm,
+        size::Real=600,
+        meanCenter::Bool=model.config.sphereNormalize,
+        origin::Array{<:Real}=(meanCenter ?  [mean(model.points[x, :]), mean(model.points[y, :])] : [0,0]),
+        zoom::Real=1,
+        lims::Real=1/zoom,
+        flipX::Bool=false,
+        flipY::Bool=false,
+        xticks::Array{<:Real}=(
+            round.([origin[1]-lims, origin[1], origin[1]+lims], digits=4) |>
+            (xticks) -> (flipX ? -reverse(xticks) : xticks)
+        ),
+        yticks::Array{<:Real}=(
+            round.([origin[2]-lims, origin[2], origin[2]+lims], digits=4) |>
+            (yticks) -> (flipY ? -reverse(yticks) : yticks)
+        ),
+        xlims::Array{<:Real}=xticks[[1, end]],
+        ylims::Array{<:Real}=yticks[[1, end]],
+        titles::Array{<:AbstractString}=String[],
+        xlabel::AbstractString=model.embedding[x, :label],
+        ylabel::AbstractString=model.embedding[y, :label],
+        unitLabel::AbstractString="Unit",
+        leg::Union{Symbol,Bool}=:topleft,
+        negColor::Colorant=DEFAULT_NEG_COLOR,
+        posColor::Colorant=DEFAULT_POS_COLOR,
+        extraColors::Array{<:Colorant,1}=DEFAULT_EXTRA_COLORS,
+        alphabet::String=DEFAULT_ALPHABET,
+        groupBy::Union{Symbol,Nothing}=nothing,
+        innerGroupBy::Union{Symbol,Nothing}=nothing,
+        spectralColorBy::Union{Symbol,Nothing}=nothing,
+        trajectoryBy::Union{Symbol,Nothing}=nothing,
+        trajectoryBins::Int=5,
+        showExtras::Bool=false,
+        showNetworks::Bool=true,
+        showUnits::Bool=true,
+        showMeans::Bool=true,
+        showWarps::Bool=false,
+        fitNodesToCircle::Bool=false,
+        showWeakEdges::Bool=true
+    )
+
+Plot an ENA model using the [GR backend](https://docs.juliaplots.org/latest/gallery/gr/)
+
+See also [savefig](https://docs.juliaplots.org/latest/output/#savefig-/-format)
+
+## Arguments
+
+At minimum, the only required argument is the ENA model itself.
+
+Several optional arguments are available:
+
+- `x` and `y` control which dimension to show on the x- and y-axis respectively
+- `margin`, `size`, `meanCenter`, `origin`, `zoom`, `lims`, `flipX`, `flipY`, `xticks`, `yticks`, `xlims`, and `ylims` together control aspects of the plot size and axes
+- `titles`, `xlabel`, `ylabel`, `unitLabel`, `leg`, and `alphabet` together control the text that labels the plot
+- `negColor`, `posColor`, and `extraColors` together control the colors used in the plot
+- `groupBy` and `innerGroupBy` define which metadata columns to use as grouping variables for the sake of color coding and confidence intervals
+- `spectralColorBy` defines which metadata column to use to color-code units as a spectrum
+- `trajectoryBy` and `trajectoryBins` together define and control how a trajectory path should be overlaid on the plot
+- `showExtras`, `showNetworks`, `showUnits`, and `showMeans` control which plot elements to show or hide. Currently, `showExtras` is unimplemented, but is defined to permit future additions under an "extra" plot element category
+- `showWarps` controls if edges should be drawn straight (`false`) or "warped" to show their true location in the space (`true`)
+- `fitNodesToCircle` controls if nodes should be shown in their optimized positions for goodness of fit, or at a circular position around the origin
+- `showWeakEdges` controls if edges with weak correlations to trends should be shown
+
+## Example
+
+```julia
+model = ENAModel(data, codes, conversations, units)
+p = plot(model)
+
+# Grab one subplot
+sp = plot(p.subplots[1], size=(600, 600))
+
+# Save
+savefig(p, "example.png")
+```
+"""
+plot(model::AbstractLinearENAModel)
+
 # Helpers
 function fixX(x::Real, model::AbstractLinearENAModel, plotconfig::NamedTuple)
     # NOTE mean centering happens in the plotkwargs via xticks etc.

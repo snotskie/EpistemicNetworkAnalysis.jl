@@ -13,8 +13,24 @@ Define a rotation that copies the embedding of an existing "training" model for 
 ## Example
 
 ```julia
-trainmodel = ENAModel(traindata, codes, conversations, units, rotation=LDARotation(:Act))
-testmodel = ENAModel(testdata, codes, conversations, units, rotation=TrainedRotation(trainmodel))
+# Randomly assign units to train or test sets
+data[!, :rand] = rand(1:100, nrow(data))
+trainFilter(unit) = unit.rand < 80
+testFilter(unit) = !trainFilter(unit)
+
+# Run model on the training set
+trainmodel = ENAModel(
+    data, codes, conversations, units,
+    unitFilter=trainFilter,
+    rotation=LDARotation(:Act)
+)
+
+# Run new model on the test set, but using the embedding of the trained model
+testmodel = ENAModel(
+    data, codes, conversations, units,
+    unitFilter=testFilter,
+    rotation=TrainedRotation(trainmodel)
+)
 ```
 
 ## Statistical Tests
