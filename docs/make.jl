@@ -1,12 +1,10 @@
 using Documenter
+using CSV
 include("../src/EpistemicNetworkAnalysis.jl")
-
-```@meta
-CurrentModule = EpistemicNetworkAnalysis
-```
 
 makedocs(
     sitename="EpistemicNetworkAnalysis.jl",
+    authors="Mariah A. Knowles <snotskie@gmail.com> and contributors",
     pages = [
         "Home" => "index.md",
         "Guide" => [
@@ -19,3 +17,4 @@ makedocs(
 )
 
 mv("build", "latest", force=true)
+cp("src/index.md", "../README.md", force=true)

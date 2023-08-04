@@ -210,19 +210,3 @@ function defaultplotkwargs(
     super = rotationsupertype(M, AbstractMeansRotation)
     return defaultplotkwargs(super, model, merge(defaults, kwargs))
 end
-
-# function test(ena::AbstractENAModel{<:AbstractMeansRotation})
-#     results = invoke(test, Tuple{AbstractENAModel{<:AbstractFormulaRotation}}, ena)
-#     controlRows = ena.metadata[!, ena.rotation.groupVar] .== ena.rotation.controlGroup
-#     treatmentRows = ena.metadata[!, ena.rotation.groupVar] .== ena.rotation.treatmentGroup
-#     controlVals = ena.accumModel[controlRows, :pos_x]
-#     treatmentVals = ena.accumModel[treatmentRows, :pos_x]
-#     mwut = MannWhitneyUTest(controlVals, treatmentVals)
-#     results[:mann_whitney_u] = mwut.U
-#     results[:mann_whitney_pvalue] = pvalue(mwut)
-#     results[:n_control] = length(controlVals)
-#     results[:n_treatment] = length(treatmentVals)
-#     results[:mdn_control] = median(controlVals)
-#     results[:mdn_treatment] = median(treatmentVals)
-#     return results
-# end

@@ -114,9 +114,9 @@ TODO:
 - [~] plot tweaks (eg. arrow sizes, cutoff label bugfix when many groups, etc.)
 - [X] module exports
 - [ ] volunteer testing
-- [ ] auto-docs
+- [X] auto-docs
 - [ ] cleaner errors and warnings (see volunteer testing results)
-- [ ] front-facing documentation and citations
+- [X] front-facing documentation and citations
 - [ ] Pluto integration/demos
 - [ ] developer demos
 - [ ] test compatibility with other plot backends

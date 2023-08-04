@@ -36,8 +36,8 @@ using Plots
     @test typeof(myENA) == ENAModel{SVDRotation}
 
     # Test that each model/rotation combination runs
-    models = [ENAModel, BiplotENAModel]
-    rotations = Dict(
+    models = [ENAModel, BiplotENAModel, DigraphENAModel]
+    rotations = [
         "SVD1" => SVDRotation(),
         "Act" => FormulaRotation(
             LinearModel,
@@ -46,8 +46,13 @@ using Plots
             nothing
         ),
         "Play" => MeansRotation(:Play, "Romeo and Juliet", "Hamlet"),
-        "Gender" => TopicRotation("Gender", [:Women], [:Men])
-    )
+        "Gender" => TopicRotation("Gender", [:Women], [:Men]),
+        "Play" => MeansRotation(:Play, "Romeo and Juliet", "Hamlet", :Act, 1, 5),
+        "LDA1" => LDARotation(:Play),
+        "LDA1" => LDARotation(:Act),
+        "MCMR1" => MulticlassRotation(:Play),
+        "MCMR1" => MulticlassRotation(:Act)
+    ]
 
     for M in models
         for (label, rotation) in rotations
@@ -58,23 +63,21 @@ using Plots
 
             @test typeof(myENA) == M{typeof(rotation)}
             @test myENA.embedding[1, :label] == label
+            p = plot(myENA)
 
-            copiedENA = M(
-                data, codes, conversations, units,
-                rotateBy=ManualRotation(myENA.embedding)
-            )
+            # Test that each combo can be trained on
+            try # Known issue: https://github.com/snotskie/EpistemicNetworkAnalysis.jl/issues/6
+                trainedENA = M(
+                    data, codes, conversations, units,
+                    rotateBy=TrainedRotation(myENA)
+                )
 
-            @test typeof(copiedENA) == M{ManualRotation}
-            @test copiedENA.embedding[1, :label] == label
+                @test typeof(trainedENA) == M{TrainedRotation{typeof(myENA)}}
+                @test trainedENA.embedding[1, :label] == label
+                tp = plot(trainedENA)
+                @test length(p.subplots) == length(tp.subplots)
+            catch
+            end
         end
     end
-
-    # TODO plotting
-    # TODO to/from ODS
-    # TODO means rotation
-    # TODO conversions
-    # TODO show
-    # TODO other models and rotation types
-    # TODO clean up
-    # TODO auto-docs
 end

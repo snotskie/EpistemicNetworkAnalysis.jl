@@ -17,9 +17,9 @@ Define a rotation that places its x-axis through the mean of `controlNodes` on t
 ## Example
 ```julia
 rotation = TopicRotation(
-    "Women-Death vs. Honor",
-    [:Women, :Death],
-    [:Honor]
+    "Gendered Language",
+    [:Women, :Love],
+    [:Men, :Honor]
 )
 ```
 """
@@ -53,38 +53,3 @@ function rotate!(
     super = rotationsupertype(M, AbstractTopicRotation)
     rotate!(super, model)
 end
- 
-#  # Implement rotation
-#  function rotate!(rotation::AbstractTopicRotation, networkModel::DataFrame, codeModel::DataFrame, metadata::DataFrame, subspaceModel::DataFrame)
-    
-#     help_one_vector(networkModel, subspaceModel)
-#  end
- 
-# # Override plotting pieces
-# ## Base - Inject a groupBy and some labels when none are given
-# function plot(ena::AbstractENAModel{<:AbstractTopicRotation};
-#     xlabel=nothing, ylabel=nothing,
-#     kwargs...)
-
-#     if isnothing(xlabel)
-#         left = join(ena.rotation.controlNodes, "/")
-#         if length(left) > 15
-#             left = join(map(x->string(x)[1:min(5,end)], ena.rotation.controlNodes), "/")
-#         end
-
-#         right = join(ena.rotation.treatmentNodes, "/")
-#         if length(right) > 15
-#             right = join(map(x->string(x)[1:min(5,end)], ena.rotation.treatmentNodes), "/")
-#         end
-
-#         xlabel = "$(left) to $(right)"
-#         # xlabel = "$( to $(join(ena.rotation.treatmentNodes, '/'))"
-#     end
-
-#     if isnothing(ylabel)
-#         ylabel = "SVD"
-#     end
-
-#     return invoke(plot, Tuple{AbstractENAModel{<:AbstractLinearENARotation}}, ena;
-#                 xlabel=xlabel, ylabel=ylabel, kwargs...)
-# end

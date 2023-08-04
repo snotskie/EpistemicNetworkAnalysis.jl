@@ -1,3 +1,24 @@
+# Helpers
+function addPointsToModelFromDim(model, i)
+    edgeIDs = model.edges.edgeID
+    unitIDs = model.accum.unitID
+    nodeIDs = model.nodes.nodeID
+    axis = Vector{Float64}(model.embedding[i, edgeIDs])
+    points = Matrix{Float64}(model.accum[!, edgeIDs]) * axis
+    df = similar(model.points, 1)
+    df[1, unitIDs] = points
+    append!(model.points, df)
+    pointsHat = Matrix{Float64}(model.accumHat[!, edgeIDs]) * axis
+    df = similar(model.pointsHat, 1)
+    df[1, unitIDs] = pointsHat
+    append!(model.pointsHat, df)
+    pointsNodes = Matrix{Float64}(model.nodes[!, edgeIDs]) * axis
+    df = similar(model.pointsNodes, 1)
+    df[1, nodeIDs] = pointsNodes
+    append!(model.pointsNodes, df)
+end
+
+# Implementation
 function defaultmodelkwargs(
         ::Type{M};
         prev_config::NamedTuple=NamedTuple(),
