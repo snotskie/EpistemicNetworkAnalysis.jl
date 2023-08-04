@@ -9,3 +9,4 @@
 .gitconfig
 .ipython
 Manifest.toml
+test/temp*

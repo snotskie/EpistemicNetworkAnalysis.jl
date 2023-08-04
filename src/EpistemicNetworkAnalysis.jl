@@ -9,92 +9,78 @@ import Plots.plot!
 import Plots.Plot
 using Colors
 using Dierckx
+using DataStructures
 
 ## Data
 using DataFrames
 using CSV
 
 ## Math
+using StatsBase
 using Statistics
 using LinearAlgebra
 using MultivariateStats
 using HypothesisTests
 using GLM
 
-## Nonlinear
-using Random
-using Distances
-using UMAP
+## Printing
+using PkgVersion
+using NamedTupleTools
+using PrettyPrinting
+using Tables
+import Base.show
 
-# Includes
-include("./helpers.jl")
-include("./typetree.jl")
-include("./plotbase.jl")
-include("./SVDRotation.jl")
-include("./LDARotation.jl")
-include("./MulticlassRotation.jl")
-include("./FormulaRotation.jl")
-include("./Formula2Rotation.jl")
-include("./MeansRotation.jl")
-include("./Means2Rotation.jl")
-include("./ThematicRotation.jl")
-include("./UMAPRotation.jl")
-include("./ENAModel.jl")
-include("./DigraphENAModel.jl")
-include("./NonlinearENAModel.jl")
-# include("./CopyRotation.jl")
-include("./ena_dataset.jl")
+## Serialization
+using XLSX
+using Dates
+
+## Nonlinear
+# using Random
+# using Distances
+# using UMAP
+
+# Dataflow Logic
+using Pipe
+
+# Helpers
+include("./enadevtools.jl")
+include("./linearmodeling.jl")
+include("./linearplotting.jl")
+include("./lineartesting.jl")
+include("./utils.jl")
+
+# Rotations
+include("./rotations/TrainedRotation.jl")
+include("./rotations/SVDRotation.jl")
+include("./rotations/FormulaRotation.jl")
+include("./rotations/MeansRotation.jl")
+include("./rotations/AbstractGroupDifferenceRotation.jl")
+include("./rotations/LDARotation.jl")
+include("./rotations/MulticlassRotation.jl")
+include("./rotations/TopicRotation.jl")
+
+# Models
+include("./models/ENAModel.jl")
+include("./models/DigraphENAModel.jl")
+include("./models/BiplotENAModel.jl")
 
 # Exports
 export ENAModel
+export BiplotENAModel
 export DigraphENAModel
-export NonlinearENAModel
+# export NonlinearENAModel
 export plot
 export SVDRotation
+export TrainedRotation
 export LDARotation
 export MulticlassRotation
 export MeansRotation
-export Means2Rotation
 export FormulaRotation
-export Formula2Rotation
-export ThematicRotation
-export UMAPRotation
-export ena_dataset
-export derivedAnyCode!
-export derivedAllCode!
-
-# @warn "Running EpistemicNetworkAnalysis.jl as main. Performing kitchen sink operation."
-# let
-
-# data = ena_dataset("shakespeare.data")
-# conversations = [:Play, :Act]
-# units = [:Play, :Speaker]
-# codes = [
-#     :Love,
-#     :Death,
-#     :Honor,
-#     :Men,
-#     :Women,
-#     # :Beauty,
-#     # :Fear,
-#     # :Friendship,
-#     # :Hate,
-#     # :Pride
-# ]
-
-# myENA = DirectedENAModel(
-#     data, codes, conversations, units,
-#     windowSize=4,
-#     rotateBy=MeansRotation(:Play, "Romeo and Juliet", "Hamlet"),
-#     # fitNodesToCircle=true
-# )
-
-# display(myENA)
-# p = plot(myENA, flipY=true)
-# savefig(p, "~/Downloads/temp.svg")
-# display(p)
-
-# end # let
-
+export TopicRotation
+# export UMAPRotation
+export loadExample
+export to_xlsx
+export deriveAnyCode!
+export deriveAllCode!
 
 end # module

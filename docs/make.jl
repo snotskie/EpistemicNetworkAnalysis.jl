@@ -1,20 +1,20 @@
-cd("/home/jovyan/docs/")
-push!(LOAD_PATH,"../src/")
-using EpistemicNetworkAnalysis
-using Pkg
-Pkg.add("Documenter")
 using Documenter
+using CSV
+include("../src/EpistemicNetworkAnalysis.jl")
 
 makedocs(
     sitename="EpistemicNetworkAnalysis.jl",
-    modules=[EpistemicNetworkAnalysis],
-    pages=[
+    authors="Mariah A. Knowles <snotskie@gmail.com> and contributors",
+    pages = [
         "Home" => "index.md",
-        "Models" => "models.md",
-        "Rotations" => "rotations.md",
-        "Plotting" => "plotting.md"
+        "Guide" => [
+            "models.md",
+            "rotations.md",
+            "plots.md",
+            "functions.md"
+        ]
     ]
 )
 
 mv("build", "latest", force=true)
-Pkg.rm("Documenter")
+cp("src/index.md", "../README.md", force=true)
