@@ -12,7 +12,8 @@ makedocs(
             "rotations.md",
             "plots.md",
             "functions.md"
-        ]
+        ],
+        "ICQE23 Workshop" => "icqe23.md"
     ]
 )
 
