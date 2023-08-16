@@ -257,8 +257,8 @@ What would you like to spend time working on together?
 
 Activity:
 
-1. Use `print.(tt(...))` to inspect the type trees of ENA models and rotations
-2. What is an abstract type and why do we see them in type trees so much?
+1. Use `supertypes(...)` and `print.(tt(...))` to inspect the type trees of ENA models and rotations
+2. What is an abstract type and why do you think we see them in type trees so much?
 
 `plot(model)` produces a plot with the following subplots:
 
@@ -354,11 +354,13 @@ You need to see how the qualities of your discourse covary with your continuous 
 
 Your narrative structure probably moves through touch points in your continuous variable, such as low scores, medium scores, and high scores
 
-If there is a well-definedc and meaningful way to split your continuous variable into discrete groups, then consider telling your story by just comparing those groups
+If there is a well-defined and meaningful way to split your continuous variable into discrete groups, then consider telling your story by directly comparing those groups. If there aren't great ways to split your continuous variable into discrete groups, then consider using high dimensional clustering techniques to define groups of similar points, then tell the story that compares those groups
 
-If there aren't great ways to split your continuous variable into discrete groups, then consider using high dimensional clustering techniques to define groups of similar points, then tell the story that compares those groups
+There are [many ways](https://link.springer.com/chapter/10.1007/978-3-031-31726-2_5) to think about stories that compare multiple groups. For some, a `FormulaRotation` is most appropriate:
 
-Otherwise, if you just want to see a general trend of "high scores are like this" and "low scores are like this," possibly controlling for confounding variables or nested data, then use a `FormulaRotation`
+- When you just want to see a general trend from low to high groups, without directly comparing groups
+- When you don't have discrete groups and you just want to see a general trend of "high scores are like this" and "low scores are like this"
+- When you need to control for confounding variables or nested data
 
 `FormulaRotation` fits a linear regression to each dimension of the high dimensional space and uses that to find a trend line or "slope," which it runs the x-axis through. A good idea is to add a trajectory to the plot to help interpret the x-axis in terms of your continuous variable
 
