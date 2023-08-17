@@ -420,7 +420,7 @@ A big part of choosing the right model is telling stories
 
 Activity:
 
-1. Pair up. Pick your favorite version of the model we've run so far and use it to write a summary of the year's data, in less than 80 words
+1. Pair up. Pick your favorite version of the model we've run so far and use it to write a summary of the year's data, in less than 80 words. As needed, you can check your understanding against the [codebook](https://link.springer.com/chapter/10.1007/978-3-030-93859-8_8/tables/1)
 2. Whose story is the right version of the story to tell? Is yours the right version of the story to tell? How would you even judge that?
 3. This data is about me. If I told you your telling of the story felt weird to me, would that affect your answer?
 4. Did your model affect the way you structured your story? How so?
