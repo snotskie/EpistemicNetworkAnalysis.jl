@@ -146,13 +146,13 @@ Activity, introductions, keep running notes on the board:
 
 ## Demo and Worked Example
 
-**Dataset**
+### Dataset
 
 The dataset we'll be using are codes and metadata from my first year on hormone replacement therapy. I'm a transgender woman, Valentines Day 2020 I started my medical transition, and I kept a daily record in various ways on my phone that first year. Also that year I learned QE and started developing tools for ENA. As a test case, I coded my own data, [modeled it](https://link.springer.com/chapter/10.1007/978-3-030-93859-8_8), and more recently made it available. (Though, just the codes and metadata, not the text of the daily entries, given their private nature)
 
 This dataset is packaged with `EpistemicNetworkAnalysis.jl`, so you can [preview it on GitHub](https://github.com/snotskie/EpistemicNetworkAnalysis.jl/blob/master/data/transitions.csv)
 
-**Getting Started**
+### Getting Started
 
 We'll start where the setup instructions left off:
 
@@ -192,7 +192,7 @@ p = plot(model)
 display(p)
 ```
 
-**Plot Interpretation**
+### Plot Interpretation
 
 `plot(model)` produces a plot with the following subplots:
 
@@ -208,7 +208,7 @@ Some differences from WebENA and rENA:
 - Plots are opinionated. Based on the model config, the plot's default settings to change to what I believed was the best way to plot that kind of model. This gives you the "right" plot without having to specify what "right" means each time
 - A [known issue](https://github.com/snotskie/EpistemicNetworkAnalysis.jl/issues/11) is that the y-axis label can get cutoff when there are a lot of subplots
 
-**Conversation, Window Size, and Empty Units**
+### Conversation, Window Size, and Empty Units
 
 As is, each day is its own "conversation," meaning no connections are made from day to day. Instead, lets change the conversation to the whole year:
 
@@ -264,7 +264,7 @@ model = ENAModel(
 )
 ```
 
-**Plot Tweaks**
+### Plot Tweaks
 
 This is data that moves over time. And other projects I know have data that moves over different continuous variables, like grades or so on. Let's color code our plot to make that pop:
 
@@ -291,7 +291,7 @@ Activity:
 - Which version of the plot shows the most information?
 - What "story" are you starting to see emerge about the data from that year?
 
-**Rotations**
+### Rotations
 
 The first and second halves seem different. Let's rotate the model to make that the focus:
 
@@ -392,7 +392,7 @@ rotation = FormulaRotation(
 )
 ```
 
-**Exporting Results and Importing your own Data**
+### Exporting Results and Importing your own Data
 
 Two useful functions for exporting your results are `to_xlsx` and `savefig`:
 
