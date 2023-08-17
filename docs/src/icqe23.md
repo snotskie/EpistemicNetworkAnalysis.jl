@@ -148,7 +148,9 @@ Activity, introductions, keep running notes on the board:
 
 **Dataset**
 
-The dataset we'll be using are codes and metadata from my first year on hormone replacement therapy. I'm a transgender woman, Valentines Day 2020 I started my medical transition, and I kept a daily record in various ways on my phone that first year. Also that year I learned QE and started developing tools for ENA. As a test case, I coded my own data, [modeled it](https://link.springer.com/chapter/10.1007/978-3-030-93859-8_8), and more recently made it available. (Though, just the codes and metadata, not the text of the daily entries, given their private nature.)
+The dataset we'll be using are codes and metadata from my first year on hormone replacement therapy. I'm a transgender woman, Valentines Day 2020 I started my medical transition, and I kept a daily record in various ways on my phone that first year. Also that year I learned QE and started developing tools for ENA. As a test case, I coded my own data, [modeled it](https://link.springer.com/chapter/10.1007/978-3-030-93859-8_8), and more recently made it available. (Though, just the codes and metadata, not the text of the daily entries, given their private nature)
+
+This dataset is packaged with `EpistemicNetworkAnalysis.jl`, so you can [preview it on GitHub](https://github.com/snotskie/EpistemicNetworkAnalysis.jl/blob/master/data/transitions.csv)
 
 **Getting Started**
 
@@ -195,7 +197,7 @@ display(p)
 `plot(model)` produces a plot with the following subplots:
 
 - `(a)` an overall mean, which tells us the baseline everything compares against
-- `(b)` and `(c)` rates of change for each connection across the x- and y-axes, which tells us what is *actually* being modeled by each axis. If you are coming up with the name of an axis after-the-fact, it's good to check your assumptions against these trends and make sure your name for the plot captures what is actually being modeled. If all the lines look grey, then it's hard to succinctly say *what* is being modeled on an axis: there's just a lot of noise
+- `(b)` and `(c)` rates of change for each connection across the x- and y-axes, which tells us what is *actually* being modeled by each axis. If you are coming up with the name of an axis after-the-fact, it's good to check your assumptions against these trends and make sure your name for the plot captures what is actually being modeled. If all the lines look grey, then it's hard to succinctly say *what* is being modeled on an axis
 - Subsequent subplots show each subgroup on its own. It's good to compare these to the overall mean
 - And the last subplots show how each pair of subgroups compare. Similar to the trend plots, these show you *what* is being modeled by the difference of the two groups. If everything looks grey, then it's hard to give a succinct description of that difference: there's just a lot of noise
 
