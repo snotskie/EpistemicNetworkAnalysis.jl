@@ -1,6 +1,15 @@
 # ICQE23
 
-## Before conference: Setup and Survey
+## What to Bring
+
+For this workshop you'll need:
+
+- 💻 Your laptop, setup as described below so we can hit the ground running
+- 🔌 Laptop charger
+- 🎉 A can-do attitude and an unshakeable curiousity
+- 🗂️ Any data you would like to work on, help thinking about, etc.
+
+## Before the Conference: Setup and Survey
 
 Before the conference begins:
 
@@ -10,42 +19,61 @@ Before the conference begins:
 4. Install `EpistemicNetworkAnalysis.jl` by:
     1. Create a new file in VS Code
     2. Save it with the name `setup.jl`
-    3. Type the following code into that file and save the changes:
+    3. Copy the following code into that file and save the changes:
 
+            # Install ENA package
             using Pkg
             Pkg.add(url="https://github.com/snotskie/EpistemicNetworkAnalysis.jl")
 
-    4. Run the file by pressing Run / Run without Debugging
+    4. Run the file by pressing Run / Run without Debugging. Note, the first time you run this code may time some time to complete
 5. Once everything is installed, test that it works by:
     1. Create a new file in VS Code
-    2. Save it with the name `check.jl`
-    3. Type the following code into that file and save the changes:
+    2. Save it with the name `main.jl`
+    3. Copy the following code into that file and save the changes:
 
+            # Load ENA package
             using EpistemicNetworkAnalysis
 
-            data = loadExample("shakespeare")
-            codes = [:Love, :Death, :Honor, :Men, :Women]
-            conversations = [:Play, :Act, :Scene]
-            units = [:Play, :Speaker]
-            rotation = MeansRotation(:Play, "Romeo and Juliet", "Hamlet")
+            # Load sample dataset, codes from my first year on hormone replacement therapy
+            data = loadExample("transitions")
 
-            model = ENAModel(
-                data, codes, conversations, units,
-                windowSize=4,
-                rotateBy=rotation
-            )
+            # Derive some new codes based on old ones
+            deriveAnyCode!(data, :BODY, :Changes, :Mood, :Oily, :Dysphoria, :Cry)
+            deriveAnyCode!(data, :REFLECT, :Identity, :Longing, :Dream, :Childhood, :Family, :Name, :Letter, :Doubt, :Religion)
+            deriveAnyCode!(data, :LEARN, :WWW, :Experiment, :Recipe)
+            deriveAnyCode!(data, :PROGRESS, :Strangers, :Passed, :Out, :Affirmation)
 
-            display(model)
-            display(plot(model))
+            # Add new columns for splitting the year's data in half, third, ...
+            data[!, :All] .= "All"
+            data[!, :Half] .= "First"
+            data[183:end, :Half] .= "Second"
+            data[!, :Third] .= "First"
+            data[122:243, :Third] .= "Second"
+            data[244:end, :Third] .= "Third"
+            data[!, :Fourth] .= "First"
+            data[92:183, :Fourth] .= "Second"
+            data[184:275, :Fourth] .= "Third"
+            data[276:end, :Fourth] .= "Fourth"
 
-    4. Run the file by pressing Run / Run without debugging
+            # List columns to use as codes, convos, and units
+            codes = [:DoseTracking, :SkippedDose, :Happy, :NonHappy, :Sweets, :BODY, :REFLECT, :LEARN, :PROGRESS]
+            conversations = [:Date]
+            units = [:Date]
+
+            # Run the model and plot it
+            model = ENAModel(data, codes, conversations, units)
+            p = plot(model)
+            display(p)
+
+    4. Run the file by pressing Run / Run without debugging. Note, the first time you run this code may time some time to complete
     5. If an ENA plot appears, congrats! Everything is setup and ready to go for the workshop!
-5. Complete the prior knowledge survey (TODO) to tell workshop organizers a little about yourself
+5. [Complete the prior knowledge survey](https://forms.gle/8QVEy6NxnQCY9tBz9) to help us plan and tell us a little about yourself
 
+If you have any problems and questions during setup at all, [please let me know](mailto:mariah.knowles@wisc.edu?subject=ICQE23+Setup+Question) and we'll get you squared away!
 
-## Intro and Demo
+## Intro
 
-This is a 2-hour tutorial workshop.
+This is a 2-hour tutorial workshop
 
 Workshop Goals:
 
@@ -60,6 +88,14 @@ Workshop Audience:
 - already familiar with ENA
 - a beginner's understanding of at least one programming language
 - who want to use rotations beyond SVD and means rotation in their own research
+
+Workshop structure:
+
+- Live-coding / code-along model
+- Three phases:
+    1. Demo how to make several different models with different rotations with one running example
+    2. Discussion on choosing the right rotation for the job, based on your gut sense of your research story
+    3. Looking ahead discussion, sharing pathways for contributing and getting help after the workshop
 
 Code of Conduct:
 
@@ -89,33 +125,240 @@ Get a helper’s attention by raising your hand or putting your name card on its
 
 Setup check: green side up if they completed setup before the workshop
 
-Live-coding practice:
+Activity, introductions, keep running notes on the board:
+
+- What are you excited to learn from this workshop?
+- Or one question you have?
+
+## Demo and Worked Example
+
+**Dataset**
+
+The dataset we'll be using are codes and metadata from my first year on hormone replacement therapy. I'm a transgender woman, Valentines Day 2020 I started my medical transition, and I kept a daily record in various ways on my phone that first year. Also that year I learned QE and started developing tools for ENA. As a test case, I coded my own data, [modeled it](https://link.springer.com/chapter/10.1007/978-3-030-93859-8_8), and more recently made it available. (Though, just the codes and metadata, not the text of the daily entries, given their private nature.)
+
+**Getting Started**
+
+We'll start where the setup instructions left off:
 
 ```julia
+# Load ENA package
 using EpistemicNetworkAnalysis
 
-data = loadExample("shakespeare")
-codes = [:Love, :Death, :Honor, :Men, :Women]
-conversations = [:Play, :Act, :Scene]
-units = [:Play, :Speaker]
-rotation = MeansRotation(:Play, "Romeo and Juliet", "Hamlet")
+# Load sample dataset, codes from my first year on hormone replacement therapy
+data = loadExample("transitions")
 
-model = ENAModel(
-    data, codes, conversations, units,
-    windowSize=4,
-    rotateBy=rotation
-)
+# Derive some new codes based on old ones
+deriveAnyCode!(data, :BODY, :Changes, :Mood, :Oily, :Dysphoria, :Cry)
+deriveAnyCode!(data, :REFLECT, :Identity, :Longing, :Dream, :Childhood, :Family, :Name, :Letter, :Doubt, :Religion)
+deriveAnyCode!(data, :LEARN, :WWW, :Experiment, :Recipe)
+deriveAnyCode!(data, :PROGRESS, :Strangers, :Passed, :Out, :Affirmation)
 
-display(model)
+# Add new columns for splitting the year's data in half, third, ...
+data[!, :All] .= "All"
+data[!, :Half] .= "First"
+data[183:end, :Half] .= "Second"
+data[!, :Third] .= "First"
+data[122:243, :Third] .= "Second"
+data[244:end, :Third] .= "Third"
+data[!, :Fourth] .= "First"
+data[92:183, :Fourth] .= "Second"
+data[184:275, :Fourth] .= "Third"
+data[276:end, :Fourth] .= "Fourth"
 
+# List columns to use as codes, convos, and units
+codes = [:DoseTracking, :SkippedDose, :Happy, :NonHappy, :Sweets, :BODY, :REFLECT, :LEARN, :PROGRESS]
+conversations = [:Date]
+units = [:Date]
+
+# Run the model and plot it
+model = ENAModel(data, codes, conversations, units)
 p = plot(model)
 display(p)
 ```
 
-Introductions, keep running notes on the board:
+**Conversation, Window Size, and Empty Units**
 
-- What are you excited to learn from this workshop?
-- Or one question you have?
+As is, each day is its own "conversation," meaning no connections are made from day to day. Instead, lets change the conversation to the whole year:
+
+```julia
+conversations = [:All] # :All is a column we made that just contains the word "All"
+```
+
+That's better, I guess. But let's inspect the model to see what's going on:
+
+```julia
+display(model)
+```
+
+Notice this part of the output:
+
+```txt
+ ModelConfig =
+     (codes = [:DoseTracking,
+               :SkippedDose,
+               :Happy,
+               :NonHappy,
+               :Sweets,
+               :BODY,
+               :REFLECT,
+               :LEARN,
+               :PROGRESS],
+      conversations = [:All],
+      units = [:Date],
+      unitFilter = ...,
+      edgeFilter = ...,
+      windowSize = Inf, <--- This part right here
+      sphereNormalize = true,
+      dropEmpty = false,
+      recenterEmpty = false),
+```
+
+By default, the window size in this package is infinite, meaning any connection between any codes in the whole conversation are counted. Let's pick a more sensible window:
+
+```julia
+model = ENAModel(
+    data, codes, conversations, units,
+    windowSize=4
+)
+```
+
+Much better. One more tweak. Let's tell the model what to do with empty units. David's convinced me that the best place to put them is in the mean or center of the plot. This has advantages for proper stats tests later
+
+```julia
+model = ENAModel(
+    data, codes, conversations, units,
+    windowSize=4,
+    recenterEmpty=true
+)
+```
+
+**Plot Tweaks**
+
+This is data that moves over time. And other projects I know have data that moves over different continuous variables, like grades or so on. Let's color code our plot to make that pop:
+
+```julia
+p = plot(
+    model,
+    spectralColorBy=true
+)
+```
+
+Alternatively, we could split the year's data in half and color code by that instead:
+
+```julia
+p = plot(
+    model,
+    groupBy=:Half # :Half is a column we added that says "First" then "Second"
+)
+```
+
+Or we could split it in thirds (`groupBy=:Third`) or in fourths (`groupBy=:Fourth`)
+
+Activity:
+
+- Which version of the plot shows the most information?
+- What "story" are you starting to see emerge about the data from that year?
+
+**Rotations**
+
+The first and second halves seem different. Let's rotate the model to make that the focus:
+
+```julia
+rotation = MeansRotation(:Half, "First", "Second")
+model = ENAModel(
+    data, codes, conversations, units,
+    windowSize=4,
+    recenterEmpty=true,
+    rotateBy=rotation
+)
+```
+
+Surely though, a person's experience over a year can't be summed up as just a before and an after, right? Let's split the year in thirds and make that three-way difference the focus:
+
+```julia
+rotation = MulticlassRotation(:Third)
+```
+
+Note the test statistic for the x- and y-axes:
+
+```julia
+display(model.embedding[1, :KruskalWallis_H])
+display(model.embedding[2, :KruskalWallis_H])
+```
+
+If we *really* want to pull the groups apart and maximize that statistic, we can use a slightly different rotation:
+
+```julia
+rotation = LDARotation(:Third)
+```
+
+Note the drop in the variance explained. The plot is also hard to read, so let's zoom in:
+
+```julia
+p = plot(
+    model,
+    zoom=3
+)
+```
+
+Activity:
+
+- Which of those two models (Multiclass or LDA) do you prefer and why?
+
+Let's try splitting the year in fourth next:
+
+```julia
+rotation = MulticlassRotation(:Fourth)
+# or
+rotation = LDARotation(:Fourth)
+```
+
+Wow, that's a lot of subplots. Let's pull out just one for now:
+
+```julia
+sp = plot(p.subplots[1], size=(600,600))
+display(sp)
+```
+
+Activity:
+
+- We've seen this data modeled a lot of different ways now. Which codes seem to really be driving the story the most?
+
+Let's model that assumption directly:
+
+```julia
+rotation = TopicRotation("HRT?", [:SkippedDose], [:Happy])
+# ...
+p = plot(
+    model,
+    spectralColorBy=true
+)
+# or
+p = plot(
+    model,
+    groupBy=:Fourth
+)
+```
+
+That seems to be pretty close. The spectral plot still has a lot of red in the middle though. Being familiar with this data, and having lived it, I know that there's a little more to the story than just those two codes
+
+```julia
+rotation = TopicRotation("HRT", [:SkippedDose, :DoseTracking], [:Happy, :PROGRESS])
+```
+
+Much better
+
+That was all a lot of work. What if we just wanted to ask, show me the model that focuses on time as a linear scale?
+
+```julia
+using Pkg
+Pkg.add("GLM")
+using GLM
+# ...
+rotation = FormulaRotation(
+    LinearModel, @formula(y ~ 1 + Day), 2, nothing
+)
+```
 
 ## Github
 
