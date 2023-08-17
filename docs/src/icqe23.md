@@ -87,7 +87,7 @@ Workshop Audience:
 - QE researchers
 - already familiar with ENA
 - a beginner's understanding of at least one programming language
-- who want to use rotations beyond SVD and means rotation in their own research
+- who want to use rotations beyond SVD and means rotation in their own research (or understand more about rotations in the first place)
 
 Workshop structure:
 
