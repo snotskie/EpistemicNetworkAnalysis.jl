@@ -1,4 +1,4 @@
-# ICQE23
+# ICQE23 ENA Rotations Workshop
 
 ## What to Bring
 
@@ -8,6 +8,20 @@ For this workshop you'll need:
 - 🔌 Laptop charger
 - 🎉 A can-do attitude and an unshakeable curiousity
 - 🗂️ Any data you would like to work on, help thinking about, etc.
+
+Prerequisites:
+
+- All learners welcome!
+- You should already be familiar with ENA. If you aren't, the morning "Introduction to Epistemic Network Analysis" workshop before ours is a great place to start!
+- You should have at least a beginner's understanding of one programming language. If you don't, [Kaggle's Intro to Programming](https://www.kaggle.com/learn/intro-to-programming) is a great place to start!
+- You do not need experience with Julia or VS Code. We will introduce them as necessary during the workshop
+
+You will learn:
+
+- All about rotations in ENA
+- How to make lots of models
+- How to choose the right model
+- How to get help and contribute long after the conference ends
 
 ## Before the Conference: Setup and Survey
 
@@ -452,7 +466,7 @@ To get us started, I've tried to build into `EpistemicNetworkAnalysis.jl` enough
 - `FormulaRotation`: My feelings on this are similar to SVD. It's probably a good place to start, to see how your data compares to some variable. Pair it with a `spectralColorBy`. But it also probably isn't a good place to end, since linear regressions likely don't fit how we structure our tellings of the story. Even so, this rotation is incredibly flexible, so it can be a good starting point for creating other rotations
 - `TrainedRotation`: Use this when you need to test a different rotation against a holdout test or validation set. It isn't a rotation in itself, but instead a useful piece of ENA machinery for perform certain kinds of model validity checks
 
-## After the Conference: Support and Contributions
+## Getting Help and Contributing
 
 `EpistemicNetworkAnalysis.jl` lives on [GitHub](https://github.com/snotskie/EpistemicNetworkAnalysis.jl)
 
