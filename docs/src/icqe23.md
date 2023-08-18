@@ -1,5 +1,41 @@
 # ICQE23 ENA Rotations Workshop
 
+```@raw html
+<style type="text/css">
+.admonition.is-category-discussion {
+    background-color: #f2e9ff;
+    border-color: #9b59b6;
+}
+.admonition.is-category-discussion>.admonition-header {
+    background: #9b59b6;
+}
+
+.admonition.is-category-activity {
+    background-color: #d9eafc;
+    border-color: #45aaf2;
+}
+.admonition.is-category-activity>.admonition-header {
+    background: #45aaf2;
+}
+
+.admonition.is-category-challenge {
+    background-color: #ffccc7;
+    border-color: #e74c3c;
+}
+.admonition.is-category-challenge>.admonition-header {
+    background: #e74c3c;
+}
+
+.admonition.is-category-checkin {
+    background-color: #e9f7ef;
+    border-color: #27ae60;
+}
+.admonition.is-category-checkin>.admonition-header {
+    background: #27ae60;
+}
+</style>
+```
+
 ## What to Bring
 
 For this workshop you'll need:
@@ -49,7 +85,7 @@ Before the conference begins:
             using EpistemicNetworkAnalysis
 
             # Load sample dataset, codes from my first year on hormone replacement therapy
-            data = loadExample("transitions")
+            data = loadExample("transitions") # NOTE: To load your own data, see DataFrame(CSV.File(...))
 
             # Derive some new codes based on old ones
             deriveAnyCode!(data, :BODY, :Changes, :Mood, :Oily, :Dysphoria, :Cry)
@@ -139,10 +175,12 @@ Get a helper’s attention by raising your hand or putting your name card on its
 
 Setup check: green side up if they completed setup before the workshop
 
-Activity, introductions, keep running notes on the board:
+!!! discussion
 
-- What are you excited to learn from this workshop?
-- Or one question you have?
+    - Green card up if you want to participate in introductions
+    - Name, (pronouns), where are you coming from?
+    - What are you excited to learn from this workshop?
+    - Or, what is one question you have? (Keep running questions on the board)
 
 ## Demo and Worked Example
 
@@ -192,6 +230,17 @@ p = plot(model)
 display(p)
 ```
 
+!!! checkin
+
+    - Green cards up if you would like me to speed up?
+    - Green cards up if you would like me to slow down?
+
+!!! activity
+
+    - Try removing different combinations of codes from the model
+    - What impact does that have?
+    - Do some codes have more impact than others? In what ways?
+
 ### Plot Interpretation
 
 `plot(model)` produces a plot with the following subplots:
@@ -207,6 +256,11 @@ Some differences from WebENA and rENA:
 - Plots are mean centered by moving the mean of the plot, not by changing the underlying data. This preserves information that may or may not be useful for downstream analyses
 - Plots are opinionated. Based on the model config, the plot's default settings to change to what I believed was the best way to plot that kind of model. This gives you the "right" plot without having to specify what "right" means each time
 - A [known issue](https://github.com/snotskie/EpistemicNetworkAnalysis.jl/issues/11) is that the y-axis label can get cutoff when there are a lot of subplots
+
+!!! discussion
+
+    - What does the story of the plot seem to be so far?
+    - What information seems to be missing?
 
 ### Conversation, Window Size, and Empty Units
 
@@ -264,6 +318,12 @@ model = ENAModel(
 )
 ```
 
+!!! activity
+
+    - Try changing the value of `windowSize` a few times
+    - What kind of impact does that have on the model?
+    - What does changing the `windowSize` mean when qualitatively when thinking about data that moves over a year?
+
 ### Plot Tweaks
 
 This is data that moves over time. And other projects I know have data that moves over different continuous variables, like grades or so on. Let's color code our plot to make that pop:
@@ -286,10 +346,11 @@ p = plot(
 
 Or we could split it in thirds (`groupBy=:Third`) or in fourths (`groupBy=:Fourth`)
 
-Activity:
+!!! discussion
 
-- Which version of the plot shows the most information?
-- What "story" are you starting to see emerge about the data from that year?
+    - Which version of the plot shows the most information?
+    - What story are you starting to see emerge from the data?
+    - Or how is your sense of the story changing as we show it in different ways?
 
 ### Rotations
 
@@ -333,10 +394,6 @@ p = plot(
 )
 ```
 
-Activity:
-
-- Which of those two models (Multiclass or LDA) do you prefer and why?
-
 Let's try splitting the year in fourth next:
 
 ```julia
@@ -352,9 +409,18 @@ sp = plot(p.subplots[1], size=(600,600))
 display(sp)
 ```
 
-Activity:
+!!! activity
 
-- We've seen this data modeled a lot of different ways now. Which codes seem to really be driving the story the most?
+    - Try running a multiclass rotation using `:Half` as the grouping variable
+    - How does this compare to the means rotation? Why do you think that is?
+
+!!! challenge
+
+    Run a model that compares thirds of the year. Plot just the subplot that compares the first and second third. Make sure the plot is zoomed enough for a legible plot
+
+!!! discussion
+
+    We've seen this data modeled a lot of different ways now. Which codes seem to really be driving the story the most?
 
 Let's model that assumption directly:
 
@@ -380,7 +446,11 @@ rotation = TopicRotation("HRT", [:SkippedDose, :DoseTracking], [:Happy, :PROGRES
 
 Much better
 
-That was all a lot of work. What if we just wanted to ask, show me the model that focuses on time as a linear scale?
+!!! challenge
+
+    Several codes are getting "clumped" together near the middle. Create a model that forces two of those codes to the left and two of those codes to the right. Plot it, and make sure you zoom enough for the plot to be legible
+
+Coming up with that HRT model was all a lot of work. What if we just wanted to ask, show me the model that focuses on time as a linear scale?
 
 ```julia
 using Pkg
@@ -391,6 +461,10 @@ rotation = FormulaRotation(
     LinearModel, @formula(y ~ 1 + Day), 2, nothing
 )
 ```
+
+!!! discussion
+
+    Which rotations are you most likely to use in your own work? Why?
 
 ### Exporting Results and Importing your own Data
 
@@ -414,31 +488,35 @@ data = DataFrame(CSV.File("example.csv"))
 
 Remember, you may first have to add these packages with `Pkg.add("Plots")` etc.
 
+!!! tip
+
+    When preparing your data for ENA, it is a good idea to remove any spaces or punctuation from your column names. Choose short, proper case nouns. You can always spell things out further in your codebook
+
 ## Choosing Models
 
 A big part of choosing the right model is telling stories
 
-Activity:
+!!! discussion
 
-1. Pair up. Pick your favorite version of the model we've run so far and use it to write a summary of the year's data, in less than 80 words. As needed, you can check your understanding against the [codebook](https://link.springer.com/chapter/10.1007/978-3-030-93859-8_8/tables/1)
-2. Whose story is the right version of the story to tell? Is yours the right version of the story to tell? How would you even judge that?
-3. This data is about me. If I told you your telling of the story felt weird to me, would that affect your answer?
-4. Did your model affect the way you structured your story? How so?
+    1. Pair up. Pick your favorite version of the model we've run so far and use it to write a summary of the year's data, in less than 80 words. As needed, you can check your understanding against the [codebook](https://link.springer.com/chapter/10.1007/978-3-030-93859-8_8/tables/1)
+    2. Whose story is the right version of the story to tell? Is yours the right version of the story to tell? How would you even judge that?
+    3. This data is about me. If I told you your telling of the story felt weird to me, would that affect your answer?
+    4. Did your model affect the way you structured your story? How so?
 
 Here we made the model first and told the story second. Let's try it the other way
 
-Activity:
+!!! activity
 
-1. Put the image below on the board
-2. Split the group in half: ethnographers and ethnographers-of-ethnographers
-3. Ethnographers: How would you describe this image? Discuss and put sticky note labels right on the TV. Label everything you see
-4. E-o-Es: Watch their discussion and take notes
-5. When done, take the image away, leaving just the stickies
-6. E-o-Es: What did you observe and what do you see going on up here?
-7. Ethnographers: Watch their discussion and take notes
-8. When done, Ethnographers: What did you observe?
+    1. Put the image below on the board
+    2. Split the group in half: ethnographers and ethnographers-of-ethnographers
+    3. Ethnographers: How would you describe this image? Discuss and put sticky note labels right on the TV. Label everything you see
+    4. E-o-Es: Watch their discussion and take notes
+    5. When done, take the image away, leaving just the stickies
+    6. E-o-Es: What did you observe and what do you see going on up here?
+    7. Ethnographers: Watch their discussion and take notes
+    8. When done, Ethnographers: What did you observe?
 
-![](map-capture.png)
+    ![](map-capture.png)
 
 Stories have structure, and these structures have a geometry to them:
 
@@ -468,6 +546,10 @@ To get us started, I've tried to build into `EpistemicNetworkAnalysis.jl` enough
 - `FormulaRotation`: My feelings on this are similar to SVD. It's probably a good place to start, to see how your data compares to some variable. Pair it with a `spectralColorBy`. But it also probably isn't a good place to end, since linear regressions likely don't fit how we structure our tellings of the story. Even so, this rotation is incredibly flexible, so it can be a good starting point for creating other rotations
 - `TrainedRotation`: Use this when you need to test a different rotation against a holdout test or validation set. It isn't a rotation in itself, but instead a useful piece of ENA machinery for perform certain kinds of model validity checks
 
+!!! checkin
+
+    Is there anything you would like me to review again or cover before we move on to getting help after the conference?
+
 ## Getting Help and Contributing
 
 `EpistemicNetworkAnalysis.jl` lives on [GitHub](https://github.com/snotskie/EpistemicNetworkAnalysis.jl)
@@ -494,11 +576,11 @@ While Julia takes this to the limit, other QE resources are also open to varying
     - rENA workshop
     - Intro to Automated Coding workshop
 
-Activity:
+!!! discussion
 
-1. Summarize with your neighbor in 15 words or less: What does `EpistemicNetworkAnalysis.jl` being open source mean to you?
-2. What other QE open resources am I missing? Other not-specifically-QE-but-still-useful open resources?
-3. What are you planning to do with ENA and ENA tools like `EpistemicNetworkAnalysis.jl` in the future? What kind of support or community would best help you on that?
+    - Summarize with your neighbor in 15 words or less: What does `EpistemicNetworkAnalysis.jl` being open source mean to you?
+    - What other QE open resources am I missing? Other not-specifically-QE-but-still-useful open resources?
+    - What are you planning to do with ENA and ENA tools like `EpistemicNetworkAnalysis.jl` in the future? What kind of support or community would best help you on that?
 
 ## Closeout
 
