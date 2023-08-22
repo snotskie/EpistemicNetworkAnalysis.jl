@@ -36,6 +36,18 @@
 </style>
 ```
 
+```@raw html
+<script type="text/javascript">
+    window.addEventListener("load", function(){
+        for (const a of document.body.getElementsByTagName("a")){
+            if (a.href.length > 0 && new URL(a.href).origin !== location.origin){
+                a.setAttribute("target", "_blank");
+            }
+        }
+    });
+</script>
+```
+
 ## What to Bring
 
 For this workshop you'll need:
@@ -66,16 +78,17 @@ Before the conference begins:
 1. [Install Julia](https://julialang.org/downloads/)
 2. [Install VS Code](https://code.visualstudio.com/download)
 3. [Install Julia VS Code extension](https://code.visualstudio.com/docs/languages/julia#_getting-started)
-4. Install `EpistemicNetworkAnalysis.jl` by:
-    1. Create a new file in VS Code
-    2. Save it with the name `setup.jl`
+4. Close and restart VS Code
+5. Install `EpistemicNetworkAnalysis.jl` by:
+    1. Create a new file in VS Code (`ctrl+n`, or `cmd+n` on Mac)
+    2. Save it with the name `setup.jl` (`ctrl+s`, or `cmd+s` on Mac). Save it in a location that will be easy for you to find later, such as in a folder on your Desktop or in your Downloads folder
     3. Copy the following code into that file and save the changes:
 
             # Install ENA package
             using Pkg
             Pkg.add(url="https://github.com/snotskie/EpistemicNetworkAnalysis.jl")
 
-    4. Run the file by pressing Run / Run without Debugging. Note, the first time you run this code may time some time to complete
+    4. Run the file by pressing the Run icon (looks like a "play button" or triangle pointing to the right, located toward the top-right of the VS Code window). Note, the first time you run this code may take some time to complete. If your VS Code window says `Julia:Evaluating` in the bottom left, then your code is still running
 5. Once everything is installed, test that it works by:
     1. Create a new file in VS Code
     2. Save it with the name `main.jl`
@@ -115,7 +128,7 @@ Before the conference begins:
             p = plot(model)
             display(p)
 
-    4. Run the file by pressing Run / Run without debugging. Note, the first time you run this code may time some time to complete
+    4. Run the file by pressing the Run icon. Note, the first time you run this code may take some time to complete
     5. If an ENA plot appears, congrats! Everything is setup and ready to go for the workshop!
 5. [Complete the prior knowledge survey](https://forms.gle/8QVEy6NxnQCY9tBz9) to help us plan and tell us a little about yourself
 
@@ -533,7 +546,7 @@ ENA helps us capture that geometry. The ENA process as a whole has five steps:
 4. Visualize that reduced space
 5. Interpret the results
 
-All these steps are agnostic to your sense of your narrative structure, except for the third, the dimension reduction step. It's in that step that the algorithm chooses which information to show and which to hide. Ideally, your dimension reduction lets you think on the plot the same way you think on the page&mdash;over here is this, and over here is this&mdash;, letting you (a) move through the story as feels natural while (b) retaining exactly the information you need to tell and test that kind of story
+All these steps are agnostic to your sense of your narrative structure, except for the third, the dimension reduction step. It's in that step that the algorithm chooses which information to show and which to hide. Ideally, your dimension reduction lets you think on the plot the same way you think on the page—over here is this, and over here is this—, letting you (a) move through the story as feels natural while (b) retaining exactly the information you need to tell and test that kind of story
 
 Our sense of our story should *drive* our ENA models. And when the two conflict, we should figure out why and extend ENA to fit
 
