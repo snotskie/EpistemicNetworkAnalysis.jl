@@ -84,9 +84,11 @@ Before the conference begins:
     2. Save it with the name `setup.jl` (`ctrl+s`, or `cmd+s` on Mac). Save it in a location that will be easy for you to find later, such as in a folder on your Desktop or in your Downloads folder
     3. Copy the following code into that file and save the changes:
 
-            # Install ENA package
-            using Pkg
-            Pkg.add(url="https://github.com/snotskie/EpistemicNetworkAnalysis.jl")
+       ```julia
+       # Install ENA package
+       using Pkg
+       Pkg.add(url="https://github.com/snotskie/EpistemicNetworkAnalysis.jl")
+       ```
 
     4. Run the file by pressing the Run icon (looks like a "play button" or triangle pointing to the right, located toward the top-right of the VS Code window). Note, the first time you run this code may take some time to complete. If your VS Code window says `Julia:Evaluating` in the bottom left, then your code is still running
 5. Once everything is installed, test that it works by:
@@ -94,39 +96,41 @@ Before the conference begins:
     2. Save it with the name `main.jl`
     3. Copy the following code into that file and save the changes:
 
-            # Load ENA package
-            using EpistemicNetworkAnalysis
+       ```julia
+       # Load ENA package
+       using EpistemicNetworkAnalysis
 
-            # Load sample dataset, codes from my first year on hormone replacement therapy
-            data = loadExample("transitions") # NOTE: To load your own data, see DataFrame(CSV.File(...))
+       # Load sample dataset, codes from my first year on hormone replacement therapy
+       data = loadExample("transitions") # NOTE: To load your own data, see DataFrame(CSV.File(...))
 
-            # Derive some new codes based on old ones
-            deriveAnyCode!(data, :BODY, :Changes, :Mood, :Oily, :Dysphoria, :Cry)
-            deriveAnyCode!(data, :REFLECT, :Identity, :Longing, :Dream, :Childhood, :Family, :Name, :Letter, :Doubt, :Religion)
-            deriveAnyCode!(data, :LEARN, :WWW, :Experiment, :Recipe)
-            deriveAnyCode!(data, :PROGRESS, :Strangers, :Passed, :Out, :Affirmation)
+       # Derive some new codes based on old ones
+       deriveAnyCode!(data, :BODY, :Changes, :Mood, :Oily, :Dysphoria, :Cry)
+       deriveAnyCode!(data, :REFLECT, :Identity, :Longing, :Dream, :Childhood, :Family, :Name, :Letter, :Doubt, :Religion)
+       deriveAnyCode!(data, :LEARN, :WWW, :Experiment, :Recipe)
+       deriveAnyCode!(data, :PROGRESS, :Strangers, :Passed, :Out, :Affirmation)
 
-            # Add new columns for splitting the year's data in half, third, ...
-            data[!, :All] .= "All"
-            data[!, :Half] .= "First"
-            data[183:end, :Half] .= "Second"
-            data[!, :Third] .= "First"
-            data[122:243, :Third] .= "Second"
-            data[244:end, :Third] .= "Third"
-            data[!, :Fourth] .= "First"
-            data[92:183, :Fourth] .= "Second"
-            data[184:275, :Fourth] .= "Third"
-            data[276:end, :Fourth] .= "Fourth"
+       # Add new columns for splitting the year's data in half, third, ...
+       data[!, :All] .= "All"
+       data[!, :Half] .= "First"
+       data[183:end, :Half] .= "Second"
+       data[!, :Third] .= "First"
+       data[122:243, :Third] .= "Second"
+       data[244:end, :Third] .= "Third"
+       data[!, :Fourth] .= "First"
+       data[92:183, :Fourth] .= "Second"
+       data[184:275, :Fourth] .= "Third"
+       data[276:end, :Fourth] .= "Fourth"
 
-            # List columns to use as codes, convos, and units
-            codes = [:DoseTracking, :SkippedDose, :Happy, :NonHappy, :Sweets, :BODY, :REFLECT, :LEARN, :PROGRESS]
-            conversations = [:Date]
-            units = [:Date]
+       # List columns to use as codes, convos, and units
+       codes = [:DoseTracking, :SkippedDose, :Happy, :NonHappy, :Sweets, :BODY, :REFLECT, :LEARN, :PROGRESS]
+       conversations = [:Date]
+       units = [:Date]
 
-            # Run the model and plot it
-            model = ENAModel(data, codes, conversations, units)
-            p = plot(model)
-            display(p)
+       # Run the model and plot it
+       model = ENAModel(data, codes, conversations, units)
+       p = plot(model)
+       display(p)
+       ```
 
     4. Run the file by pressing the Run icon. Note, the first time you run this code may take some time to complete
     5. If an ENA plot appears, congrats! Everything is setup and ready to go for the workshop!
