@@ -1,5 +1,9 @@
 # EpistemicNetworkAnalysis.jl
 
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/snotskie)
+
+[![ColPrac: Contributor's Guide on Collaborative Practices for Community Packages](https://img.shields.io/badge/ColPrac-Contributor's%20Guide-blueviolet)](https://github.com/SciML/ColPrac)
+
 **Author: Mariah A. Knowles (@snotskie)**
 
 A port of [rENA](https://rdrr.io/cran/rENA/) version 0.2.0.1 into native Julia, with substantial API changes to fit Julia style, and with addition of new rotation methods.
@@ -48,7 +52,7 @@ model = ENAModel(
 )
 
 show(model)
-show(plot(model))
+display(plot(model))
 ```
 
 If you run into any issues, don't hesitate to [file an issue or ask for help](https://github.com/snotskie/EpistemicNetworkAnalysis.jl/issues).

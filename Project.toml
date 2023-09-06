@@ -1,7 +1,7 @@
 name = "EpistemicNetworkAnalysis"
 uuid = "c00a38d3-3ee6-47f0-934a-5622ac45083d"
 authors = ["Mariah A. Knowles <mariah.knowles@wisc.edu>"]
-version = "0.5.0"
+version = "0.5.1"
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"

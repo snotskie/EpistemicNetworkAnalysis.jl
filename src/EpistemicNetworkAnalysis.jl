@@ -82,5 +82,6 @@ export loadExample
 export to_xlsx
 export deriveAnyCode!
 export deriveAllCode!
+export summary
 
 end # module
