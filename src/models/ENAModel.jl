@@ -95,7 +95,7 @@ show(summary(model))
 
 # Display and save plot
 p = plot(model)
-show(p)
+display(p)
 savefig(p, "example.svg")
 
 # Save model for later use in Julia

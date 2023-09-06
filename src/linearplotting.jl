@@ -205,6 +205,22 @@ sp = plot(p.subplots[1], size=(600, 600))
 # Save
 savefig(p, "example.png")
 ```
+
+## Interpretation
+
+`plot(model)` produces a plot with the following subplots:
+
+- `(a)` an overall mean, which tells us the baseline everything compares against
+- `(b)` and `(c)` rates of change for each connection across the x- and y-axes, which helps identify what is being modeled by each axis
+- Subsequent subplots show each subgroup on its own. It's good to compare these to the overall mean
+- And the last subplots show how each pair of subgroups compare. Similar to the trend plots, these show you what is being modeled by the difference of the two groups
+
+Some differences from WebENA and rENA:
+
+- Saturation shows *correlation strength*. In WebENA and rENA saturation and line thickness both show magnitude of an effect
+- Plots are mean centered by moving the origin of the plot, not by changing the underlying data. This preserves information that may or may not be useful for downstream analyses
+- Plots are opinionated. Based on the model config, the plot's default settings to change to what I believed was the best way to plot that kind of model. This gives you the "right" plot without having to specify what "right" means each time
+- A [known issue](https://github.com/snotskie/EpistemicNetworkAnalysis.jl/issues/11) is that the y-axis label can get cutoff when there are a lot of subplots
 """
 plot(model::AbstractLinearENAModel)
 

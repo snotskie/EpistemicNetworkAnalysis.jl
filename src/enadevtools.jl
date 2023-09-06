@@ -287,6 +287,20 @@ function summary(::Type{M}, model::AbstractENAModel) where {R<:AbstractENARotati
     return copy(model.embedding[!, columns])
 end
 
+"""
+    summary(model::AbstractENAModel)
+
+Produce a dataframe containing summary statistics for each dimension of the model embedding
+    
+## Example
+
+```julia
+model = ENAModel(data, codes, conversations, units)
+stats = summary(model)
+```
+"""
+summary
+
 function show(io::IO, model::AbstractENAModel)
     details = (
         ENATool="EpistemicNetworkAnalysis.jl",
@@ -309,6 +323,20 @@ function show(io::IO, model::AbstractENAModel)
 
     pprint(io, details)
 end
+
+"""
+    show(model::AbstractENAModel)
+
+Display text summarizing a model's configuration and summary statistics.
+    
+## Example
+
+```julia
+model = ENAModel(data, codes, conversations, units)
+show(model)
+```
+"""
+show(::AbstractENAModel)
 
 # in linear, do plot like the consruct helper, override its components under there
 function plot(::Type{M}, model::AbstractENAModel, plotconfig::NamedTuple) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
