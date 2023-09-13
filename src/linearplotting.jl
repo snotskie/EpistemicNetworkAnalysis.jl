@@ -1,10 +1,15 @@
 # Defaults
 const DEFAULT_NEG_COLOR = colorant"#cc423a"
 const DEFAULT_POS_COLOR = colorant"#218ebf"
-const DEFAULT_EXTRA_COLORS = [
-    colorant"#56BD7C", colorant"#EF691B", colorant"#9d5dbb",
-    colorant"#FBC848", colorant"#D0386C",
-    colorant"#f18e9f", colorant"#9A9EAB", colorant"#ff8c39",
+const DEFAULT_GROUP_COLORS = [
+    colorant"#56BD7C",
+    colorant"#EF691B",
+    colorant"#9d5dbb",
+    colorant"#FBC848",
+    colorant"#D0386C",
+    colorant"#f18e9f",
+    colorant"#9A9EAB",
+    colorant"#ff8c39",
     colorant"#346B88"
 ]
 
@@ -48,14 +53,14 @@ function defaultplotkwargs(
         leg::Union{Symbol,Bool}=:topleft,
         negColor::Colorant=DEFAULT_NEG_COLOR,
         posColor::Colorant=DEFAULT_POS_COLOR,
-        extraColors::Array{<:Colorant,1}=DEFAULT_EXTRA_COLORS,
+        groupColors::Array{<:Colorant,1}=DEFAULT_GROUP_COLORS,
         alphabet::String=DEFAULT_ALPHABET,
         groupBy::Union{Symbol,Nothing}=nothing,
         innerGroupBy::Union{Symbol,Nothing}=nothing,
         spectralColorBy::Union{Symbol,Nothing}=nothing,
         trajectoryBy::Union{Symbol,Nothing}=nothing,
         trajectoryBins::Int=5,
-        showExtras::Bool=false,
+        showExtras::Bool=true,
         showNetworks::Bool=true,
         showUnits::Bool=true,
         showMeans::Bool=true,
@@ -87,7 +92,7 @@ function defaultplotkwargs(
         leg=leg,
         negColor=negColor,
         posColor=posColor,
-        extraColors=extraColors,
+        groupColors=groupColors,
         alphabet=alphabet,
         flipX=flipX,
         flipY=flipY,
@@ -155,14 +160,14 @@ end
         leg::Union{Symbol,Bool}=:topleft,
         negColor::Colorant=DEFAULT_NEG_COLOR,
         posColor::Colorant=DEFAULT_POS_COLOR,
-        extraColors::Array{<:Colorant,1}=DEFAULT_EXTRA_COLORS,
+        groupColors::Array{<:Colorant,1}=DEFAULT_GROUP_COLORS,
         alphabet::String=DEFAULT_ALPHABET,
         groupBy::Union{Symbol,Nothing}=nothing,
         innerGroupBy::Union{Symbol,Nothing}=nothing,
         spectralColorBy::Union{Symbol,Nothing}=nothing,
         trajectoryBy::Union{Symbol,Nothing}=nothing,
         trajectoryBins::Int=5,
-        showExtras::Bool=false,
+        showExtras::Bool=true,
         showNetworks::Bool=true,
         showUnits::Bool=true,
         showMeans::Bool=true,
@@ -184,7 +189,7 @@ Several optional arguments are available:
 - `x` and `y` control which dimension to show on the x- and y-axis respectively
 - `margin`, `size`, `meanCenter`, `origin`, `zoom`, `lims`, `flipX`, `flipY`, `xticks`, `yticks`, `xlims`, and `ylims` together control aspects of the plot size and axes
 - `titles`, `xlabel`, `ylabel`, `unitLabel`, `leg`, and `alphabet` together control the text that labels the plot
-- `negColor`, `posColor`, and `extraColors` together control the colors used in the plot
+- `negColor`, `posColor`, and `groupColors` together control the colors used in the plot
 - `groupBy` and `innerGroupBy` define which metadata columns to use as grouping variables for the sake of color coding and confidence intervals
 - `spectralColorBy` defines which metadata column to use to color-code units as a spectrum
 - `trajectoryBy` and `trajectoryBins` together define and control how a trajectory path should be overlaid on the plot
@@ -314,9 +319,9 @@ end
 function getGroupColorMap(model::AbstractLinearENAModel, plotconfig::NamedTuple)
     allGroups = sort(unique(model.metadata[!, plotconfig.groupBy]))
     groupColors = Dict(
-        g => plotconfig.extraColors[i]
+        g => plotconfig.groupColors[i]
         for (i, g) in enumerate(allGroups)
-        if i <= length(plotconfig.extraColors) # in case we don't have enough colors
+        if i <= length(plotconfig.groupColors) # in case we don't have enough colors
     )
 
     return DefaultDict(colorant"black", groupColors) # in case we don't have enough colors  
@@ -713,6 +718,43 @@ function plot_trends!(
     ys = Vector(model.points[plotconfig.y, unitIDs])
     plot_network!(M, px, model, TrendLinearEdgePainter(xs, plotconfig.negColor, plotconfig.posColor), plotconfig)
     plot_network!(M, py, model, TrendLinearEdgePainter(ys, plotconfig.negColor, plotconfig.posColor), plotconfig)
+    plot!(px,
+        [-999], [-999],
+        label="+x Trend",
+        seriestype=:scatter,
+        markershape=:square,
+        markersize=GLOBAL_UNIT_SIZE,
+        markercolor=[plotconfig.posColor],
+        markerstrokewidth=0
+    )
+    plot!(px,
+        [-999], [-999],
+        label="-x Trend",
+        seriestype=:scatter,
+        markershape=:square,
+        markersize=GLOBAL_UNIT_SIZE,
+        markercolor=[plotconfig.negColor],
+        markerstrokewidth=0
+    )
+    plot!(py,
+        [-999], [-999],
+        label="+y Trend",
+        seriestype=:scatter,
+        markershape=:square,
+        markersize=GLOBAL_UNIT_SIZE,
+        markercolor=[plotconfig.posColor],
+        markerstrokewidth=0
+    )
+    plot!(py,
+        [-999], [-999],
+        label="-y Trend",
+        seriestype=:scatter,
+        markershape=:square,
+        markersize=GLOBAL_UNIT_SIZE,
+        markercolor=[plotconfig.negColor],
+        markerstrokewidth=0
+    )
+    
     push!(ps, px)
     push!(ps, py)
 end
@@ -777,9 +819,28 @@ function plot_subtractions!(
                     end
                 end
 
-                plot_network!(M, p, model, TrendLinearEdgePainter(vals, groupColors[group1], groupColors[group2]), plotconfig, groupRows)
+                # plot_network!(M, p, model, TrendLinearEdgePainter(vals, groupColors[group1], groupColors[group2]), plotconfig, groupRows)
+                plot_network!(M, p, model, TrendLinearEdgePainter(vals, plotconfig.negColor, plotconfig.posColor), plotconfig, groupRows)
                 plot_units!(M, p, model, plotconfig, groupRows)
                 plot_means!(M, p, model, plotconfig, groupRows)
+                plot!(p,
+                    [-999], [-999],
+                    label="$(group2) Trend",
+                    seriestype=:scatter,
+                    markershape=:square,
+                    markersize=GLOBAL_UNIT_SIZE,
+                    markercolor=[plotconfig.posColor],
+                    markerstrokewidth=0
+                )
+                plot!(p,
+                    [-999], [-999],
+                    label="$(group1) Trend",
+                    seriestype=:scatter,
+                    markershape=:square,
+                    markersize=GLOBAL_UNIT_SIZE,
+                    markercolor=[plotconfig.negColor],
+                    markerstrokewidth=0
+                )
                 push!(ps, p)
             end
         end

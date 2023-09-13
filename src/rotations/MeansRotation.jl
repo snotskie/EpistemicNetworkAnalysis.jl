@@ -166,14 +166,14 @@ function defaultplotkwargs(
         model::AbstractLinearENAModel;
         x::Int=1,
         y::Int=2,
-        negColor::Colorant=DEFAULT_NEG_COLOR,
-        posColor::Colorant=DEFAULT_POS_COLOR,
-        extraColors::Array{<:Colorant,1}=(
-            # ensure the "left" group is the "red" group, using alphabetical order
-            model.rotation.controlGroups[x] <= model.rotation.treatmentGroups[x] ?
-            [DEFAULT_NEG_COLOR, DEFAULT_POS_COLOR, DEFAULT_EXTRA_COLORS...] :
-            [DEFAULT_POS_COLOR, DEFAULT_NEG_COLOR, DEFAULT_EXTRA_COLORS...]
-        ),
+        # negColor::Colorant=DEFAULT_NEG_COLOR,
+        # posColor::Colorant=DEFAULT_POS_COLOR,
+        # extraColors::Array{<:Colorant,1}=(
+        #     # ensure the "left" group is the "red" group, using alphabetical order
+        #     model.rotation.controlGroups[x] <= model.rotation.treatmentGroups[x] ?
+        #     [DEFAULT_NEG_COLOR, DEFAULT_POS_COLOR, DEFAULT_EXTRA_COLORS...] :
+        #     [DEFAULT_POS_COLOR, DEFAULT_NEG_COLOR, DEFAULT_EXTRA_COLORS...]
+        # ),
         # if x has a group var, group by that
         # elif y has a group var, group by that
         # else, nothing
@@ -199,9 +199,9 @@ function defaultplotkwargs(
     defaults = (
         x=x,
         y=y,
-        negColor=negColor,
-        posColor=posColor,
-        extraColors=extraColors,
+        # negColor=negColor,
+        # posColor=posColor,
+        # extraColors=extraColors,
         groupBy=groupBy,
         innerGroupBy=innerGroupBy,
         kwargs...
