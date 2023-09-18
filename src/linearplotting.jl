@@ -720,39 +720,39 @@ function plot_trends!(
     plot_network!(M, py, model, TrendLinearEdgePainter(ys, plotconfig.negColor, plotconfig.posColor), plotconfig)
     plot!(px,
         [-999], [-999],
-        label="+x Trend",
+        label="Positive Change",
         seriestype=:scatter,
-        markershape=:square,
+        markershape=:hline,
         markersize=GLOBAL_UNIT_SIZE,
         markercolor=[plotconfig.posColor],
-        markerstrokewidth=0
+        markerstrokewidth=1
     )
     plot!(px,
         [-999], [-999],
-        label="-x Trend",
+        label="Negative Change",
         seriestype=:scatter,
-        markershape=:square,
+        markershape=:hline,
         markersize=GLOBAL_UNIT_SIZE,
         markercolor=[plotconfig.negColor],
-        markerstrokewidth=0
+        markerstrokewidth=1
     )
     plot!(py,
         [-999], [-999],
-        label="+y Trend",
+        label="Positive Change",
         seriestype=:scatter,
-        markershape=:square,
+        markershape=:hline,
         markersize=GLOBAL_UNIT_SIZE,
         markercolor=[plotconfig.posColor],
-        markerstrokewidth=0
+        markerstrokewidth=1
     )
     plot!(py,
         [-999], [-999],
-        label="-y Trend",
+        label="Negative Change",
         seriestype=:scatter,
-        markershape=:square,
+        markershape=:hline,
         markersize=GLOBAL_UNIT_SIZE,
         markercolor=[plotconfig.negColor],
-        markerstrokewidth=0
+        markerstrokewidth=1
     )
     
     push!(ps, px)
@@ -825,21 +825,21 @@ function plot_subtractions!(
                 plot_means!(M, p, model, plotconfig, groupRows)
                 plot!(p,
                     [-999], [-999],
-                    label="$(group2) Trend",
+                    label="$(group1)➜$(group2) Change",
                     seriestype=:scatter,
-                    markershape=:square,
+                    markershape=:hline,
                     markersize=GLOBAL_UNIT_SIZE,
                     markercolor=[plotconfig.posColor],
-                    markerstrokewidth=0
+                    markerstrokewidth=1
                 )
                 plot!(p,
                     [-999], [-999],
-                    label="$(group1) Trend",
+                    label="$(group2)➜$(group1) Change",
                     seriestype=:scatter,
-                    markershape=:square,
+                    markershape=:hline,
                     markersize=GLOBAL_UNIT_SIZE,
                     markercolor=[plotconfig.negColor],
-                    markerstrokewidth=0
+                    markerstrokewidth=1
                 )
                 push!(ps, p)
             end
