@@ -211,7 +211,7 @@ p = plot(model)
 p = plot(model, leg=:outertopright)
 
 # Grab one subplot
-sp = plot(p.subplots[1])
+sp = plot(p.subplots[1], size=(700,700))
 
 # Save
 savefig(p, "example.png")
