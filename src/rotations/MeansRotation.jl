@@ -121,7 +121,7 @@ function rotate!(
         model.metadata[!, col_name] = col_data
     end
 
-    # optionally compute interactions between those terms
+    ## optionally compute interactions between those terms
     if model.rotation.moderated
         coef_index_interaction = maximum(model.rotation.coef_indexes) + 1
         for (i, coef_index_i) in enumerate(model.rotation.coef_indexes)
@@ -150,6 +150,47 @@ function test!(
         ::Type{M}, trainmodel::AbstractLinearENAModel, testmodel::AbstractLinearENAModel
     ) where {R<:AbstractMeansRotation, M<:AbstractLinearENAModel{R}}
 
+    # BUGFIX https://github.com/snotskie/EpistemicNetworkAnalysis.jl/issues/6
+    # when we have a true train/test split, we have to "redo" the work of
+    # factoring the model so the testmodel.metadata has columns expected by
+    # FormulaRotation's tests
+    if trainmodel != testmodel
+        ## factor the grouping variables to 0/1/missing, mean centered
+        for (i, coef_index) in enumerate(trainmodel.rotation.coef_indexes)
+            col_name = Symbol(trainmodel.rotation.formulas[i].rhs[coef_index])
+            groupVar = trainmodel.rotation.groupVars[i]
+            controlGroup = trainmodel.rotation.controlGroups[i]
+            treatmentGroup = trainmodel.rotation.treatmentGroups[i]
+            col_data = map(eachrow(testmodel.metadata)) do unitRow
+                if unitRow[groupVar] == controlGroup
+                    return 0.0
+                elseif unitRow[groupVar] == treatmentGroup
+                    return 1.0
+                else
+                    return missing
+                end
+            end
+
+            col_data = Vector(col_data) .- mean(skipmissing(col_data))
+            testmodel.metadata[!, col_name] = col_data
+        end
+
+        ## compute interactions between terms
+        if trainmodel.rotation.moderated
+            coef_index_interaction = maximum(trainmodel.rotation.coef_indexes) + 1
+            for (i, coef_index_i) in enumerate(trainmodel.rotation.coef_indexes)
+                col_name_i = Symbol(trainmodel.rotation.formulas[i].rhs[coef_index_i])
+                for (j, coef_index_j) in enumerate(trainmodel.rotation.coef_indexes[i+1:end])
+                    col_name_j = Symbol(trainmodel.rotation.formulas[j].rhs[coef_index_j])
+                    col_name_interaction = Symbol(trainmodel.rotation.formulas[j].rhs[coef_index_interaction])
+                    col_data = Vector(testmodel.metadata[!, col_name_i]) .* Vector(testmodel.metadata[!, col_name_j])
+                    testmodel.metadata[!, col_name_interaction] = col_data
+                    coef_index_interaction += 1
+                end
+            end
+        end
+    end
+
     super = rotationsupertype(M, AbstractMeansRotation)
     test!(super, trainmodel, testmodel)
     for (i, label) in enumerate(trainmodel.rotation.groupVars)
@@ -166,14 +207,14 @@ function defaultplotkwargs(
         model::AbstractLinearENAModel;
         x::Int=1,
         y::Int=2,
-        negColor::Colorant=DEFAULT_NEG_COLOR,
-        posColor::Colorant=DEFAULT_POS_COLOR,
-        extraColors::Array{<:Colorant,1}=(
-            # ensure the "left" group is the "red" group, using alphabetical order
-            model.rotation.controlGroups[x] <= model.rotation.treatmentGroups[x] ?
-            [DEFAULT_NEG_COLOR, DEFAULT_POS_COLOR, DEFAULT_EXTRA_COLORS...] :
-            [DEFAULT_POS_COLOR, DEFAULT_NEG_COLOR, DEFAULT_EXTRA_COLORS...]
-        ),
+        # negColor::Colorant=DEFAULT_NEG_COLOR,
+        # posColor::Colorant=DEFAULT_POS_COLOR,
+        # extraColors::Array{<:Colorant,1}=(
+        #     # ensure the "left" group is the "red" group, using alphabetical order
+        #     model.rotation.controlGroups[x] <= model.rotation.treatmentGroups[x] ?
+        #     [DEFAULT_NEG_COLOR, DEFAULT_POS_COLOR, DEFAULT_EXTRA_COLORS...] :
+        #     [DEFAULT_POS_COLOR, DEFAULT_NEG_COLOR, DEFAULT_EXTRA_COLORS...]
+        # ),
         # if x has a group var, group by that
         # elif y has a group var, group by that
         # else, nothing
@@ -199,9 +240,9 @@ function defaultplotkwargs(
     defaults = (
         x=x,
         y=y,
-        negColor=negColor,
-        posColor=posColor,
-        extraColors=extraColors,
+        # negColor=negColor,
+        # posColor=posColor,
+        # extraColors=extraColors,
         groupBy=groupBy,
         innerGroupBy=innerGroupBy,
         kwargs...

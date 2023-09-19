@@ -47,6 +47,7 @@ using Plots
         ),
         "Play" => MeansRotation(:Play, "Romeo and Juliet", "Hamlet"),
         "Gender" => TopicRotation("Gender", [:Women], [:Men]),
+        "Play" => MeansRotation(:Play, "Romeo and Juliet", "Hamlet", :Act, 1, 5, moderated=false),
         "Play" => MeansRotation(:Play, "Romeo and Juliet", "Hamlet", :Act, 1, 5),
         "LDA1" => LDARotation(:Play),
         "LDA1" => LDARotation(:Act),
@@ -66,18 +67,15 @@ using Plots
             p = plot(myENA)
 
             # Test that each combo can be trained on
-            try # Known issue: https://github.com/snotskie/EpistemicNetworkAnalysis.jl/issues/6
-                trainedENA = M(
-                    data, codes, conversations, units,
-                    rotateBy=TrainedRotation(myENA)
-                )
+            trainedENA = M(
+                data, codes, conversations, units,
+                rotateBy=TrainedRotation(myENA)
+            )
 
-                @test typeof(trainedENA) == M{TrainedRotation{typeof(myENA)}}
-                @test trainedENA.embedding[1, :label] == label
-                tp = plot(trainedENA)
-                @test length(p.subplots) == length(tp.subplots)
-            catch
-            end
+            @test typeof(trainedENA) == M{TrainedRotation{typeof(myENA)}}
+            @test trainedENA.embedding[1, :label] == label
+            tp = plot(trainedENA)
+            @test length(p.subplots) == length(tp.subplots)
         end
     end
 end

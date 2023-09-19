@@ -1,10 +1,15 @@
 # Defaults
 const DEFAULT_NEG_COLOR = colorant"#cc423a"
 const DEFAULT_POS_COLOR = colorant"#218ebf"
-const DEFAULT_EXTRA_COLORS = [
-    colorant"#56BD7C", colorant"#EF691B", colorant"#9d5dbb",
-    colorant"#FBC848", colorant"#D0386C",
-    colorant"#f18e9f", colorant"#9A9EAB", colorant"#ff8c39",
+const DEFAULT_GROUP_COLORS = [
+    colorant"#56BD7C",
+    colorant"#EF691B",
+    colorant"#9d5dbb",
+    colorant"#FBC848",
+    colorant"#D0386C",
+    colorant"#f18e9f",
+    colorant"#9A9EAB",
+    colorant"#ff8c39",
     colorant"#346B88"
 ]
 
@@ -24,7 +29,7 @@ function defaultplotkwargs(
         x::Int=1,
         y::Int=2,
         margin::PlotMeasures.AbsoluteLength=10mm,
-        size::Real=600,
+        size::Real=700,
         meanCenter::Bool=model.config.sphereNormalize,
         origin::Array{<:Real}=(meanCenter ?  [mean(model.points[x, :]), mean(model.points[y, :])] : [0,0]),
         zoom::Real=1,
@@ -48,21 +53,21 @@ function defaultplotkwargs(
         leg::Union{Symbol,Bool}=:topleft,
         negColor::Colorant=DEFAULT_NEG_COLOR,
         posColor::Colorant=DEFAULT_POS_COLOR,
-        extraColors::Array{<:Colorant,1}=DEFAULT_EXTRA_COLORS,
+        groupColors::Array{<:Colorant,1}=DEFAULT_GROUP_COLORS,
         alphabet::String=DEFAULT_ALPHABET,
         groupBy::Union{Symbol,Nothing}=nothing,
         innerGroupBy::Union{Symbol,Nothing}=nothing,
         spectralColorBy::Union{Symbol,Nothing}=nothing,
         trajectoryBy::Union{Symbol,Nothing}=nothing,
         trajectoryBins::Int=5,
-        showExtras::Bool=false,
+        showExtras::Bool=true,
         showNetworks::Bool=true,
         showUnits::Bool=true,
         showMeans::Bool=true,
         showWarps::Bool=false,
         fitNodesToCircle::Bool=false,
         showWeakEdges::Bool=true,
-        # TODO the options I cut from the model type
+        colorbar::Bool=false,
         kwargs...
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
@@ -87,7 +92,7 @@ function defaultplotkwargs(
         leg=leg,
         negColor=negColor,
         posColor=posColor,
-        extraColors=extraColors,
+        groupColors=groupColors,
         alphabet=alphabet,
         flipX=flipX,
         flipY=flipY,
@@ -103,6 +108,7 @@ function defaultplotkwargs(
         showWarps=showWarps,
         fitNodesToCircle=fitNodesToCircle,
         showWeakEdges=showWeakEdges,
+        colorbar=colorbar,
         kwargs...
     )
 
@@ -155,20 +161,21 @@ end
         leg::Union{Symbol,Bool}=:topleft,
         negColor::Colorant=DEFAULT_NEG_COLOR,
         posColor::Colorant=DEFAULT_POS_COLOR,
-        extraColors::Array{<:Colorant,1}=DEFAULT_EXTRA_COLORS,
+        groupColors::Array{<:Colorant,1}=DEFAULT_GROUP_COLORS,
         alphabet::String=DEFAULT_ALPHABET,
         groupBy::Union{Symbol,Nothing}=nothing,
         innerGroupBy::Union{Symbol,Nothing}=nothing,
         spectralColorBy::Union{Symbol,Nothing}=nothing,
         trajectoryBy::Union{Symbol,Nothing}=nothing,
         trajectoryBins::Int=5,
-        showExtras::Bool=false,
+        showExtras::Bool=true,
         showNetworks::Bool=true,
         showUnits::Bool=true,
         showMeans::Bool=true,
         showWarps::Bool=false,
         fitNodesToCircle::Bool=false,
-        showWeakEdges::Bool=true
+        showWeakEdges::Bool=true,
+        colorbar::Bool=false
     )
 
 Plot an ENA model using the [GR backend](https://docs.juliaplots.org/latest/gallery/gr/)
@@ -184,7 +191,7 @@ Several optional arguments are available:
 - `x` and `y` control which dimension to show on the x- and y-axis respectively
 - `margin`, `size`, `meanCenter`, `origin`, `zoom`, `lims`, `flipX`, `flipY`, `xticks`, `yticks`, `xlims`, and `ylims` together control aspects of the plot size and axes
 - `titles`, `xlabel`, `ylabel`, `unitLabel`, `leg`, and `alphabet` together control the text that labels the plot
-- `negColor`, `posColor`, and `extraColors` together control the colors used in the plot
+- `negColor`, `posColor`, and `groupColors` together control the colors used in the plot
 - `groupBy` and `innerGroupBy` define which metadata columns to use as grouping variables for the sake of color coding and confidence intervals
 - `spectralColorBy` defines which metadata column to use to color-code units as a spectrum
 - `trajectoryBy` and `trajectoryBins` together define and control how a trajectory path should be overlaid on the plot
@@ -192,6 +199,7 @@ Several optional arguments are available:
 - `showWarps` controls if edges should be drawn straight (`false`) or "warped" to show their true location in the space (`true`)
 - `fitNodesToCircle` controls if nodes should be shown in their optimized positions for goodness of fit, or at a circular position around the origin
 - `showWeakEdges` controls if edges with weak correlations to trends should be shown
+- `colorbar` controls if subplots that use gradient color-coding for their edges should have an explicit colorbar added
 
 ## Example
 
@@ -199,8 +207,11 @@ Several optional arguments are available:
 model = ENAModel(data, codes, conversations, units)
 p = plot(model)
 
+# Move the legends to an outer position
+p = plot(model, leg=:outertopright)
+
 # Grab one subplot
-sp = plot(p.subplots[1], size=(600, 600))
+sp = plot(p.subplots[1], size=(700,700))
 
 # Save
 savefig(p, "example.png")
@@ -242,7 +253,8 @@ end
 
 function nonlinearGradientMap(lo, mid, hi; grains=100, curve=1.5)
     return vcat(
-        [weighted_color_mean((100-i)^curve/grains^curve, lo, mid) for i in 1:grains],
+        [weighted_color_mean((grains-i)^curve/grains^curve, lo, mid) for i in 1:grains],
+        [mid],
         [weighted_color_mean(1-i^curve/grains^curve, mid, hi) for i in 1:grains]
     )
 end
@@ -314,9 +326,9 @@ end
 function getGroupColorMap(model::AbstractLinearENAModel, plotconfig::NamedTuple)
     allGroups = sort(unique(model.metadata[!, plotconfig.groupBy]))
     groupColors = Dict(
-        g => plotconfig.extraColors[i]
+        g => plotconfig.groupColors[i]
         for (i, g) in enumerate(allGroups)
-        if i <= length(plotconfig.extraColors) # in case we don't have enough colors
+        if i <= length(plotconfig.groupColors) # in case we don't have enough colors
     )
 
     return DefaultDict(colorant"black", groupColors) # in case we don't have enough colors  
@@ -562,13 +574,14 @@ function paint_edges!(
     ))
 
     # Color map the lines based on their correlation with the vals
-    mid_color = weighted_color_mean(0.5, RGB(edgePainter.neg_color), RGB(edgePainter.pos_color))
-    mid_color = weighted_color_mean(0.3, RGB(mid_color), colorant"white")
+    mid_color = weighted_color_mean(0.5, edgePainter.neg_color, edgePainter.pos_color)
+    mid_color = weighted_color_mean(0.3, mid_color, colorant"white")
     edgeColorMap = nonlinearGradientMap(
-        weighted_color_mean(0.95, edgePainter.neg_color, colorant"black"),
+        # weighted_color_mean(0.95, edgePainter.neg_color, colorant"black"),
+        edgePainter.neg_color,
         mid_color,
-        weighted_color_mean(0.95, edgePainter.pos_color, colorant"black"),
-        curve=2.5
+        # weighted_color_mean(0.95, edgePainter.pos_color, colorant"black")
+        edgePainter.pos_color
     )
 
     # Compute line widths as the strength (slope) between the vals and the accum network weights
@@ -619,6 +632,16 @@ function paint_edges!(
     end
 
     paintSortedNetwork!(p, model, plotconfig, edgeWidths, edgeColors, nodeWidths)
+
+    # Optionally add color bar
+    if plotconfig.colorbar
+        plot!(p,
+            [], [], label=false,
+            marker_z=-1:1,
+            color=cgrad(edgeColorMap),
+            colorbar=true
+        )
+    end
 end
 
 struct NodesOnlyLinearEdgePainter <: AbstractLinearEdgePainter end
@@ -670,6 +693,7 @@ function plot_omnibus!(
 
     p = plot(;
         leg=plotconfig.leg,
+        aspect_ratio=:equal,
         margin=plotconfig.margin,
         yrotation=90,
         size=(plotconfig.size, plotconfig.size),
@@ -690,6 +714,7 @@ function plot_trends!(
 
     px = plot(
         leg=plotconfig.leg,
+        aspect_ratio=:equal,
         margin=plotconfig.margin,
         yrotation=90,
         size=(plotconfig.size, plotconfig.size)
@@ -697,6 +722,7 @@ function plot_trends!(
 
     py = plot(
         leg=plotconfig.leg,
+        aspect_ratio=:equal,
         margin=plotconfig.margin,
         yrotation=90,
         size=(plotconfig.size, plotconfig.size)
@@ -713,6 +739,43 @@ function plot_trends!(
     ys = Vector(model.points[plotconfig.y, unitIDs])
     plot_network!(M, px, model, TrendLinearEdgePainter(xs, plotconfig.negColor, plotconfig.posColor), plotconfig)
     plot_network!(M, py, model, TrendLinearEdgePainter(ys, plotconfig.negColor, plotconfig.posColor), plotconfig)
+    plot!(px,
+        [-999], [-999],
+        label="Positive Change",
+        seriestype=:scatter,
+        markershape=:hline,
+        markersize=GLOBAL_UNIT_SIZE,
+        markercolor=[plotconfig.posColor],
+        markerstrokewidth=1
+    )
+    plot!(px,
+        [-999], [-999],
+        label="Negative Change",
+        seriestype=:scatter,
+        markershape=:hline,
+        markersize=GLOBAL_UNIT_SIZE,
+        markercolor=[plotconfig.negColor],
+        markerstrokewidth=1
+    )
+    plot!(py,
+        [-999], [-999],
+        label="Positive Change",
+        seriestype=:scatter,
+        markershape=:hline,
+        markersize=GLOBAL_UNIT_SIZE,
+        markercolor=[plotconfig.posColor],
+        markerstrokewidth=1
+    )
+    plot!(py,
+        [-999], [-999],
+        label="Negative Change",
+        seriestype=:scatter,
+        markershape=:hline,
+        markersize=GLOBAL_UNIT_SIZE,
+        markercolor=[plotconfig.negColor],
+        markerstrokewidth=1
+    )
+    
     push!(ps, px)
     push!(ps, py)
 end
@@ -729,6 +792,7 @@ function plot_groups!(
     for group in keys(groupColors)
         p = plot(
             leg=plotconfig.leg,
+            aspect_ratio=:equal,
             margin=plotconfig.margin,
             yrotation=90,
             size=(plotconfig.size, plotconfig.size)
@@ -758,6 +822,7 @@ function plot_subtractions!(
             if i < j
                 p = plot(
                     leg=plotconfig.leg,
+                    aspect_ratio=:equal,
                     margin=plotconfig.margin,
                     yrotation=90,
                     size=(plotconfig.size, plotconfig.size)
@@ -777,9 +842,28 @@ function plot_subtractions!(
                     end
                 end
 
-                plot_network!(M, p, model, TrendLinearEdgePainter(vals, groupColors[group1], groupColors[group2]), plotconfig, groupRows)
+                # plot_network!(M, p, model, TrendLinearEdgePainter(vals, groupColors[group1], groupColors[group2]), plotconfig, groupRows)
+                plot_network!(M, p, model, TrendLinearEdgePainter(vals, plotconfig.negColor, plotconfig.posColor), plotconfig, groupRows)
                 plot_units!(M, p, model, plotconfig, groupRows)
                 plot_means!(M, p, model, plotconfig, groupRows)
+                plot!(p,
+                    [-999], [-999],
+                    label="$(group2) - $(group1) Mean Difference",
+                    seriestype=:scatter,
+                    markershape=:hline,
+                    markersize=GLOBAL_UNIT_SIZE,
+                    markercolor=[plotconfig.posColor],
+                    markerstrokewidth=1
+                )
+                plot!(p,
+                    [-999], [-999],
+                    label="$(group1) - $(group2) Mean Difference",
+                    seriestype=:scatter,
+                    markershape=:hline,
+                    markersize=GLOBAL_UNIT_SIZE,
+                    markercolor=[plotconfig.negColor],
+                    markerstrokewidth=1
+                )
                 push!(ps, p)
             end
         end
@@ -800,6 +884,7 @@ function plot_extras!(
 
     p = plot(
         leg=plotconfig.leg,
+        aspect_ratio=:equal,
         margin=plotconfig.margin,
         yrotation=90,
         size=(plotconfig.size, plotconfig.size)

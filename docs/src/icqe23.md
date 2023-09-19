@@ -348,7 +348,7 @@ This is data that moves over time. And other projects I know have data that move
 ```julia
 p = plot(
     model,
-    spectralColorBy=true
+    spectralColorBy=:Day
 )
 ```
 
@@ -446,7 +446,7 @@ rotation = TopicRotation("HRT?", [:SkippedDose], [:Happy])
 # ...
 p = plot(
     model,
-    spectralColorBy=true
+    spectralColorBy=:Day
 )
 # or
 p = plot(
