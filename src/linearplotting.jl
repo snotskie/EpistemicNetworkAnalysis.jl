@@ -67,7 +67,7 @@ function defaultplotkwargs(
         showWarps::Bool=false,
         fitNodesToCircle::Bool=false,
         showWeakEdges::Bool=true,
-        # TODO the options I cut from the model type
+        colorbar::Bool=false,
         kwargs...
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
@@ -108,6 +108,7 @@ function defaultplotkwargs(
         showWarps=showWarps,
         fitNodesToCircle=fitNodesToCircle,
         showWeakEdges=showWeakEdges,
+        colorbar=colorbar,
         kwargs...
     )
 
@@ -173,7 +174,8 @@ end
         showMeans::Bool=true,
         showWarps::Bool=false,
         fitNodesToCircle::Bool=false,
-        showWeakEdges::Bool=true
+        showWeakEdges::Bool=true,
+        colorbar::Bool=false
     )
 
 Plot an ENA model using the [GR backend](https://docs.juliaplots.org/latest/gallery/gr/)
@@ -197,6 +199,7 @@ Several optional arguments are available:
 - `showWarps` controls if edges should be drawn straight (`false`) or "warped" to show their true location in the space (`true`)
 - `fitNodesToCircle` controls if nodes should be shown in their optimized positions for goodness of fit, or at a circular position around the origin
 - `showWeakEdges` controls if edges with weak correlations to trends should be shown
+- `colorbar` controls if subplots that use gradient color-coding for their edges should have an explicit colorbar added
 
 ## Example
 
@@ -208,7 +211,7 @@ p = plot(model)
 p = plot(model, leg=:outertopright)
 
 # Grab one subplot
-sp = plot(p.subplots[1], size=(600, 600))
+sp = plot(p.subplots[1])
 
 # Save
 savefig(p, "example.png")
@@ -250,7 +253,8 @@ end
 
 function nonlinearGradientMap(lo, mid, hi; grains=100, curve=1.5)
     return vcat(
-        [weighted_color_mean((100-i)^curve/grains^curve, lo, mid) for i in 1:grains],
+        [weighted_color_mean((grains-i)^curve/grains^curve, lo, mid) for i in 1:grains],
+        [mid],
         [weighted_color_mean(1-i^curve/grains^curve, mid, hi) for i in 1:grains]
     )
 end
@@ -570,13 +574,14 @@ function paint_edges!(
     ))
 
     # Color map the lines based on their correlation with the vals
-    mid_color = weighted_color_mean(0.5, RGB(edgePainter.neg_color), RGB(edgePainter.pos_color))
-    mid_color = weighted_color_mean(0.3, RGB(mid_color), colorant"white")
+    mid_color = weighted_color_mean(0.5, edgePainter.neg_color, edgePainter.pos_color)
+    mid_color = weighted_color_mean(0.3, mid_color, colorant"white")
     edgeColorMap = nonlinearGradientMap(
-        weighted_color_mean(0.95, edgePainter.neg_color, colorant"black"),
+        # weighted_color_mean(0.95, edgePainter.neg_color, colorant"black"),
+        edgePainter.neg_color,
         mid_color,
-        weighted_color_mean(0.95, edgePainter.pos_color, colorant"black"),
-        curve=2.5
+        # weighted_color_mean(0.95, edgePainter.pos_color, colorant"black")
+        edgePainter.pos_color
     )
 
     # Compute line widths as the strength (slope) between the vals and the accum network weights
@@ -627,6 +632,16 @@ function paint_edges!(
     end
 
     paintSortedNetwork!(p, model, plotconfig, edgeWidths, edgeColors, nodeWidths)
+
+    # Optionally add color bar
+    if plotconfig.colorbar
+        plot!(p,
+            [], [], label=false,
+            marker_z=-1:1,
+            color=cgrad(edgeColorMap),
+            colorbar=true
+        )
+    end
 end
 
 struct NodesOnlyLinearEdgePainter <: AbstractLinearEdgePainter end
