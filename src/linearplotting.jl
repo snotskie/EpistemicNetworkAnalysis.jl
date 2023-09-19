@@ -29,7 +29,7 @@ function defaultplotkwargs(
         x::Int=1,
         y::Int=2,
         margin::PlotMeasures.AbsoluteLength=10mm,
-        size::Real=600,
+        size::Real=700,
         meanCenter::Bool=model.config.sphereNormalize,
         origin::Array{<:Real}=(meanCenter ?  [mean(model.points[x, :]), mean(model.points[y, :])] : [0,0]),
         zoom::Real=1,
@@ -203,6 +203,9 @@ Several optional arguments are available:
 ```julia
 model = ENAModel(data, codes, conversations, units)
 p = plot(model)
+
+# Move the legends to an outer position
+p = plot(model, leg=:outertopright)
 
 # Grab one subplot
 sp = plot(p.subplots[1], size=(600, 600))
@@ -675,6 +678,7 @@ function plot_omnibus!(
 
     p = plot(;
         leg=plotconfig.leg,
+        aspect_ratio=:equal,
         margin=plotconfig.margin,
         yrotation=90,
         size=(plotconfig.size, plotconfig.size),
@@ -695,6 +699,7 @@ function plot_trends!(
 
     px = plot(
         leg=plotconfig.leg,
+        aspect_ratio=:equal,
         margin=plotconfig.margin,
         yrotation=90,
         size=(plotconfig.size, plotconfig.size)
@@ -702,6 +707,7 @@ function plot_trends!(
 
     py = plot(
         leg=plotconfig.leg,
+        aspect_ratio=:equal,
         margin=plotconfig.margin,
         yrotation=90,
         size=(plotconfig.size, plotconfig.size)
@@ -771,6 +777,7 @@ function plot_groups!(
     for group in keys(groupColors)
         p = plot(
             leg=plotconfig.leg,
+            aspect_ratio=:equal,
             margin=plotconfig.margin,
             yrotation=90,
             size=(plotconfig.size, plotconfig.size)
@@ -800,6 +807,7 @@ function plot_subtractions!(
             if i < j
                 p = plot(
                     leg=plotconfig.leg,
+                    aspect_ratio=:equal,
                     margin=plotconfig.margin,
                     yrotation=90,
                     size=(plotconfig.size, plotconfig.size)
@@ -825,7 +833,7 @@ function plot_subtractions!(
                 plot_means!(M, p, model, plotconfig, groupRows)
                 plot!(p,
                     [-999], [-999],
-                    label="$(group1)➜$(group2) Change",
+                    label="$(group2) - $(group1) Mean Difference",
                     seriestype=:scatter,
                     markershape=:hline,
                     markersize=GLOBAL_UNIT_SIZE,
@@ -834,7 +842,7 @@ function plot_subtractions!(
                 )
                 plot!(p,
                     [-999], [-999],
-                    label="$(group2)➜$(group1) Change",
+                    label="$(group1) - $(group2) Mean Difference",
                     seriestype=:scatter,
                     markershape=:hline,
                     markersize=GLOBAL_UNIT_SIZE,
@@ -861,6 +869,7 @@ function plot_extras!(
 
     p = plot(
         leg=plotconfig.leg,
+        aspect_ratio=:equal,
         margin=plotconfig.margin,
         yrotation=90,
         size=(plotconfig.size, plotconfig.size)
