@@ -36,18 +36,6 @@
 </style>
 ```
 
-```@raw html
-<script type="text/javascript">
-    window.addEventListener("load", function(){
-        for (const a of document.body.getElementsByTagName("a")){
-            if (a.href.length > 0 && new URL(a.href).origin !== location.origin){
-                a.setAttribute("target", "_blank");
-            }
-        }
-    });
-</script>
-```
-
 ## What to Bring
 
 For this workshop you'll need:
@@ -207,11 +195,18 @@ The dataset we'll be using are codes and metadata from my first year on hormone 
 
 This dataset is packaged with `EpistemicNetworkAnalysis.jl`, so you can [preview it on GitHub](https://github.com/snotskie/EpistemicNetworkAnalysis.jl/blob/master/data/transitions.csv)
 
+!!! activity
+
+    - Preview the data with your partner
+    - What stands out to you about what the data contains?
+    - What metadata columns do we have and how might we use them?
+    - At a skim, are their codes that have way more 1s than others?
+
 ### Getting Started
 
 We'll start where the setup instructions left off:
 
-```julia
+```@example runningExample
 # Load ENA package
 using EpistemicNetworkAnalysis
 
@@ -245,7 +240,12 @@ units = [:Date]
 model = ENAModel(data, codes, conversations, units)
 p = plot(model)
 display(p)
+using Plots # hide
+mkdir("icqe23") # hide
+savefig(p, "icqe23/opening-example.svg"); nothing # hide
 ```
+
+![](icqe23/opening-example.svg)
 
 !!! checkin
 
@@ -263,15 +263,15 @@ display(p)
 `plot(model)` produces a plot with the following subplots:
 
 - `(a)` an overall mean, which tells us the baseline everything compares against
-- `(b)` and `(c)` rates of change for each connection across the x- and y-axes, which tells us what is *actually* being modeled by each axis. If you are coming up with the name of an axis after-the-fact, it's good to check your assumptions against these trends and make sure your name for the plot captures what is actually being modeled. If all the lines look grey, then it's hard to succinctly say *what* is being modeled on an axis
+- `(b)` and `(c)` rates of change for each connection across the x- and y-axes, which gives us a clue about what is being modeled by each axis. If you are coming up with a name for the x-axis, it's good to check your assumptions against these trends and make sure they lign up
 - Subsequent subplots show each subgroup on its own. It's good to compare these to the overall mean
 - And the last subplots show how each pair of subgroups compare. Similar to the trend plots, these show you *what* is being modeled by the difference of the two groups. If everything looks grey, then it's hard to give a succinct description of that difference: there's just a lot of noise
 
 Some differences from WebENA and rENA:
 
-- Saturation shows *correlation strength* so we can tell at a glance when a model might be weak. In WebENA and rENA saturation is redundant (not necessarily bad) with line thickness, which shows magnitude of an effect
-- Plots are mean centered by moving the mean of the plot, not by changing the underlying data. This preserves information that may or may not be useful for downstream analyses
-- Plots are opinionated. Based on the model config, the plot's default settings to change to what I believed was the best way to plot that kind of model. This gives you the "right" plot without having to specify what "right" means each time
+- Saturation shows *correlation strength* so we can tell at a glance when a model might be weak. In WebENA and rENA saturation is redundant (not a bad thing) with line thickness, which shows magnitude of an effect
+- Plots are mean centered by moving the origin of the plot, not by changing the underlying data. This preserves information that may or may not be useful for downstream analyses
+- Plots are opinionated. Based on the model config, the plot's default settings change to what I believed was the best way to plot that kind of model. This gives you the "right" plot without having to specify what "right" means each time
 - A [known issue](https://github.com/snotskie/EpistemicNetworkAnalysis.jl/issues/11) is that the y-axis label can get cutoff when there are a lot of subplots
 
 !!! discussion
@@ -283,9 +283,14 @@ Some differences from WebENA and rENA:
 
 As is, each day is its own "conversation," meaning no connections are made from day to day. Instead, lets change the conversation to the whole year:
 
-```julia
+```@example runningExample
 conversations = [:All] # :All is a column we made that just contains the word "All"
+model = ENAModel(data, codes, conversations, units) # hide
+p = plot(model) # hide
+savefig(p, "icqe23/all-convo.svg"); nothing # hide
 ```
+
+![](icqe23/all-convo.svg)
 
 That's better, I guess. But let's inspect the model to see what's going on:
 
@@ -318,22 +323,32 @@ Notice this part of the output:
 
 By default, the window size in this package is infinite, meaning any connection between any codes in the whole conversation are counted. Let's pick a more sensible window:
 
-```julia
+```@example runningExample
 model = ENAModel(
     data, codes, conversations, units,
     windowSize=4
 )
+p = plot(model) # hide
+savefig(p, "icqe23/window-4.svg"); nothing # hide
 ```
 
-Much better. One more tweak. Let's tell the model what to do with empty units. David's convinced me that the best place to put them is in the mean or center of the plot. This has advantages for proper stats tests later
+![](icqe23/window-4.svg)
 
-```julia
+Getting better. But one more tweak. Let's tell the model what to do with empty units. David's convinced me that the best place to put them is in the mean or center of the plot. This has advantages for proper stats tests later
+
+```@example runningExample
 model = ENAModel(
     data, codes, conversations, units,
     windowSize=4,
     recenterEmpty=true
 )
+p = plot(model) # hide
+savefig(p, "icqe23/recenter-empty.svg"); nothing # hide
 ```
+
+![](icqe23/recenter-empty.svg)
+
+Significantly better!
 
 !!! activity
 
@@ -345,23 +360,31 @@ model = ENAModel(
 
 This is data that moves over time. And other projects I know have data that moves over different continuous variables, like grades or so on. Let's color code our plot to make that pop:
 
-```julia
+```@example runningExample
 p = plot(
     model,
     spectralColorBy=:Day
 )
+savefig(p, "icqe23/spectral-day.svg"); nothing # hide
 ```
+
+![](icqe23/spectral-day.svg)
 
 Alternatively, we could split the year's data in half and color code by that instead:
 
-```julia
+```@example runningExample
 p = plot(
     model,
     groupBy=:Half # :Half is a column we added that says "First" then "Second"
 )
+savefig(p, "icqe23/group-half.svg"); nothing # hide
 ```
 
-Or we could split it in thirds (`groupBy=:Third`) or in fourths (`groupBy=:Fourth`)
+![](icqe23/group-half.svg)
+
+!!! activity
+
+    - Try splitting it in thirds (`groupBy=:Third`) or in fourths (`groupBy=:Fourth`)
 
 !!! discussion
 
@@ -371,9 +394,9 @@ Or we could split it in thirds (`groupBy=:Third`) or in fourths (`groupBy=:Fourt
 
 ### Rotations
 
-The first and second halves seem different. Let's rotate the model to make that the focus:
+The first and second halves seem different. Let's rotate the model to make that focus explicit:
 
-```julia
+```@example runningExample
 rotation = MeansRotation(:Half, "First", "Second")
 model = ENAModel(
     data, codes, conversations, units,
@@ -381,50 +404,59 @@ model = ENAModel(
     recenterEmpty=true,
     rotateBy=rotation
 )
+p = plot(model) # hide
+savefig(p, "icqe23/mr-half.svg"); nothing # hide
 ```
 
-Surely though, a person's experience over a year can't be summed up as just a before and an after, right? Let's split the year in thirds and make that three-way difference the focus:
+![](icqe23/mr-half.svg)
 
-```julia
+Turns out, in this data, the default SVD rotation was nearly identical to that means rotation
+
+But, a person's experience over a year can't be summed up as just a before and an after, right? Let's split the year in thirds and make that three-way difference the focus:
+
+```@example runningExample
 rotation = MulticlassRotation(:Third)
+model = ENAModel( # hide
+    data, codes, conversations, units, # hide
+    windowSize=4, # hide
+    recenterEmpty=true, # hide
+    rotateBy=rotation # hide
+) # hide
+p = plot(model) # hide
+savefig(p, "icqe23/mcmr-third.svg"); nothing # hide
 ```
 
-Note the test statistic for the x- and y-axes:
+![](icqe23/mcmr-third.svg)
 
-```julia
-display(model.embedding[1, :KruskalWallis_H])
-display(model.embedding[2, :KruskalWallis_H])
-```
-
-If we *really* want to pull the groups apart and maximize that statistic, we can use a slightly different rotation:
-
-```julia
-rotation = LDARotation(:Third)
-```
-
-Note the drop in the variance explained. The plot is also hard to read, so let's zoom in:
-
-```julia
-p = plot(
-    model,
-    zoom=3
-)
-```
+That's starting to feel better
 
 Let's try splitting the year in fourth next:
 
-```julia
+```@example runningExample
 rotation = MulticlassRotation(:Fourth)
-# or
-rotation = LDARotation(:Fourth)
+model = ENAModel( # hide
+    data, codes, conversations, units, # hide
+    windowSize=4, # hide
+    recenterEmpty=true, # hide
+    rotateBy=rotation # hide
+) # hide
+p = plot(model) # hide
+savefig(p, "icqe23/mcmr-fourth.svg"); nothing # hide
 ```
 
-Wow, that's a lot of subplots. Let's pull out just one for now:
+![](icqe23/mcmr-fourth.svg)
 
-```julia
-sp = plot(p.subplots[1], size=(600,600))
+The "arc" of the year is starting to take shape
+
+But wow! That's a lot of subplots. Let's pull out just one for now:
+
+```@example runningExample
+sp = plot(p.subplots[1], size=(700,700))
 display(sp)
+savefig(sp, "icqe23/mcmr-fourth-sp1.svg"); nothing # hide
 ```
+
+![](icqe23/mcmr-fourth-sp1.svg)
 
 !!! activity
 
@@ -441,43 +473,104 @@ display(sp)
 
 Let's model that assumption directly:
 
-```julia
+```@example runningExample
 rotation = TopicRotation("HRT?", [:SkippedDose], [:Happy])
 # ...
+model = ENAModel( # hide
+    data, codes, conversations, units, # hide
+    windowSize=4, # hide
+    recenterEmpty=true, # hide
+    rotateBy=rotation # hide
+) # hide
 p = plot(
     model,
     spectralColorBy=:Day
 )
+savefig(plot(p.subplots[1], size=(700,700)), "icqe23/topic-spectral.svg"); nothing # hide
 # or
 p = plot(
     model,
     groupBy=:Fourth
 )
+savefig(plot(p.subplots[1], size=(700,700)), "icqe23/topic-fourth.svg"); nothing # hide
 ```
 
-That seems to be pretty close. The spectral plot still has a lot of red in the middle though. Being familiar with this data, and having lived it, I know that there's a little more to the story than just those two codes
+![](icqe23/topic-spectral.svg)
 
-```julia
+![](icqe23/topic-fourth.svg)
+
+That seems to be pretty close. The spectral plot still has a lot of red in the middle though. I'd like it to make clear "stripes" of color if possible. And being familiar with this data (having lived it), I know that there's a little more to the story than just those two codes
+
+```@example runningExample
 rotation = TopicRotation("HRT", [:SkippedDose, :DoseTracking], [:Happy, :PROGRESS])
+model = ENAModel( # hide
+    data, codes, conversations, units, # hide
+    windowSize=4, # hide
+    recenterEmpty=true, # hide
+    rotateBy=rotation # hide
+) # hide
+p = plot( # hide
+    model, # hide
+    spectralColorBy=:Day # hide
+) # hide
+savefig(plot(p.subplots[1], size=(700,700)), "icqe23/topic-redo-spectral.svg"); nothing # hide
+p = plot( # hide
+    model, # hide
+    groupBy=:Fourth # hide
+) # hide
+savefig(plot(p.subplots[1], size=(700,700)), "icqe23/topic-redo-fourth.svg"); nothing # hide
 ```
+
+![](icqe23/topic-redo-spectral.svg)
+
+![](icqe23/topic-redo-fourth.svg)
 
 Much better
 
 !!! challenge
 
-    Several codes are getting "clumped" together near the middle. Create a model that forces two of those codes to the left and two of those codes to the right. Plot it, and make sure you zoom enough for the plot to be legible
+    Several codes are getting "clumped" together near the middle. Create a model that forces two of those codes to the left and two of those codes to the right, then plot it.
 
-Coming up with that HRT model was all a lot of work. What if we just wanted to ask, show me the model that focuses on time as a linear scale?
+Coming up with that HRT model was a lot of work, especially since I had to tell you the answer I came up with from a lot of qualitative work
+
+But what if we just wanted to ask, show me the model that captures time, linearly, and with early on the left and late on the right?
+
+To do that, we first need to add a linear modeling library:
 
 ```julia
 using Pkg
 Pkg.add("GLM")
+```
+
+Then we can use it as part of a rotation:
+
+```@example runningExample
 using GLM
 # ...
 rotation = FormulaRotation(
     LinearModel, @formula(y ~ 1 + Day), 2, nothing
 )
+model = ENAModel( # hide
+    data, codes, conversations, units, # hide
+    windowSize=4, # hide
+    recenterEmpty=true, # hide
+    rotateBy=rotation # hide
+) # hide
+p = plot( # hide
+    model, # hide
+    spectralColorBy=:Day # hide
+) # hide
+savefig(plot(p.subplots[1], size=(700,700)), "icqe23/formula-spectral.svg"); nothing # hide
+p = plot( # hide
+    model, # hide
+    groupBy=:Fourth # hide
+) # hide
+savefig(plot(p.subplots[1], size=(700,700)), "icqe23/formula-fourth.svg"); nothing # hide
 ```
+
+![](icqe23/formula-spectral.svg)
+
+![](icqe23/formula-fourth.svg)
 
 !!! discussion
 
