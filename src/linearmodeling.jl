@@ -322,7 +322,7 @@ function accumulate!(
     # end
 end
 
-function approximate!(
+function substantiate!(
         ::Type{M}, model::AbstractLinearENAModel
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
@@ -353,11 +353,21 @@ function approximate!(
         coefs = X * y # regress on this edge
         model.nodes[!, edge] = coefs[1:end]
     end
+end
+
+function approximate!(
+        ::Type{M}, model::AbstractLinearENAModel
+    ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
     # find accumHat
     ## Refit the units: in high-d space, the refit units are as close as possible to their
     ## center of mass wrt the network
     ## This is by-definition the refit space
+    nodeIndexMap = Dict(
+        nodeID => i
+        for (i, nodeID) in enumerate(model.nodes.nodeID)
+    )
+    
     for unitEdgeID in model.edges.edgeID
         for (k, unitRow) in enumerate(eachrow(model.accumHat))
             unitRow[unitEdgeID] =

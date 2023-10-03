@@ -89,6 +89,7 @@ for M in models
 
             tp = plot(trainedENA)
             @test typeof(trainedENA) == M{TrainedRotation{typeof(myENA)}}
+            @test isequal(trainedENA.nodes, myENA.nodes)
             @test trainedENA.embedding[1, :label] == label
             @test length(p.subplots) == length(tp.subplots)
         end
