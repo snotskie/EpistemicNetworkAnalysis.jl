@@ -65,6 +65,14 @@ function rotate!(
     rotate!(super, model)
 end
 
+function substantiate!(
+        ::Type{M}, model::AbstractLinearENAModel
+    ) where {R<:AbstractTrainedRotation, M<:AbstractLinearENAModel{R}}
+
+    # just copy what the trained model already did
+    model.nodes = copy(model.rotation.trainmodel.nodes)
+end
+
 function test!(
         ::Type{M}, ::AbstractLinearENAModel, model::AbstractLinearENAModel
     ) where {CR<:AbstractLinearENARotation, CM<:AbstractLinearENAModel{CR}, R<:AbstractTrainedRotation{CM}, M<:AbstractLinearENAModel{R}}

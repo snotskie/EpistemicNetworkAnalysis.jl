@@ -154,6 +154,7 @@ function constructENA(
     )
 
     accumulate!(M, model)
+    substantiate!(M, model)
     approximate!(M, model)
     rotate!(M, model)
     test!(M, model)
@@ -182,6 +183,7 @@ function remodelENA(
     )
 
     accumulate!(M, model)
+    substantiate!(M, model)
     approximate!(M, model)
     rotate!(M, model)
     test!(M, model)
@@ -247,9 +249,13 @@ end
 
 # NOTE: when implementing these functions elsewhere, M should be the *most* specific
 # type that the function applies to, while model should be the *least* specific.
-# Also, accumulate! and approximate! should be generic to the rotation type when possible,
+# Also, accumulate!, substantiate!, and approximate! should be generic to the rotation type when possible,
 # while rotate! should be generic to the ENA type when possible.
 function accumulate!(::Type{M}, model::AbstractENAModel) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
+    error("Unimplemented")
+end
+
+function substantiate!(::Type{M}, model::AbstractENAModel) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
     error("Unimplemented")
 end
 
