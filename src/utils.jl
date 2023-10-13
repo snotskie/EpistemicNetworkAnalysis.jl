@@ -298,7 +298,9 @@ function pointcloud(
             means[i] = mean(X[i, :])
             stds[i] = std(X[i, :])
             X[i, :] .-= means[i]
-            X[i, :] ./= stds[i]
+            if stds[i] != 0
+                X[i, :] ./= stds[i]
+            end
         end
     end
 
