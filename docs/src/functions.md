@@ -42,3 +42,9 @@ EpistemicNetworkAnalysis.deriveAllCode!
 ```@docs
 EpistemicNetworkAnalysis.to_xlsx
 ```
+
+## pointcloud
+
+```@docs
+EpistemicNetworkAnalysis.pointcloud
+```

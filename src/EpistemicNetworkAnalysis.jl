@@ -83,5 +83,6 @@ export to_xlsx
 export deriveAnyCode!
 export deriveAllCode!
 export summary
+export pointcloud
 
 end # module

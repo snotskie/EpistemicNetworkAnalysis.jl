@@ -35,7 +35,7 @@ function rotate!(
     groupMap = Dict(group => i for (i, group) in enumerate(groups))
     nc = length(groups)
     X = Matrix{Float64}(transpose(Matrix{Float64}(model.accum[!, model.edges.edgeID])))
-    for j in 1:size(X, 2)
+    for j in axes(X, 2)
         X[:, j] = X[:, j] .- mean(X[:, j])
     end
 
@@ -47,7 +47,7 @@ function rotate!(
     ldaModel = projection(fit(MulticlassLDA, X, y))
 
     ## Add to the model
-    ns = size(ldaModel)[2]
+    ns = size(ldaModel, 2)
     embedding = similar(model.embedding, ns)
     for i in 1:ns
         embedding[i, :label] = "LDA$(i)"

@@ -308,14 +308,14 @@ function computeNetworkDensities(model, rows=!; normalize=false)
         s = maximum(values(edgeDensities))
         if s != 0
             for edgeID in edgeIDs
-                edgeDensities[edge] /= s
+                edgeDensities[edgeID] /= s
             end
         end
 
         s = maximum(values(nodeDensities))
         if s != 0
             for nodeID in nodeIDs
-                nodeDensities[node] /= s
+                nodeDensities[nodeID] /= s
             end
         end
     end

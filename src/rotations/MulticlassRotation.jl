@@ -68,7 +68,7 @@ function rotate!(
     vecs = eigvecs(Sb)
 
     ## Add to the model
-    ns = size(vecs)[2]
+    ns = size(vecs, 2)
     embedding = similar(model.embedding, ns)
     for i in 1:ns
         embedding[i, :label] = "MCMR$(i)"

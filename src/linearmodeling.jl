@@ -427,7 +427,7 @@ function rotate!(
     # make a mean centered copy of accum
     edgeIDs = model.edges.edgeID
     X = Matrix{Float64}(model.accum[!, edgeIDs])
-    for i in 1:size(X)[2]
+    for i in axes(X, 2)
         X[:, i] .-= mean(X[:, i])
     end
 
@@ -437,7 +437,7 @@ function rotate!(
         col = Vector{Float64}(model.points[i, unitIDs])
         col .-= mean(col)
         denom = dot(col, col)
-        for j in 1:size(X)[2]
+        for j in axes(X, 2)
             scalar = dot(X[:, j], col) / denom
             X[:, j] -= scalar * col
         end
@@ -445,7 +445,7 @@ function rotate!(
 
     # then, once we've deflated or not, we run SVD on the data, then add to the model
     svd = transpose(projection(fit(PCA, X', pratio=1.0)))
-    df = similar(model.embedding, size(svd)[1])
+    df = similar(model.embedding, size(svd, 1))
     df[!, edgeIDs] = svd
     df.label = ["SVD$(i)" for i in 1:nrow(df)]
     append!(model.embedding, df)
