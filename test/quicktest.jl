@@ -27,21 +27,21 @@ codes = [
    :Women
 ]
 # group = :Play
-# rotation = EpistemicNetworkAnalysis.MeansRotation(
-#     :Play, "Romeo and Juliet", "Hamlet",
-#     # :Act, 1, 5,
-#     # moderated=true
-# )
+rotation = EpistemicNetworkAnalysis.MeansRotation(
+    :Play, "Romeo and Juliet", "Hamlet",
+    # :Act, 1, 5,
+    # moderated=true
+)
 
 # rotation = EpistemicNetworkAnalysis.LDARotation(
 #     :Play
 #     # :Act
 # )
 
-rotation = EpistemicNetworkAnalysis.MulticlassRotation(
-    # :Play
-    :Act
-)
+# rotation = EpistemicNetworkAnalysis.MulticlassRotation(
+#     # :Play
+#     :Act
+# )
 
 # rotation = EpistemicNetworkAnalysis.TopicRotation(
 #     "Women-Death vs. Honor",
