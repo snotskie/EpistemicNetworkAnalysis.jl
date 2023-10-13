@@ -192,7 +192,11 @@ function test!(
     end
 
     super = rotationsupertype(M, AbstractMeansRotation)
-    test!(super, trainmodel, testmodel)
+    test!(super, trainmodel, testmodel, groupVar=label, groups=[
+        trainmodel.rotation.controlGroups[i],
+        trainmodel.rotation.treatmentGroups[i]
+    ])
+    
     for (i, label) in enumerate(trainmodel.rotation.groupVars)
         test!(M, trainmodel, testmodel, KruskalWallisTest, dim=i, groupVar=label, groups=[
             trainmodel.rotation.controlGroups[i],

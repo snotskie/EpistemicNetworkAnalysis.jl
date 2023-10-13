@@ -91,7 +91,7 @@ model = ENAModel(
 show(model)
 
 # Display summary statistics
-show(summary(model))
+show(statistics(model))
 
 # Display and save plot
 p = plot(model)

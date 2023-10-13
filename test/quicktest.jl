@@ -72,7 +72,7 @@ model2 = EpistemicNetworkAnalysis.ENAModel(
     dropEmpty=true,
 )
 
-@show(EpistemicNetworkAnalysis.summary(model2))
+@show(EpistemicNetworkAnalysis.statistics(model2))
 @show(model2)
 EpistemicNetworkAnalysis.to_xlsx("test/temp.xlsx", model2)
 serialize("test/temp.ena", model)

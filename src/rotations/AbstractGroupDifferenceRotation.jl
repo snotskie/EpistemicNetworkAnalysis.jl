@@ -7,9 +7,8 @@ function test!(
     ) where {R<:AbstractGroupDifferenceRotation, M<:AbstractLinearENAModel{R}}
 
     super = rotationsupertype(M, AbstractGroupDifferenceRotation)
-    test!(super, trainmodel, testmodel)
-
     groups = sort(unique(trainmodel.metadata[!, trainmodel.rotation.groupVar]))
+    test!(super, trainmodel, testmodel, groupVar=trainmodel.rotation.groupVar, groups=groups)
     for i in 1:nrow(testmodel.embedding)
         test!(M, trainmodel, testmodel, KruskalWallisTest, dim=i, groupVar=trainmodel.rotation.groupVar, groups=groups)
     end

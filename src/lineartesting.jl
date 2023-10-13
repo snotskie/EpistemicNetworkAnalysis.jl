@@ -1,12 +1,21 @@
 function test!(
         ::Type{M},
         ::AbstractLinearENAModel, # ignores the trainmodel, since we're just reporting summary statistics
-        model::AbstractLinearENAModel
+        model::AbstractLinearENAModel;
+        groupVar::Symbol=:Missing,
+        groups::Array=[]
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
     
     edgeIDs = model.edges.edgeID
     unitIDs = model.accum.unitID
     total_variance = sum(var.(eachcol(model.accum[!, edgeIDs])))
+    if !ismissing(groupVar)
+        model.embedding[!, :coregistration_GroupBy] .= groupVar
+        for g in groups
+            model.embedding[!, Symbol("coregistration_$(g)")] = repeat(Union{Float64,Missing}[missing], nrow(model.embedding))
+        end
+    end
+
     for i in 1:nrow(model.embedding)
         points = Vector(model.points[i, unitIDs])
         pointsHat = Vector(model.pointsHat[i, unitIDs])
@@ -25,6 +34,24 @@ function test!(
         ]
 
         model.embedding[i, :coregistration] = cor(pointsDiffs, pointsHatDiffs)
+        for g in groups
+            groupIDs = model.metadata[model.metadata[!, groupVar] .== g, :unitID]
+            groupPoints = Vector(model.points[i, groupIDs])
+            groupPointsHat = Vector(model.pointsHat[i, groupIDs])
+            groupPointsDiffs = [
+                a - b
+                for a in groupPoints
+                for b in groupPoints
+            ]
+    
+            groupPointsHatDiffs = [
+                a - b
+                for a in groupPointsHat
+                for b in groupPointsHat
+            ]
+
+            model.embedding[i, Symbol("coregistration_$(g)")] = cor(groupPointsDiffs, groupPointsHatDiffs)
+        end
     end
 
     # NOTE this fails for CopyRotation
