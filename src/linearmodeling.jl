@@ -57,6 +57,17 @@ function populateENAfields(
         config...
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
+    # sanity checks
+    if nrow(data) < 3
+        error("The data::DataFrame parameter should have at least 3 rows")
+    elseif length(codes) < 3
+        error("The codes::Array parameter should have at least 3 items")
+    elseif length(units) == 0
+        error("The units::Array parameter should have at least 1 item") 
+    end
+
+    # note, empty conversations is allowed. amounts to a whole conversation model
+
     config = NamedTuple(config)
 
     # edges: empty starting point

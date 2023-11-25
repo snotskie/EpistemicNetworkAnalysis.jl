@@ -126,9 +126,9 @@ function constructENA(
     return constructENA(
         M,
         data,
-        Symbol.(codes),
-        Symbol.(conversations),
-        Symbol.(units),
+        convert(Array{Symbol}, Symbol.(codes)),
+        convert(Array{Symbol}, Symbol.(conversations)),
+        convert(Array{Symbol}, Symbol.(units)),
         rotation;
         kwargs...
     )
