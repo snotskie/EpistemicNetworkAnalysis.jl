@@ -129,6 +129,60 @@ end
 
 function test!(
         ::Type{M},
+        ::AbstractLinearENAModel, # ignores the trainmodel, since all the train info we need is given in the kwargs
+        model::AbstractLinearENAModel,
+        test::Type{HypothesisTests.VarianceEqualityTest}; # BrownForsythe wraps this type
+        dim::Int=1,
+        groupVar::Symbol=:Missing,
+        groups::Array=[],
+        kwargs...
+    ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
+    
+    mdn_cols = [Symbol("BrownForsythe_Median_$(i)") for i in 1:length(groups)]
+    name_cols = [Symbol("BrownForsythe_Name_$(i)") for i in 1:length(groups)]
+    n_cols = [Symbol("BrownForsythe_N_$(i)") for i in 1:length(groups)]
+
+    if !(:BrownForsythe_W in Symbol.(names(model.embedding)))
+        filler = repeat(Union{Float64,Missing}[missing], nrow(model.embedding))
+        filler2 = repeat(Union{Symbol,Missing}[missing], nrow(model.embedding))
+        filler3 = repeat(Any[missing], nrow(model.embedding))
+        model.embedding[!, :BrownForsythe_W] = copy(filler)
+        model.embedding[!, :BrownForsythe_p] = copy(filler)
+        model.embedding[!, :BrownForsythe_GroupBy] = copy(filler2)
+        for mdn_col in mdn_cols
+            model.embedding[!, mdn_col] = copy(filler)
+        end
+
+        for name_col in name_cols
+            model.embedding[!, name_col] = copy(filler3)
+        end
+
+        for n_col in n_cols
+            model.embedding[!, n_col] = copy(filler)
+        end
+    end
+
+    bf_values = [
+        Vector(model.points[dim,
+            model.accum[
+                model.metadata[!, groupVar] .== g,
+                :unitID
+            ]
+        ])
+        for g in groups
+    ]
+
+    bf_test = BrownForsytheTest(bf_values...)
+    model.embedding[dim, :BrownForsythe_W] = HypothesisTests.teststatistic(bf_test)
+    model.embedding[dim, :BrownForsythe_p] = pvalue(bf_test)
+    model.embedding[dim, :BrownForsythe_GroupBy] = groupVar
+    model.embedding[dim, mdn_cols] .= median.(bf_values)
+    model.embedding[dim, name_cols] .= groups
+    model.embedding[dim, n_cols] .= length.(bf_values)
+end
+
+function test!(
+        ::Type{M},
         ::AbstractLinearENAModel, # ignores the trainmodel, since all the info we need is given in the kwargs
         model::AbstractLinearENAModel,
         test::Type{<:RegressionModel};

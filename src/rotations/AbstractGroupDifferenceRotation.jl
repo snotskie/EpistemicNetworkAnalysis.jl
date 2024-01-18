@@ -12,6 +12,7 @@ function test!(
     for i in 1:nrow(testmodel.embedding)
         test!(M, trainmodel, testmodel, GroupwiseCoregistrationTest, dim=i, groupVar=trainmodel.rotation.groupVar, groups=groups)
         test!(M, trainmodel, testmodel, KruskalWallisTest, dim=i, groupVar=trainmodel.rotation.groupVar, groups=groups)
+        test!(M, trainmodel, testmodel, HypothesisTests.VarianceEqualityTest, dim=i, groupVar=trainmodel.rotation.groupVar, groups=groups)
     end
 end
 

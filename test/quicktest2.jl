@@ -13,22 +13,25 @@ EpistemicNetworkAnalysis.deriveAnyCode!(data, :LEARN, :WWW, :Experiment, :Recipe
 EpistemicNetworkAnalysis.deriveAnyCode!(data, :PROGRESS, :Strangers, :Passed, :Out, :Affirmation)
 
 # Add new columns for splitting the year's data in half, third, ...
-# data[!, :Half] .= "First"
-# data[183:end, :Half] .= "Second"
-# data[!, :Third] .= "First"
-# data[122:243, :Third] .= "Second"
-# data[244:end, :Third] .= "Third"
-# data[!, :Fourth] .= "First"
-# data[92:183, :Fourth] .= "Second"
-# data[184:275, :Fourth] .= "Third"
-# data[276:end, :Fourth] .= "Fourth"
+data[!, :Half] .= "First"
+data[183:end, :Half] .= "Second"
+data[!, :Third] .= "First"
+data[122:243, :Third] .= "Second"
+data[244:end, :Third] .= "Third"
+data[!, :Fourth] .= "First"
+data[92:183, :Fourth] .= "Second"
+data[184:275, :Fourth] .= "Third"
+data[276:end, :Fourth] .= "Fourth"
 
 # List columns to use as codes, convos, and units
 codes = [:DoseTracking, :SkippedDose, :Happy, :NonHappy, :Sweets, :BODY, :REFLECT, :LEARN, :PROGRESS]
 conversations = []
 units = [:Date]
 
+# Rotation
+rotation = EpistemicNetworkAnalysis.MulticlassRotation(:Third)
+
 # Run the model and plot it
-model = EpistemicNetworkAnalysis.ENAModel(data, codes, conversations, units)
+model = EpistemicNetworkAnalysis.ENAModel(data, codes, conversations, units, rotateBy=rotation)
 p = EpistemicNetworkAnalysis.plot(model)
 display(p)

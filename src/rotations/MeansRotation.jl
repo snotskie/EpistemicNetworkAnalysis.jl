@@ -203,6 +203,11 @@ function test!(
             trainmodel.rotation.controlGroups[i],
             trainmodel.rotation.treatmentGroups[i]
         ])
+
+        test!(M, trainmodel, testmodel, HypothesisTests.VarianceEqualityTest, dim=i, groupVar=label, groups=[
+            trainmodel.rotation.controlGroups[i],
+            trainmodel.rotation.treatmentGroups[i]
+        ])
     end
 end
 
