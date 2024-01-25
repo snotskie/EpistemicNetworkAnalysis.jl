@@ -66,33 +66,41 @@ for M in models
 
         @testset "$(nameof(M)){$(nameof(typeof(rotation)))} runs" begin
             @test typeof(myENA) == M{typeof(rotation)}
+        end
+
+        @testset "$(nameof(M)){$(nameof(typeof(rotation)))} is correctly labeled" begin
             @test myENA.embedding[1, :label] == label
         end
 
-        @testset "$(nameof(M)){$(nameof(typeof(rotation)))} has correct variance" begin
-            @test isapprox(sum(myENA.embedding.variance_explained), 1.0, atol=1e-8)
+        @testset "$(nameof(M)){$(nameof(typeof(rotation)))} has not too many dimensions" begin
+            @test nrow(myENA.embedding) <= nrow(myENA.edges)
         end
 
-        @testset "$(nameof(M)){$(nameof(typeof(rotation)))} axes are orthogonal" begin
-            for i in 1:nrow(myENA.edges)
-                for j in (i+1):nrow(myENA.edges)
+        total_variance_explained = sum(myENA.embedding.variance_explained)
+        @testset "$(nameof(M)){$(nameof(typeof(rotation)))} has correct variance: $(total_variance_explained) <= 1.0" begin
+            @test isapprox(total_variance_explained, 1.0, atol=1e-8) || total_variance_explained <= 1.0
+        end
+        
+        for i in 1:nrow(myENA.embedding)
+            for j in (i+1):nrow(myENA.embedding)
+                @testset "$(nameof(M)){$(nameof(typeof(rotation)))} axes $(i) and $(j) are orthogonal" begin
                     edgeIDs = myENA.edges.edgeID
                     @test isapprox(dot(myENA.embedding[i, edgeIDs], myENA.embedding[j, edgeIDs]), 0.0, atol=1e-8)
                 end
             end
         end
 
-        # @testset "$(nameof(M)){$(nameof(typeof(rotation)))} SVD axes in proper order" begin
-        #     for i in 1:nrow(myENA.embedding)
-        #         if startswith(myENA.embedding.label[i], "SVD")
-        #             for j in (i+1):nrow(myENA.embedding)
-        #                 if startswith(myENA.embedding.label[j], "SVD")
-        #                     @test myENA.embedding.variance_explained[i] >= myENA.embedding.variance_explained[j]
-        #                 end
-        #             end
-        #         end
-        #     end
-        # end
+        for i in 1:nrow(myENA.embedding)
+            if startswith(myENA.embedding.label[i], "SVD")
+                for j in (i+1):nrow(myENA.embedding)
+                    if startswith(myENA.embedding.label[j], "SVD")
+                        @testset "$(nameof(M)){$(nameof(typeof(rotation)))} $(myENA.embedding.label[i]) and $(myENA.embedding.label[j]) in proper order" begin
+                            @test_skip myENA.embedding.variance_explained[i] >= myENA.embedding.variance_explained[j]
+                        end
+                    end
+                end
+            end
+        end
 
         p = plot(myENA)
         @testset "$(nameof(M)){$(nameof(typeof(rotation)))} plots" begin

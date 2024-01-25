@@ -452,6 +452,10 @@ function rotate!(
     # make a copy of accum, and if needed, deflate it before we run SVD on it
     X = Matrix{Float64}(model.accum[!, edgeIDs])
     for i in 1:numExistingDims
+        # for j in axes(X, 2)
+        #     X[:, j] .-= mean(X[:, j])
+        # end
+
         vi = X * Vector{Float64}(model.embedding[i, edgeIDs])
         vi .-= mean(vi)
         denom = dot(vi, vi)
@@ -471,10 +475,14 @@ function rotate!(
     end
 
     # then, once we've deflated or not, we run SVD on the data, then add to the model
-    svd = transpose(projection(fit(PCA, X', pratio=1.0)))
-    @debug "svd = $(svd)"
-    df = similar(model.embedding, size(svd, 1))
-    df[!, edgeIDs] = svd
+    pca = fit(PCA, X', pratio=1.0, method=:svd) # BUGFIX force use svd, https://github.com/snotskie/EpistemicNetworkAnalysis.jl/issues/56#issuecomment-1910540698
+    @debug "eigvals(pca) = $(eigvals(pca))"
+    svd = transpose(projection(pca))
+    # BUGFIX https://github.com/snotskie/EpistemicNetworkAnalysis.jl/issues/56#issuecomment-1910540698
+    # Prevent SVD from adding more dimensions than are possible
+    numSVDDims = min(size(svd, 1), length(edgeIDs) - numExistingDims)
+    df = similar(model.embedding, numSVDDims)
+    df[!, edgeIDs] = svd[1:numSVDDims, :]
     df.label = ["SVD$(i)" for i in 1:nrow(df)]
     append!(model.embedding, df)
     for i in (numExistingDims+1):nrow(model.embedding)
