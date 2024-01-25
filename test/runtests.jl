@@ -3,6 +3,9 @@ using Test
 using DataFrames
 using GLM
 using Plots
+using LinearAlgebra
+
+ENV["JULIA_DEBUG"] = EpistemicNetworkAnalysis
 
 data = loadExample("shakespeare")
 @testset "Data loads" begin
@@ -36,6 +39,7 @@ end
 # Test that each model/rotation combination runs
 models = [ENAModel, BiplotENAModel, DigraphENAModel]
 rotations = [
+    # expected xaxis label => rotation
     "SVD1" => SVDRotation(),
     "Act" => FormulaRotation(
         LinearModel,
@@ -64,6 +68,31 @@ for M in models
             @test typeof(myENA) == M{typeof(rotation)}
             @test myENA.embedding[1, :label] == label
         end
+
+        @testset "$(nameof(M)){$(nameof(typeof(rotation)))} has correct variance" begin
+            @test isapprox(sum(myENA.embedding.variance_explained), 1.0, atol=1e-8)
+        end
+
+        @testset "$(nameof(M)){$(nameof(typeof(rotation)))} axes are orthogonal" begin
+            for i in 1:nrow(myENA.edges)
+                for j in (i+1):nrow(myENA.edges)
+                    edgeIDs = myENA.edges.edgeID
+                    @test isapprox(dot(myENA.embedding[i, edgeIDs], myENA.embedding[j, edgeIDs]), 0.0, atol=1e-8)
+                end
+            end
+        end
+
+        # @testset "$(nameof(M)){$(nameof(typeof(rotation)))} SVD axes in proper order" begin
+        #     for i in 1:nrow(myENA.embedding)
+        #         if startswith(myENA.embedding.label[i], "SVD")
+        #             for j in (i+1):nrow(myENA.embedding)
+        #                 if startswith(myENA.embedding.label[j], "SVD")
+        #                     @test myENA.embedding.variance_explained[i] >= myENA.embedding.variance_explained[j]
+        #                 end
+        #             end
+        #         end
+        #     end
+        # end
 
         p = plot(myENA)
         @testset "$(nameof(M)){$(nameof(typeof(rotation)))} plots" begin

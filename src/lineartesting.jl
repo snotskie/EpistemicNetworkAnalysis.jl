@@ -26,9 +26,6 @@ function test!(
 
         model.embedding[i, :coregistration] = cor(pointsDiffs, pointsHatDiffs)
     end
-
-    # NOTE this fails for CopyRotation
-    # @assert sum(model.embedding.variance_explained) ≈ 1.0 "Var Exp does not add up to 100% as expected"
 end
 
 struct GroupwiseCoregistrationTest end # empty type for specifying when to use the groupwise method below

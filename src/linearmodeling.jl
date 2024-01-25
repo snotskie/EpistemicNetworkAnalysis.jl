@@ -400,6 +400,7 @@ function rotate!(
     # and add point positions to the model
     edgeIDs = model.edges.edgeID
     numExistingDims = nrow(model.embedding)
+    @debug "numExistingDims = $(numExistingDims)"
     if numExistingDims > 0
         # normalize the first dimension (the rest are normalized below)
         v1 = Vector(model.embedding[1, edgeIDs])
@@ -415,47 +416,63 @@ function rotate!(
         # orthogonalize, by rejection, each existing dimension from each previous dimension.
         # note, a dimension will be orthogonalize before it is used to add points to the model
         vi = Vector(model.embedding[i, edgeIDs])
+        @debug "vi = $(vi)"
         denom = dot(vi, vi)
-        for j in (i+1):numExistingDims
-            vj = Vector(model.embedding[j, edgeIDs])
-            s = sqrt(sum(vj .^ 2))
-            if s != 0
-                model.embedding[j, edgeIDs] .= vj / s
-            end
+        if denom != 0
+            @debug "denom = $(denom)"
+            for j in (i+1):numExistingDims
+                vj = Vector(model.embedding[j, edgeIDs])
+                @debug "vj = $(vj)"
+                s = sqrt(sum(vj .^ 2))
+                if s != 0
+                    model.embedding[j, edgeIDs] .= vj / s
+                    vj = Vector(model.embedding[j, edgeIDs])
+                end
+                @debug "vj after scaling = $(vj)"
 
-            scalar = dot(vj, vi) / denom
-            model.embedding[j, edgeIDs] .= vj - scalar * vi
-            s = sqrt(sum(vj .^ 2))
-            if s < 0.05
-                model.embedding[j, edgeIDs] .= 0
-                @warn "During the rotation step, axis $j was deflated to zero due to close correlation with axis $i."
-            elseif s != 0
-                model.embedding[j, edgeIDs] .= vj / s
+                scalar = dot(vj, vi) / denom
+                @debug "scalar = $(scalar)"
+                model.embedding[j, edgeIDs] .= vj - scalar * vi
+                vj = Vector(model.embedding[j, edgeIDs])
+                s = sqrt(sum(vj .^ 2))
+                if s < 0.05
+                    model.embedding[j, edgeIDs] .= 0
+                    vj = Vector(model.embedding[j, edgeIDs])
+                    @warn "During the rotation step, axis $j was deflated to zero due to close correlation with axis $i."
+                elseif s != 0
+                    model.embedding[j, edgeIDs] .= vj / s
+                    vj = Vector(model.embedding[j, edgeIDs])
+                end
+                @debug "vj after rejection and rescaling = $(vj)"
+                @debug "dot(vi, vj) = $(dot(vi, vj))"
             end
         end
     end
 
-    # make a mean centered copy of accum
-    edgeIDs = model.edges.edgeID
+    # make a copy of accum, and if needed, deflate it before we run SVD on it
     X = Matrix{Float64}(model.accum[!, edgeIDs])
+    for i in 1:numExistingDims
+        vi = X * Vector{Float64}(model.embedding[i, edgeIDs])
+        vi .-= mean(vi)
+        denom = dot(vi, vi)
+        if denom != 0
+            for j in axes(X, 2)
+                vj = X[:, j]
+                vj .-= mean(vj)
+                scalar = dot(vj, vi) / denom
+                X[:, j] -= scalar * vi
+            end
+        end
+    end
+
+    # mean center X before SVD
     for i in axes(X, 2)
         X[:, i] .-= mean(X[:, i])
     end
 
-    # if needed, deflate those points' dimensions from X before we run SVD on it
-    unitIDs = model.accum.unitID
-    for i in 1:numExistingDims
-        col = Vector{Float64}(model.points[i, unitIDs])
-        col .-= mean(col)
-        denom = dot(col, col)
-        for j in axes(X, 2)
-            scalar = dot(X[:, j], col) / denom
-            X[:, j] -= scalar * col
-        end
-    end
-
     # then, once we've deflated or not, we run SVD on the data, then add to the model
     svd = transpose(projection(fit(PCA, X', pratio=1.0)))
+    @debug "svd = $(svd)"
     df = similar(model.embedding, size(svd, 1))
     df[!, edgeIDs] = svd
     df.label = ["SVD$(i)" for i in 1:nrow(df)]
@@ -464,10 +481,3 @@ function rotate!(
         addPointsToModelFromDim(model, i)
     end
 end
-
-# function tests(
-#         ::Type{M}, model::AbstractLinearENAModel
-#     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
-
-#     # TODO maybe cut this, think about tests as summary stats dict
-# end
