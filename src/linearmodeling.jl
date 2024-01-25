@@ -165,6 +165,7 @@ function populateENAfields(
         :label=>String[],
         :variance_explained=>Real[],
         # :pearson=>Real[],
+        :eigen_value=>Union{Number,Missing}[],
         :coregistration=>Real[],
         (edgeID=>Real[] for edgeID in edgeIDs)...
     ))
@@ -484,8 +485,38 @@ function rotate!(
     df = similar(model.embedding, numSVDDims)
     df[!, edgeIDs] = svd[1:numSVDDims, :]
     df.label = ["SVD$(i)" for i in 1:nrow(df)]
+    df.eigen_value = eigvals(pca)[1:numSVDDims]
     append!(model.embedding, df)
     for i in (numExistingDims+1):nrow(model.embedding)
         addPointsToModelFromDim(model, i)
+    end
+
+    # ensure all values are defined in all dimensions
+    for i in 1:nrow(model.embedding)
+        for col in names(model.embedding)
+            try
+                model.embedding[i, col] = model.embedding[i, col]
+            catch e
+                if e isa UndefRefError
+                    if eltype(model.embedding[:, col]) >: Missing
+                        model.embedding[i, col] = missing
+                    elseif eltype(model.embedding[:, col]) >: Nothing
+                        model.embedding[i, col] = nothing
+                    elseif eltype(model.embedding[:, col]) <: AbstractString
+                        model.embedding[i, col] = "UNDEF"
+                    elseif eltype(model.embedding[:, col]) >: Symbol
+                        model.embedding[i, col] = :UNDEF
+                    elseif eltype(model.embedding[:, col]) <: Number
+                        model.embedding[i, col] = 0.0
+                    elseif eltype(model.embedding[:, col]) >: Bool
+                        model.embedding[i, col] = false
+                    else
+                        @error "An embedding value was undefined in a column for which a sensible 'missing' value does not exist. The type is $(eltype(model.embedding[:, col]))"
+                    end
+                else
+                    rethrow(e)
+                end
+            end
+        end
     end
 end

@@ -44,13 +44,16 @@ function rotate!(
     end
 
     ## Run the LDA
-    ldaModel = projection(fit(MulticlassLDA, X, y))
+    lda = fit(MulticlassLDA, X, y)
+    ldaModel = projection(lda)
+    # vals = eigvals(lda) # Not yet supported?
 
     ## Add to the model
     ns = size(ldaModel, 2)
     embedding = similar(model.embedding, ns)
     for i in 1:ns
         embedding[i, :label] = "LDA$(i)"
+        # embedding[i, :eigen_value] = vals[i] # Not yet supported?
         embedding[i, model.edges.edgeID] = ldaModel[:, i]
     end
 

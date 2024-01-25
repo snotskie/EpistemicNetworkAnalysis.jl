@@ -95,11 +95,15 @@ for M in models
                 for j in (i+1):nrow(myENA.embedding)
                     if startswith(myENA.embedding.label[j], "SVD")
                         @testset "$(nameof(M)){$(nameof(typeof(rotation)))} $(myENA.embedding.label[i]) and $(myENA.embedding.label[j]) in proper order" begin
-                            @test_skip myENA.embedding.variance_explained[i] >= myENA.embedding.variance_explained[j]
+                            @test myENA.embedding.eigen_value[i] >= myENA.embedding.eigen_value[j]
                         end
                     end
                 end
             end
+        end
+
+        @testset "$(nameof(M)){$(nameof(typeof(rotation)))} displays" begin
+            display(myENA)
         end
 
         p = plot(myENA)
