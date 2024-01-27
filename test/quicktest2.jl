@@ -2,6 +2,7 @@
 # and without having to deal with restarting the REPL between module loads
 
 include("../src/EpistemicNetworkAnalysis.jl")
+using GLM
 
 # Load sample dataset, codes from my first year on hormone replacement therapy
 data = EpistemicNetworkAnalysis.loadExample("transitions") # NOTE: To load your own data, see DataFrame(CSV.File(...))
@@ -29,9 +30,17 @@ conversations = []
 units = [:Date]
 
 # Rotation
-rotation = EpistemicNetworkAnalysis.MulticlassRotation(:Third)
+# rotation = EpistemicNetworkAnalysis.MulticlassRotation(:Third)
+rotation = EpistemicNetworkAnalysis.FormulaRotation(
+    LinearModel, @formula(y ~ 1 + 0), 1, nothing
+)
 
 # Run the model and plot it
-model = EpistemicNetworkAnalysis.ENAModel(data, codes, conversations, units, rotateBy=rotation)
+model = EpistemicNetworkAnalysis.ENAModel(
+    data, codes, conversations, units,
+    rotateBy=rotation,
+    # lineNormalize=true,
+    dropEmpty=true
+)
 p = EpistemicNetworkAnalysis.plot(model)
 display(p)

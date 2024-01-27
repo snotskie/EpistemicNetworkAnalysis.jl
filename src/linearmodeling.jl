@@ -26,6 +26,7 @@ function defaultmodelkwargs(
         edgeFilter::Function=x->true,
         windowSize::Real=Inf,
         sphereNormalize::Bool=true,
+        lineNormalize::Bool=false,
         dropEmpty::Bool=false,
         recenterEmpty::Bool=false,
         # deflateEmpty::Bool=false,
@@ -38,6 +39,7 @@ function defaultmodelkwargs(
         edgeFilter=edgeFilter,
         windowSize=windowSize,
         sphereNormalize=sphereNormalize,
+        lineNormalize=lineNormalize,
         dropEmpty=dropEmpty,
         recenterEmpty=recenterEmpty,
         # deflateEmpty=deflateEmpty,
@@ -57,7 +59,7 @@ function populateENAfields(
         config...
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
-    # sanity checks
+    # sanity checks: errors
     if nrow(data) < 3
         error("The data::DataFrame parameter should have at least 3 rows")
     elseif length(codes) < 3
@@ -69,6 +71,13 @@ function populateENAfields(
     # note, empty conversations is allowed. amounts to a whole conversation model
 
     config = NamedTuple(config)
+    # sanity checks: warnings
+    if config.dropEmpty && config.recenterEmpty
+        @warn "dropEmpty and recenterEmpty were both set to true. In this case, recenterEmpty is moot, as empty units are dropped, so they cannot be recentered."
+    end
+    if config.lineNormalize && !config.dropEmpty && !config.recenterEmpty
+        @warn "When setting lineNormalize to true, you should also set either dropEmpty or recenterEmpty to true."
+    end
 
     # edges: empty starting point
     edges = DataFrame(
@@ -261,12 +270,26 @@ function accumulate!(
 
     # normalize each unit, if requested
     edgeIDs = model.edges.edgeID
-    if model.config.sphereNormalize
+    if model.config.sphereNormalize || model.config.lineNormalize
         for i in 1:nrow(model.accum)
             vector = Vector{Float64}(model.accum[i, edgeIDs])
             s = sqrt(sum(vector .^ 2))
             if s != 0
                 model.accum[i, edgeIDs] = vector / s
+            end
+        end
+
+        if model.config.lineNormalize
+            oneish = ones(length(edgeIDs)) ./ sqrt(length(edgeIDs)) # unit length in the direction of 1
+            for i in 1:nrow(model.accum)
+                vector = Vector{Float64}(model.accum[i, edgeIDs])
+                denom = dot(oneish, vector)
+                if denom != 0
+                    vec_ext = vector / denom # project oneish onto vector
+                    new_dist = acos(denom) # new distance = arc length = angle in radians
+                    old_dist = sqrt(sum((oneish - vec_ext) .^ 2))
+                    model.accum[i, edgeIDs] = oneish + new_dist/old_dist*(vec_ext - oneish) # oneish, moved in the direction of vec_ext, by a distance equal to original arc length
+                end
             end
         end
     # else, still scale it down to make plots easier to read
