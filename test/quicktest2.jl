@@ -30,16 +30,20 @@ conversations = []
 units = [:Date]
 
 # Rotation
-# rotation = EpistemicNetworkAnalysis.MulticlassRotation(:Third)
-rotation = EpistemicNetworkAnalysis.FormulaRotation(
-    LinearModel, @formula(y ~ 1 + 0), 1, nothing
-)
+rotation = EpistemicNetworkAnalysis.MulticlassRotation(:Third)
+# rotation = EpistemicNetworkAnalysis.FormulaRotation(
+#     LinearModel, @formula(y ~ 1 + 0), 1, nothing
+# )
+# rotation = EpistemicNetworkAnalysis.SVDRotation()
+# rotation = EpistemicNetworkAnalysis.FormulaRotation(
+#     LinearModel, @formula(y ~ 1 + Day), 2, nothing
+# )
 
 # Run the model and plot it
 model = EpistemicNetworkAnalysis.ENAModel(
     data, codes, conversations, units,
     rotateBy=rotation,
-    # lineNormalize=true,
+    lineNormalize=true,
     dropEmpty=true
 )
 p = EpistemicNetworkAnalysis.plot(model)

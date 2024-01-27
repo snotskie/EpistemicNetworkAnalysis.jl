@@ -280,15 +280,18 @@ function accumulate!(
         end
 
         if model.config.lineNormalize
-            oneish = ones(length(edgeIDs)) ./ sqrt(length(edgeIDs)) # unit length in the direction of 1
+            # fulcrum = ones(length(edgeIDs)) ./ sqrt(length(edgeIDs)) # unit length in the direction of 1
+            fulcrum = mean.(eachcol(model.accum[!, edgeIDs]))
+            fulcrum /= sqrt(sum(fulcrum .^ 2))
+            numer = dot(fulcrum, fulcrum)
             for i in 1:nrow(model.accum)
                 vector = Vector{Float64}(model.accum[i, edgeIDs])
-                denom = dot(oneish, vector)
+                denom = dot(fulcrum, vector)
                 if denom != 0
-                    vec_ext = vector / denom # project oneish onto vector
+                    vec_ext = vector * numer / denom # project fulcrum onto vector, "extending" vector in line to the fulcrum
                     new_dist = acos(denom) # new distance = arc length = angle in radians
-                    old_dist = sqrt(sum((oneish - vec_ext) .^ 2))
-                    model.accum[i, edgeIDs] = oneish + new_dist/old_dist*(vec_ext - oneish) # oneish, moved in the direction of vec_ext, by a distance equal to original arc length
+                    old_dist = sqrt(sum((fulcrum - vec_ext) .^ 2))
+                    model.accum[i, edgeIDs] = fulcrum + new_dist/old_dist*(vec_ext - fulcrum) # fulcrum, moved in the direction of vec_ext, by a distance equal to original arc length
                 end
             end
         end
