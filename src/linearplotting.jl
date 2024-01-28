@@ -65,6 +65,7 @@ function defaultplotkwargs(
         showUnits::Bool=true,
         showMeans::Bool=true,
         showWarps::Bool=false,
+        confidenceShape::Symbol=:rect,
         fitNodesToCircle::Bool=false,
         showWeakEdges::Bool=true,
         colorbar::Bool=false,
@@ -106,6 +107,7 @@ function defaultplotkwargs(
         showUnits=showUnits,
         showMeans=showMeans,
         showWarps=showWarps,
+        confidenceShape=confidenceShape,
         fitNodesToCircle=fitNodesToCircle,
         showWeakEdges=showWeakEdges,
         colorbar=colorbar,
@@ -173,6 +175,7 @@ end
         showUnits::Bool=true,
         showMeans::Bool=true,
         showWarps::Bool=false,
+        confidenceShape::Symbol=:rect,
         fitNodesToCircle::Bool=false,
         showWeakEdges::Bool=true,
         colorbar::Bool=false
@@ -195,7 +198,7 @@ Several optional arguments are available:
 - `groupBy` and `innerGroupBy` define which metadata columns to use as grouping variables for the sake of color coding and confidence intervals
 - `spectralColorBy` defines which metadata column to use to color-code units as a spectrum
 - `trajectoryBy` and `trajectoryBins` together define and control how a trajectory path should be overlaid on the plot
-- `showExtras`, `showNetworks`, `showUnits`, and `showMeans` control which plot elements to show or hide
+- `showExtras`, `showNetworks`, `showUnits`, and `showMeans` control which plot elements to show or hide. Additionally, `confidenceShape` can be set to `:rect` (default) or `:ellipse` to choose which shape to use when plotting confidence intervals around the means
 - `showWarps` controls if edges should be drawn straight (`false`) or "warped" to show their true location in the space (`true`)
 - `fitNodesToCircle` controls if nodes should be shown in their optimized positions for goodness of fit, or at a circular position around the origin
 - `showWeakEdges` controls if edges with weak correlations to trends should be shown
@@ -308,14 +311,14 @@ function computeNetworkDensities(model, rows=!; normalize=false)
         s = maximum(values(edgeDensities))
         if s != 0
             for edgeID in edgeIDs
-                edgeDensities[edge] /= s
+                edgeDensities[edgeID] /= s
             end
         end
 
         s = maximum(values(nodeDensities))
         if s != 0
             for nodeID in nodeIDs
-                nodeDensities[node] /= s
+                nodeDensities[nodeID] /= s
             end
         end
     end
@@ -334,7 +337,7 @@ function getGroupColorMap(model::AbstractLinearENAModel, plotconfig::NamedTuple)
     return DefaultDict(colorant"black", groupColors) # in case we don't have enough colors  
 end
 
-function plotConfidenceInterval(p, xs, ys, color, shape, label)
+function plotConfidenceInterval(p, xs, ys, color, shape, label, ci_shape)
 
     # Plot the mean center
     if length(xs) > 0
@@ -353,31 +356,102 @@ function plotConfidenceInterval(p, xs, ys, color, shape, label)
 
     # Plot the confidence interval
     if length(xs) > 1
-        ci_x = collect(confint(OneSampleTTest(xs)))
-        ci_y = collect(confint(OneSampleTTest(ys)))
-        Plots.plot!(p, [ci_x[1], ci_x[2]], [ci_y[1], ci_y[1]],
-            label=nothing,
-            seriestype=:line,
-            linewidth=1,
-            linecolor=color)
+        if ci_shape == :rect
+            ci_x = collect(confint(OneSampleTTest(xs)))
+            ci_y = collect(confint(OneSampleTTest(ys)))
+            Plots.plot!(p, [ci_x[1], ci_x[2]], [ci_y[1], ci_y[1]],
+                label=nothing,
+                seriestype=:line,
+                linewidth=1,
+                linecolor=color)
 
-        Plots.plot!(p, [ci_x[1], ci_x[2]], [ci_y[2], ci_y[2]],
-            label=nothing,
-            seriestype=:line,
-            linewidth=1,
-            linecolor=color)
+            Plots.plot!(p, [ci_x[1], ci_x[2]], [ci_y[2], ci_y[2]],
+                label=nothing,
+                seriestype=:line,
+                linewidth=1,
+                linecolor=color)
 
-        Plots.plot!(p, [ci_x[1], ci_x[1]], [ci_y[1], ci_y[2]],
-            label=nothing,
-            seriestype=:line,
-            linewidth=1,
-            linecolor=color)
+            Plots.plot!(p, [ci_x[1], ci_x[1]], [ci_y[1], ci_y[2]],
+                label=nothing,
+                seriestype=:line,
+                linewidth=1,
+                linecolor=color)
 
-        Plots.plot!(p, [ci_x[2], ci_x[2]], [ci_y[1], ci_y[2]],
-            label=nothing,
-            seriestype=:line,
-            linewidth=1,
-            linecolor=color)
+            Plots.plot!(p, [ci_x[2], ci_x[2]], [ci_y[1], ci_y[2]],
+                label=nothing,
+                seriestype=:line,
+                linewidth=1,
+                linecolor=color)
+        elseif ci_shape == :ellipse
+            # remove outliers, as the ellipse is sensitive to them
+            q1x = quantile(xs, .25)
+            q3x = quantile(xs, .75)
+            iqrx = q3x - q1x
+            inx = map(xs) do x
+                if x < q1x - 1.5 * iqrx
+                    return false
+                elseif x > q3x + 1.5 * iqrx
+                    return false
+                else
+                    return true
+                end
+            end
+            q1y = quantile(ys, .25)
+            q3y = quantile(ys, .75)
+            iqry = q3y - q1y
+            iny = map(ys) do y
+                if y < q1y - 1.5 * iqry
+                    return false
+                elseif y > q3y + 1.5 * iqry
+                    return false
+                else
+                    return true
+                end
+            end
+            inxy = inx .& iny
+            xs, ys = xs[inxy], ys[inxy]
+
+            # covariance matrix
+            Σ = cov([xs ys])
+            vals = eigvals(Σ)
+            vecs = eigvecs(Σ)
+            if vals[1] <= vals[2]
+                vals[1], vals[2] = vals[2], vals[1]
+                vecs[:, 1], vecs[:, 2] = vecs[:, 2], vecs[:, 1]
+            end
+
+            # angle
+            θ = atan(vecs[2,1] / vecs[1,1])
+            if θ < 0
+                θ += 2π
+            end
+
+            # center
+            cx = mean(xs)
+            cy = mean(ys)
+
+            # ellipse points
+            t = range(0, 2π, length=100)
+            confidence = 0.95
+            quant = sqrt(quantile(Chisq(2), confidence))
+            rx = quant * sqrt(vals[1])
+            ry = quant * sqrt(vals[2])
+            xe = rx .* cos.(t)
+            ye = ry .* sin.(t)
+            ellipse = [xe ye] * [cos(θ) sin(θ); -sin(θ) cos(θ)]
+            pxs = cx .+ ellipse[:, 1]
+            pys = cy .+ ellipse[:, 2]
+
+            # plot it
+            Plots.plot!(p, pxs, pys,
+                label=nothing,
+                color=color)
+                # seriestype=:line,
+                # linewidth=1,
+                # linecolor=color)
+        else
+            error("Unrecognized confidenceShape $(ci_shape). Available options are :rect and :ellipse")
+        end
     end
 end
 
@@ -1019,7 +1093,7 @@ function plot_means!(
             ys = [fixY(y, plotconfig) for y in model.points[plotconfig.y, unitIDs]]
             color = groupColors[group]
             if isnothing(plotconfig.innerGroupBy)
-                plotConfidenceInterval(p, xs, ys, color, :square, "$(group) Mean")
+                plotConfidenceInterval(p, xs, ys, color, :square, "$(group) Mean", plotconfig.confidenceShape)
             else
                 allInnerGroups = sort(unique(model.metadata[!, plotconfig.innerGroupBy]))
                 # NOTE when we run out of markers, we stop plotting inner groups
@@ -1030,7 +1104,7 @@ function plot_means!(
                         iunitIDs = model.accum[imeanedRows, :unitID]
                         ixs = [fixX(x, plotconfig) for x in model.points[plotconfig.x, iunitIDs]]
                         iys = [fixY(y, plotconfig) for y in model.points[plotconfig.y, iunitIDs]]
-                        plotConfidenceInterval(p, ixs, iys, color, imarker, "$(group) Mean where $(plotconfig.innerGroupBy) = $(igroup)")
+                        plotConfidenceInterval(p, ixs, iys, color, imarker, "$(group) Mean where $(plotconfig.innerGroupBy) = $(igroup)", plotconfig.confidenceShape)
                     end
                 end
             end

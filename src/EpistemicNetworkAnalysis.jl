@@ -10,6 +10,7 @@ import Plots.Plot
 using Colors
 using Dierckx
 using DataStructures
+using Distributions
 
 ## Data
 using DataFrames
@@ -82,6 +83,7 @@ export loadExample
 export to_xlsx
 export deriveAnyCode!
 export deriveAllCode!
-export summary
+export statistics
+export pointcloud
 
 end # module

@@ -26,6 +26,7 @@ function defaultmodelkwargs(
         edgeFilter::Function=x->true,
         windowSize::Real=Inf,
         sphereNormalize::Bool=true,
+        lineNormalize::Bool=false,
         dropEmpty::Bool=false,
         recenterEmpty::Bool=false,
         # deflateEmpty::Bool=false,
@@ -38,6 +39,7 @@ function defaultmodelkwargs(
         edgeFilter=edgeFilter,
         windowSize=windowSize,
         sphereNormalize=sphereNormalize,
+        lineNormalize=lineNormalize,
         dropEmpty=dropEmpty,
         recenterEmpty=recenterEmpty,
         # deflateEmpty=deflateEmpty,
@@ -57,7 +59,25 @@ function populateENAfields(
         config...
     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
 
+    # sanity checks: errors
+    if nrow(data) < 3
+        error("The data::DataFrame parameter should have at least 3 rows")
+    elseif length(codes) < 3
+        error("The codes::Array parameter should have at least 3 items")
+    elseif length(units) == 0
+        error("The units::Array parameter should have at least 1 item") 
+    end
+
+    # note, empty conversations is allowed. amounts to a whole conversation model
+
     config = NamedTuple(config)
+    # sanity checks: warnings
+    if config.dropEmpty && config.recenterEmpty
+        @warn "dropEmpty and recenterEmpty were both set to true. In this case, recenterEmpty is moot, as empty units are dropped, so they cannot be recentered."
+    end
+    if config.lineNormalize && !config.dropEmpty && !config.recenterEmpty
+        @warn "When setting lineNormalize to true, you should also set either dropEmpty or recenterEmpty to true."
+    end
 
     # edges: empty starting point
     edges = DataFrame(
@@ -154,6 +174,7 @@ function populateENAfields(
         :label=>String[],
         :variance_explained=>Real[],
         # :pearson=>Real[],
+        :eigen_value=>Union{Number,Missing}[],
         :coregistration=>Real[],
         (edgeID=>Real[] for edgeID in edgeIDs)...
     ))
@@ -249,12 +270,29 @@ function accumulate!(
 
     # normalize each unit, if requested
     edgeIDs = model.edges.edgeID
-    if model.config.sphereNormalize
+    if model.config.sphereNormalize || model.config.lineNormalize
         for i in 1:nrow(model.accum)
             vector = Vector{Float64}(model.accum[i, edgeIDs])
             s = sqrt(sum(vector .^ 2))
             if s != 0
                 model.accum[i, edgeIDs] = vector / s
+            end
+        end
+
+        if model.config.lineNormalize
+            # fulcrum = ones(length(edgeIDs)) ./ sqrt(length(edgeIDs)) # unit length in the direction of 1
+            fulcrum = mean.(eachcol(model.accum[!, edgeIDs]))
+            fulcrum /= sqrt(sum(fulcrum .^ 2))
+            numer = dot(fulcrum, fulcrum)
+            for i in 1:nrow(model.accum)
+                vector = Vector{Float64}(model.accum[i, edgeIDs])
+                denom = dot(fulcrum, vector)
+                if denom != 0
+                    vec_ext = vector * numer / denom # project fulcrum onto vector, "extending" vector in line to the fulcrum
+                    new_dist = acos(denom) # new distance = arc length = angle in radians
+                    old_dist = sqrt(sum((fulcrum - vec_ext) .^ 2))
+                    model.accum[i, edgeIDs] = fulcrum + new_dist/old_dist*(vec_ext - fulcrum) # fulcrum, moved in the direction of vec_ext, by a distance equal to original arc length
+                end
             end
         end
     # else, still scale it down to make plots easier to read
@@ -389,6 +427,7 @@ function rotate!(
     # and add point positions to the model
     edgeIDs = model.edges.edgeID
     numExistingDims = nrow(model.embedding)
+    @debug "numExistingDims = $(numExistingDims)"
     if numExistingDims > 0
         # normalize the first dimension (the rest are normalized below)
         v1 = Vector(model.embedding[1, edgeIDs])
@@ -404,59 +443,106 @@ function rotate!(
         # orthogonalize, by rejection, each existing dimension from each previous dimension.
         # note, a dimension will be orthogonalize before it is used to add points to the model
         vi = Vector(model.embedding[i, edgeIDs])
+        @debug "vi = $(vi)"
         denom = dot(vi, vi)
-        for j in (i+1):numExistingDims
-            vj = Vector(model.embedding[j, edgeIDs])
-            s = sqrt(sum(vj .^ 2))
-            if s != 0
-                model.embedding[j, edgeIDs] .= vj / s
-            end
+        if denom != 0
+            @debug "denom = $(denom)"
+            for j in (i+1):numExistingDims
+                vj = Vector(model.embedding[j, edgeIDs])
+                @debug "vj = $(vj)"
+                s = sqrt(sum(vj .^ 2))
+                if s != 0
+                    model.embedding[j, edgeIDs] .= vj / s
+                    vj = Vector(model.embedding[j, edgeIDs])
+                end
+                @debug "vj after scaling = $(vj)"
 
-            scalar = dot(vj, vi) / denom
-            model.embedding[j, edgeIDs] .= vj - scalar * vi
-            s = sqrt(sum(vj .^ 2))
-            if s < 0.05
-                model.embedding[j, edgeIDs] .= 0
-                @warn "During the rotation step, axis $j was deflated to zero due to close correlation with axis $i."
-            elseif s != 0
-                model.embedding[j, edgeIDs] .= vj / s
+                scalar = dot(vj, vi) / denom
+                @debug "scalar = $(scalar)"
+                model.embedding[j, edgeIDs] .= vj - scalar * vi
+                vj = Vector(model.embedding[j, edgeIDs])
+                s = sqrt(sum(vj .^ 2))
+                if s < 0.05
+                    model.embedding[j, edgeIDs] .= 0
+                    vj = Vector(model.embedding[j, edgeIDs])
+                    @warn "During the rotation step, axis $j was deflated to zero due to close correlation with axis $i."
+                elseif s != 0
+                    model.embedding[j, edgeIDs] .= vj / s
+                    vj = Vector(model.embedding[j, edgeIDs])
+                end
+                @debug "vj after rejection and rescaling = $(vj)"
+                @debug "dot(vi, vj) = $(dot(vi, vj))"
             end
         end
     end
 
-    # make a mean centered copy of accum
-    edgeIDs = model.edges.edgeID
+    # make a copy of accum, and if needed, deflate it before we run SVD on it
     X = Matrix{Float64}(model.accum[!, edgeIDs])
-    for i in 1:size(X)[2]
+    for i in 1:numExistingDims
+        # for j in axes(X, 2)
+        #     X[:, j] .-= mean(X[:, j])
+        # end
+
+        vi = X * Vector{Float64}(model.embedding[i, edgeIDs])
+        vi .-= mean(vi)
+        denom = dot(vi, vi)
+        if denom != 0
+            for j in axes(X, 2)
+                vj = X[:, j]
+                vj .-= mean(vj)
+                scalar = dot(vj, vi) / denom
+                X[:, j] -= scalar * vi
+            end
+        end
+    end
+
+    # mean center X before SVD
+    for i in axes(X, 2)
         X[:, i] .-= mean(X[:, i])
     end
 
-    # if needed, deflate those points' dimensions from X before we run SVD on it
-    unitIDs = model.accum.unitID
-    for i in 1:numExistingDims
-        col = Vector{Float64}(model.points[i, unitIDs])
-        col .-= mean(col)
-        denom = dot(col, col)
-        for j in 1:size(X)[2]
-            scalar = dot(X[:, j], col) / denom
-            X[:, j] -= scalar * col
-        end
-    end
-
     # then, once we've deflated or not, we run SVD on the data, then add to the model
-    svd = transpose(projection(fit(PCA, X', pratio=1.0)))
-    df = similar(model.embedding, size(svd)[1])
-    df[!, edgeIDs] = svd
+    pca = fit(PCA, X', pratio=1.0, method=:svd) # BUGFIX force use svd, https://github.com/snotskie/EpistemicNetworkAnalysis.jl/issues/56#issuecomment-1910540698
+    @debug "eigvals(pca) = $(eigvals(pca))"
+    svd = transpose(projection(pca))
+    # BUGFIX https://github.com/snotskie/EpistemicNetworkAnalysis.jl/issues/56#issuecomment-1910540698
+    # Prevent SVD from adding more dimensions than are possible
+    numSVDDims = min(size(svd, 1), length(edgeIDs) - numExistingDims)
+    df = similar(model.embedding, numSVDDims)
+    df[!, edgeIDs] = svd[1:numSVDDims, :]
     df.label = ["SVD$(i)" for i in 1:nrow(df)]
+    df.eigen_value = eigvals(pca)[1:numSVDDims]
     append!(model.embedding, df)
     for i in (numExistingDims+1):nrow(model.embedding)
         addPointsToModelFromDim(model, i)
     end
+
+    # ensure all values are defined in all dimensions
+    for i in 1:nrow(model.embedding)
+        for col in names(model.embedding)
+            try
+                model.embedding[i, col] = model.embedding[i, col]
+            catch e
+                if e isa UndefRefError
+                    if eltype(model.embedding[:, col]) >: Missing
+                        model.embedding[i, col] = missing
+                    elseif eltype(model.embedding[:, col]) >: Nothing
+                        model.embedding[i, col] = nothing
+                    elseif eltype(model.embedding[:, col]) <: AbstractString
+                        model.embedding[i, col] = "UNDEF"
+                    elseif eltype(model.embedding[:, col]) >: Symbol
+                        model.embedding[i, col] = :UNDEF
+                    elseif eltype(model.embedding[:, col]) <: Number
+                        model.embedding[i, col] = 0.0
+                    elseif eltype(model.embedding[:, col]) >: Bool
+                        model.embedding[i, col] = false
+                    else
+                        @error "An embedding value was undefined in a column for which a sensible 'missing' value does not exist. The type is $(eltype(model.embedding[:, col]))"
+                    end
+                else
+                    rethrow(e)
+                end
+            end
+        end
+    end
 end
-
-# function tests(
-#         ::Type{M}, model::AbstractLinearENAModel
-#     ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
-
-#     # TODO maybe cut this, think about tests as summary stats dict
-# end

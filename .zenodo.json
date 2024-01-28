@@ -1,0 +1,18 @@
+{
+    "creators": [
+        {
+            "affiliation": "University of Wisconsin-Madison",
+            "name": "Knowles, Mariah A.",
+            "orcid": "0000-0002-1798-4830"
+        }
+    ],
+    "description": "Native implementation of Epistemic Network Analysis written in the Julia programming language. Based on rENA 0.2.0.1.",
+    "keywords": [
+        "Julia",
+        "Epistemic Network Analysis"
+    ],
+    "license": {
+        "id": "GPL-3.0"
+    },
+    "title": "EpistemicNetworkAnalysis.jl"
+}

@@ -18,6 +18,7 @@
         edgeFilter::Function=edge->edge.kind == :directed,
         windowSize::Real=Inf,
         sphereNormalize::Bool=true,
+        lineNormalize::Bool=false,
         dropEmpty::Bool=false,
         recenterEmpty::Bool=false
     )

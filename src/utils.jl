@@ -262,3 +262,106 @@ to_xlsx
 
 #     return xf # TODO return the reconstructed model
 # end
+
+struct PointCloud
+    X::Matrix{Real}
+    feature_names::Vector{Symbol}
+    unit_names::Vector{Symbol}
+    mode::Symbol
+    z_normed::Bool
+    z_means::Vector{Union{Real,Missing}}
+    z_stds::Vector{Union{Real,Missing}}
+end
+
+function pointcloud(
+        model::AbstractENAModel;
+        ndims::Int=nrow(model.points),
+        mode::Symbol=:wide,
+        z_norm::Bool=false,
+        metadata::Vector{Symbol}=Symbol[]
+    )
+
+    unit_names = model.metadata.unitID
+    feature_names = [Symbol.(model.embedding.label[1:ndims])..., metadata...]
+    X = Matrix(model.points[1:ndims, unit_names]) # wide format
+    if !isempty(metadata)
+        X = vcat(X, transpose(Matrix(model.metadata[!, metadata]))) # transpose(long format)
+        if !z_norm
+            @warn "When adding additional metadata to pointcloud, it is recommended to normalize values with pointcloud(model, z_norm=true, ...). See the documentation for pointcloud for more information."
+        end
+    end
+
+    means = repeat(Union{Real,Missing}[missing], size(X, 1))
+    stds = repeat(Union{Real,Missing}[missing], size(X, 1))
+    if z_norm
+        for i in axes(X, 1)
+            means[i] = mean(X[i, :])
+            stds[i] = std(X[i, :])
+            X[i, :] .-= means[i]
+            if stds[i] != 0
+                X[i, :] ./= stds[i]
+            end
+        end
+    end
+
+    if mode == :tall
+        X = transpose(X)
+    elseif mode != :wide
+        @error "pointcloud mode must be :tall or :wide"
+    end
+
+    return PointCloud(X, feature_names, unit_names, mode, z_norm, means, stds)
+end
+
+"""
+    pointcloud(
+        model::AbstractENAModel;
+        ndims::Int=nrow(model.points),
+        mode::Symbol=:wide,
+        z_norm::Bool=false,
+        metadata::Vector{Symbol}=Symbol[]
+    )
+
+Produce a point cloud matrix from a model's plotted points and optional additional metadata columns,
+for preparing data to pass to other packages, e.g., for machine learning.
+
+## Arguments
+
+Required:
+
+- `model`: The ENA model to produce a point cloud from
+
+Optional:
+
+- `ndims`: The number of dimensions from the ENA model's embedding to include in the point cloud. The first `ndim` dimensions will be included. By default, all dimensions will be included
+- `mode`: The orientation of the point cloud, either in `:wide` format (default) or `:tall` format. In wide format, the point cloud's `X` matrix's rows will correspond to features. In tall format, they will correspond to units.
+- `z_norm`: Whether to normalize the point cloud's features (default: false)
+- `metadata`: A list of additional names of metadata columns from the model to include in the point cloud. Note, when including additional metadata, it is advised to also set `z_norm` to true
+
+## Fields
+
+Once the point cloud is constructed, it will have the following fields:
+
+- `X`: A matrix containing the point cloud data, in either wide or tall format
+- `feature_names`: A vector of the names of the features included in the point cloud. When `mode` is `:wide`, `feature_names` corresponds to the rows of `X`. When `mode` is `:tall`, it corresponds to the columns of `X` instead.
+- `unit_names`: A vector of the IDs of the units included in the point cloud. When `mode` is `:wide`, `unit_names` corresponds to the columns of `X`. When `mode` is `:tall`, it corresponds to the rows of `X` instead.
+- `z_normed`: A boolean representing whether the point cloud was normalized
+- `z_means` and `z_stds`: When `z_normed` is true, these are vectors of the original means and standard deviations of the features of the point cloud
+
+## Example
+
+```julia
+# Wide format DataFrame
+pc = pointcloud(model)
+df = DataFrame(pc.X, pc.unit_names)
+
+# Tall format DataFrame
+pc = pointcloud(model, mode=:tall)
+df = DataFrame(pc.X, pc.feature_names)
+
+# ndims, metadata, and z_norm
+pc = pointcloud(model, ndims=4, mode=:tall, metadata=[:Act], z_norm=true)
+df = DataFrame(pc.X, pc.feature_names)
+```
+"""
+pointcloud

@@ -126,9 +126,9 @@ function constructENA(
     return constructENA(
         M,
         data,
-        Symbol.(codes),
-        Symbol.(conversations),
-        Symbol.(units),
+        convert(Array{Symbol}, Symbol.(codes)),
+        convert(Array{Symbol}, Symbol.(conversations)),
+        convert(Array{Symbol}, Symbol.(units)),
         rotation;
         kwargs...
     )
@@ -279,7 +279,7 @@ function test!(::Type{M}, trainmodel::AbstractENAModel, testmodel::AbstractENAMo
     error("Unimplemented")
 end
 
-function summary(::Type{M}, model::AbstractENAModel) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
+function statistics(::Type{M}, model::AbstractENAModel) where {R<:AbstractENARotation, M<:AbstractENAModel{R}}
     columns = [
         :label,
         setdiff(Symbol.(names(model.embedding)), [:label, model.edges.edgeID...])...
@@ -289,18 +289,18 @@ function summary(::Type{M}, model::AbstractENAModel) where {R<:AbstractENARotati
 end
 
 """
-    summary(model::AbstractENAModel)
+    statistics(model::AbstractENAModel)
 
-Produce a dataframe containing summary statistics for each dimension of the model embedding
+Produce a dataframe containing statistics statistics for each dimension of the model embedding
     
 ## Example
 
 ```julia
 model = ENAModel(data, codes, conversations, units)
-stats = summary(model)
+stats = statistics(model)
 ```
 """
-summary
+statistics
 
 function show(io::IO, model::AbstractENAModel)
     details = (
@@ -319,7 +319,7 @@ function show(io::IO, model::AbstractENAModel)
             length(propertynames(model.rotation)) > 0 ?
             namedtuple(propertynames(model.rotation), fieldvalues(model.rotation)) :
             (),
-        Dimensions=Tables.rowtable(summary(model))
+        Dimensions=Tables.rowtable(statistics(model))
     )
 
     pprint(io, details)
@@ -345,8 +345,8 @@ function plot(::Type{M}, model::AbstractENAModel, plotconfig::NamedTuple) where 
 end
 
 ## Wrapper Functions
-function summary(model::AbstractENAModel)
-    return summary(typeof(model), model)
+function statistics(model::AbstractENAModel)
+    return statistics(typeof(model), model)
 end
 
 function plot(model::AbstractENAModel; kwargs...)
