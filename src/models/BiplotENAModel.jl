@@ -15,7 +15,10 @@
         # Optional
         rotation::AbstractLinearENARotation=SVDRotation(),
         unitFilter::Function=unit->true,
+        edgeFilter::Function=edge->edge.kind == :count,
+        windowSize::Real=Inf,
         sphereNormalize::Bool=true,
+        lineNormalize::Bool=false,
         dropEmpty::Bool=false,
         recenterEmpty::Bool=false
     )

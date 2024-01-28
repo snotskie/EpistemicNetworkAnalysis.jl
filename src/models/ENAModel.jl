@@ -15,6 +15,7 @@
         edgeFilter::Function=edge->edge.kind == :undirected,
         windowSize::Real=Inf,
         sphereNormalize::Bool=true,
+        lineNormalize::Bool=false,
         dropEmpty::Bool=false,
         recenterEmpty::Bool=false
     )
@@ -40,7 +41,7 @@ Finally, the less common but occassionally useful optional arguments are:
 
 - `unitFilter`: Function for deciding which units of analysis to include in the model, such as based on its metadata
 - `edgeFilter`: As above, but for which edges to include in the model, such as based on which codes it connects. Ensure that only `:undirected` edges are included
-- `sphereNormalize`: Whether the model should normalize units of analysis so that, for example, speakers who talk more are still considered similar to those who talk less but about the same subjects
+- `sphereNormalize` and `lineNormalize`: Whether the model should normalize units of analysis so that, for example, speakers who talk more are still considered similar to those who talk less but about the same subjects
 - `recenterEmpty`: Whether the model should move empty units of analysis to the mean of all units, instead of leaving them at the zero origin
 
 ## Fields

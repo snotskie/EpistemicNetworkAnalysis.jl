@@ -3,6 +3,7 @@
 
 include("../src/EpistemicNetworkAnalysis.jl")
 using GLM
+using Plots
 
 # Load sample dataset, codes from my first year on hormone replacement therapy
 data = EpistemicNetworkAnalysis.loadExample("transitions") # NOTE: To load your own data, see DataFrame(CSV.File(...))
@@ -46,5 +47,6 @@ model = EpistemicNetworkAnalysis.ENAModel(
     lineNormalize=true,
     dropEmpty=true
 )
-p = EpistemicNetworkAnalysis.plot(model)
-display(p)
+p = EpistemicNetworkAnalysis.plot(model, confidenceShape=:ellipse)
+sp = plot(p.subplots[1], size=(600,600))
+display(sp)

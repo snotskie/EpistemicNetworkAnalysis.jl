@@ -10,6 +10,7 @@ import Plots.Plot
 using Colors
 using Dierckx
 using DataStructures
+using Distributions
 
 ## Data
 using DataFrames
