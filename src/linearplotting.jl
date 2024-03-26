@@ -198,7 +198,7 @@ Several optional arguments are available:
 - `groupBy` and `innerGroupBy` define which metadata columns to use as grouping variables for the sake of color coding and confidence intervals
 - `spectralColorBy` defines which metadata column to use to color-code units as a spectrum
 - `trajectoryBy` and `trajectoryBins` together define and control how a trajectory path should be overlaid on the plot
-- `showExtras`, `showNetworks`, `showUnits`, and `showMeans` control which plot elements to show or hide. Additionally, `confidenceShape` can be set to `:rect` (default) or `:ellipse` to choose which shape to use when plotting confidence intervals around the means
+- `showExtras`, `showNetworks`, `showUnits`, and `showMeans` control which plot elements to show or hide. Additionally, `confidenceShape` can be set to `:rect` (default) or `:density` to choose which shape to use around the means
 - `showWarps` controls if edges should be drawn straight (`false`) or "warped" to show their true location in the space (`true`)
 - `fitNodesToCircle` controls if nodes should be shown in their optimized positions for goodness of fit, or at a circular position around the origin
 - `showWeakEdges` controls if edges with weak correlations to trends should be shown
@@ -382,75 +382,82 @@ function plotConfidenceInterval(p, xs, ys, color, shape, label, ci_shape)
                 seriestype=:line,
                 linewidth=1,
                 linecolor=color)
-        elseif ci_shape == :ellipse
-            # remove outliers, as the ellipse is sensitive to them
-            q1x = quantile(xs, .25)
-            q3x = quantile(xs, .75)
-            iqrx = q3x - q1x
-            inx = map(xs) do x
-                if x < q1x - 1.5 * iqrx
-                    return false
-                elseif x > q3x + 1.5 * iqrx
-                    return false
-                else
-                    return true
-                end
-            end
-            q1y = quantile(ys, .25)
-            q3y = quantile(ys, .75)
-            iqry = q3y - q1y
-            iny = map(ys) do y
-                if y < q1y - 1.5 * iqry
-                    return false
-                elseif y > q3y + 1.5 * iqry
-                    return false
-                else
-                    return true
-                end
-            end
-            inxy = inx .& iny
-            xs, ys = xs[inxy], ys[inxy]
+        elseif ci_shape == :density
+            plot!(p,
+                kde((xs, ys)),
+                levels=[1],#, 2, 3, 4, 5],
+                color=color,
+                cbar=false
+            )
+        # elseif ci_shape == :ellipse
+        #     # remove outliers, as the ellipse is sensitive to them
+        #     q1x = quantile(xs, .25)
+        #     q3x = quantile(xs, .75)
+        #     iqrx = q3x - q1x
+        #     inx = map(xs) do x
+        #         if x < q1x - 1.5 * iqrx
+        #             return false
+        #         elseif x > q3x + 1.5 * iqrx
+        #             return false
+        #         else
+        #             return true
+        #         end
+        #     end
+        #     q1y = quantile(ys, .25)
+        #     q3y = quantile(ys, .75)
+        #     iqry = q3y - q1y
+        #     iny = map(ys) do y
+        #         if y < q1y - 1.5 * iqry
+        #             return false
+        #         elseif y > q3y + 1.5 * iqry
+        #             return false
+        #         else
+        #             return true
+        #         end
+        #     end
+        #     inxy = inx .& iny
+        #     xs, ys = xs[inxy], ys[inxy]
 
-            # covariance matrix
-            Σ = cov([xs ys])
-            vals = eigvals(Σ)
-            vecs = eigvecs(Σ)
-            if vals[1] <= vals[2]
-                vals[1], vals[2] = vals[2], vals[1]
-                vecs[:, 1], vecs[:, 2] = vecs[:, 2], vecs[:, 1]
-            end
+        #     # covariance matrix
+        #     Σ = cov([xs ys])
+        #     vals = eigvals(Σ)
+        #     vecs = eigvecs(Σ)
+        #     if vals[1] <= vals[2]
+        #         vals[1], vals[2] = vals[2], vals[1]
+        #         vecs[:, 1], vecs[:, 2] = vecs[:, 2], vecs[:, 1]
+        #     end
 
-            # angle
-            θ = atan(vecs[2,1] / vecs[1,1])
-            if θ < 0
-                θ += 2π
-            end
+        #     # angle
+        #     θ = atan(vecs[2,1] / vecs[1,1])
+        #     if θ < 0
+        #         θ += 2π
+        #     end
 
-            # center
-            cx = mean(xs)
-            cy = mean(ys)
+        #     # center
+        #     cx = mean(xs)
+        #     cy = mean(ys)
 
-            # ellipse points
-            t = range(0, 2π, length=100)
-            confidence = 0.95
-            quant = sqrt(quantile(Chisq(2), confidence))
-            rx = quant * sqrt(vals[1])
-            ry = quant * sqrt(vals[2])
-            xe = rx .* cos.(t)
-            ye = ry .* sin.(t)
-            ellipse = [xe ye] * [cos(θ) sin(θ); -sin(θ) cos(θ)]
-            pxs = cx .+ ellipse[:, 1]
-            pys = cy .+ ellipse[:, 2]
+        #     # ellipse points
+        #     t = range(0, 2π, length=100)
+        #     confidence = 0.95
+        #     quant = sqrt(quantile(Chisq(2), confidence))
+        #     rx = quant * sqrt(vals[1])
+        #     ry = quant * sqrt(vals[2])
+        #     xe = rx .* cos.(t)
+        #     ye = ry .* sin.(t)
+        #     ellipse = [xe ye] * [cos(θ) sin(θ); -sin(θ) cos(θ)]
+        #     pxs = cx .+ ellipse[:, 1]
+        #     pys = cy .+ ellipse[:, 2]
 
-            # plot it
-            Plots.plot!(p, pxs, pys,
-                label=nothing,
-                color=color)
-                # seriestype=:line,
-                # linewidth=1,
-                # linecolor=color)
+        #     # plot it
+        #     Plots.plot!(p, pxs, pys,
+        #         label=nothing,
+        #         color=color)
+        #         # seriestype=:line,
+        #         # linewidth=1,
+        #         # linecolor=color)
         else
-            error("Unrecognized confidenceShape $(ci_shape). Available options are :rect and :ellipse")
+            error("Unrecognized confidenceShape $(ci_shape). Available options are :rect and :density")
         end
     end
 end

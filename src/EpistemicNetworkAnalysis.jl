@@ -11,6 +11,8 @@ using Colors
 using Dierckx
 using DataStructures
 using Distributions
+using KernelDensity
+using StatsPlots
 
 ## Data
 using DataFrames

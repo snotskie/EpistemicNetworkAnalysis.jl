@@ -88,6 +88,7 @@ modeldes = deserialize("test/temp.ena")
 
 p = EpistemicNetworkAnalysis.plot(
     model2,
+    confidenceShape=:density,
     # showWeakEdges=false,
     # zoom=.6,
     # trajectoryBy=:Act,

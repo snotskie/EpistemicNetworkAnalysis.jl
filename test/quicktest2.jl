@@ -47,6 +47,7 @@ model = EpistemicNetworkAnalysis.ENAModel(
     lineNormalize=true,
     dropEmpty=true
 )
-p = EpistemicNetworkAnalysis.plot(model, confidenceShape=:ellipse)
-sp = plot(p.subplots[1], size=(600,600))
-display(sp)
+p = EpistemicNetworkAnalysis.plot(model, confidenceShape=:density)
+display(p)
+# sp = plot(p.subplots[1], size=(600,600))
+# display(sp)
