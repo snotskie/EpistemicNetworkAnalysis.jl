@@ -385,7 +385,7 @@ function plotConfidenceInterval(p, xs, ys, color, shape, label, ci_shape)
         elseif ci_shape == :density
             plot!(p,
                 kde((xs, ys)),
-                levels=[1],#, 2, 3, 4, 5],
+                levels=[1, 2, 3, 4, 5],
                 color=color,
                 cbar=false
             )
