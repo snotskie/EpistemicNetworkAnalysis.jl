@@ -60,6 +60,8 @@ function defaultplotkwargs(
         spectralColorBy::Union{Symbol,Nothing}=nothing,
         trajectoryBy::Union{Symbol,Nothing}=nothing,
         trajectoryBins::Int=5,
+        spectoryBy::Union{Symbol,Nothing}=nothing,
+        spectoryPercent::Real=0.10,
         showExtras::Bool=true,
         showNetworks::Bool=true,
         showUnits::Bool=true,
@@ -102,6 +104,8 @@ function defaultplotkwargs(
         spectralColorBy=spectralColorBy,
         trajectoryBy=trajectoryBy,
         trajectoryBins=trajectoryBins,
+        spectoryBy=spectoryBy,
+        spectoryPercent=spectoryPercent,
         showExtras=showExtras,
         showNetworks=showNetworks,
         showUnits=showUnits,
@@ -959,31 +963,53 @@ function plot_extras!(
         return
     end
 
-    if isnothing(plotconfig.trajectoryBy)
-        return
+    if !isnothing(plotconfig.trajectoryBy)
+        p = plot(
+            leg=plotconfig.leg,
+            aspect_ratio=:equal,
+            margin=plotconfig.margin,
+            yrotation=90,
+            size=(plotconfig.size, plotconfig.size)
+        )
+
+        letter = DEFAULT_ALPHABET[length(ps)+1]
+        title!(p, "($(letter)) Trajectory by $(plotconfig.trajectoryBy)")
+        plot_network!(M, p, model, NodesOnlyLinearEdgePainter(), plotconfig)
+        plot_units!(M, p, model, merge(
+            plotconfig,
+            (
+                spectralColorBy=plotconfig.trajectoryBy,
+                groupBy=nothing
+            )
+        ))
+
+        plot_trajectories!(M, p, model, plotconfig)
+        push!(ps, p)
     end
 
-    p = plot(
-        leg=plotconfig.leg,
-        aspect_ratio=:equal,
-        margin=plotconfig.margin,
-        yrotation=90,
-        size=(plotconfig.size, plotconfig.size)
-    )
-
-    letter = DEFAULT_ALPHABET[length(ps)+1]
-    title!(p, "($(letter)) Trajectory by $(plotconfig.trajectoryBy)")
-    plot_network!(M, p, model, NodesOnlyLinearEdgePainter(), plotconfig)
-    plot_units!(M, p, model, merge(
-        plotconfig,
-        (
-            spectralColorBy=plotconfig.trajectoryBy,
-            groupBy=nothing
+    if !isnothing(plotconfig.spectoryBy)
+        p = plot(
+            leg=plotconfig.leg,
+            aspect_ratio=:equal,
+            margin=plotconfig.margin,
+            yrotation=90,
+            size=(plotconfig.size, plotconfig.size)
         )
-    ))
 
-    plot_trajectories!(M, p, model, plotconfig)
-    push!(ps, p)
+        letter = DEFAULT_ALPHABET[length(ps)+1]
+        title!(p, "($(letter)) Spectory by $(plotconfig.spectoryBy)")
+        plot_network!(M, p, model, NodesOnlyLinearEdgePainter(), plotconfig)
+        plot_units!(M, p, model, merge(
+            plotconfig,
+            (
+                spectralColorBy=plotconfig.spectoryBy,
+                groupBy=nothing
+            )
+        ))
+
+        plot_spectories!(M, p, model, plotconfig)
+        push!(ps, p)
+    end    
 end
 
 # Plot Elements
@@ -1170,6 +1196,46 @@ function plot_trajectories!(
                 linecolor=:black,
                 arrow=:closed,
                 label=nothing
+            )
+        end
+    end 
+end
+
+function plot_spectories!(
+        ::Type{M},
+        p::Plot,
+        model::AbstractLinearENAModel,
+        plotconfig::NamedTuple,
+        displayRows::BitVector=BitVector(repeat([true], nrow(model.accum)))
+    ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
+
+    if isnothing(plotconfig.spectoryBy)
+        return
+    end
+
+    tempPositions = DataFrame(Dict(
+        :unitID => model.accum.unitID,
+        :pos_x => [fixX(model.points[plotconfig.x, unitID], plotconfig) for unitID in model.accum.unitID],
+        :pos_y => [fixY(model.points[plotconfig.y, unitID], plotconfig) for unitID in model.accum.unitID]
+    ))
+
+    smoothingData = innerjoin(model.accum[displayRows, :], model.metadata[displayRows, :], on=:unitID)
+    smoothingData = innerjoin(smoothingData, tempPositions, on=:unitID)
+    if plotconfig.spectoryBy in Symbol.(names(smoothingData))
+        sb = plotconfig.spectoryBy
+        sort!(smoothingData, sb)
+        N = round(Int, plotconfig.spectoryPercent * nrow(smoothingData))
+        S = max(1, round(Int, N/2))
+        T = floor(Int, (nrow(smoothingData) - N + 1) / S)
+        for t in 1:T
+            xs = Vector(smoothingData[t*S:(N+t*S-1), :pos_x])
+            ys = Vector(smoothingData[t*S:(N+t*S-1), :pos_y])
+            color = HSL((t - 1)/T*240, 1, 0.5)
+            plot!(p,
+                kde((xs, ys)),
+                levels=[1],
+                color=color,
+                cbar=false
             )
         end
     end 
