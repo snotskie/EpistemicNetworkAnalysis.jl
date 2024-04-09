@@ -61,7 +61,7 @@ function defaultplotkwargs(
         trajectoryBy::Union{Symbol,Nothing}=nothing,
         trajectoryBins::Int=5,
         spectoryBy::Union{Symbol,Nothing}=nothing,
-        spectoryPercent::Real=0.10,
+        spectoryPercent::Real=1/3,
         showExtras::Bool=true,
         showNetworks::Bool=true,
         showUnits::Bool=true,
@@ -174,6 +174,8 @@ end
         spectralColorBy::Union{Symbol,Nothing}=nothing,
         trajectoryBy::Union{Symbol,Nothing}=nothing,
         trajectoryBins::Int=5,
+        spectoryBy::Union{Symbol,Nothing}=nothing,
+        spectoryPercent::Real=1/3,
         showExtras::Bool=true,
         showNetworks::Bool=true,
         showUnits::Bool=true,
@@ -200,8 +202,8 @@ Several optional arguments are available:
 - `titles`, `xlabel`, `ylabel`, `unitLabel`, `leg`, and `alphabet` together control the text that labels the plot
 - `negColor`, `posColor`, and `groupColors` together control the colors used in the plot
 - `groupBy` and `innerGroupBy` define which metadata columns to use as grouping variables for the sake of color coding and confidence intervals
-- `spectralColorBy` defines which metadata column to use to color-code units as a spectrum
-- `trajectoryBy` and `trajectoryBins` together define and control how a trajectory path should be overlaid on the plot
+- `spectralColorBy` defines which metadata column to use to color-code units as a spectrum, to show how networks relate to the variable of interest
+- `trajectoryBy` and `trajectoryBins` together define and control how a trajectory path should be overlaid on the plot, to show how the mean network changes along the variable of interest. Similarly, `spectoryBy` and `spectoryPercent` define how a sequence of 1-level densities should be overlaid on the plot, to show how the distribution of networks changes along the variable of interest
 - `showExtras`, `showNetworks`, `showUnits`, and `showMeans` control which plot elements to show or hide. Additionally, `confidenceShape` can be set to `:rect` (default) or `:density` to choose which shape to use around the means
 - `showWarps` controls if edges should be drawn straight (`false`) or "warped" to show their true location in the space (`true`)
 - `fitNodesToCircle` controls if nodes should be shown in their optimized positions for goodness of fit, or at a circular position around the origin
@@ -387,11 +389,10 @@ function plotConfidenceInterval(p, xs, ys, color, shape, label, ci_shape)
                 linewidth=1,
                 linecolor=color)
         elseif ci_shape == :density
-            plot!(p,
+            plot_kde_without_cbar!(p,
                 kde((xs, ys)),
                 levels=[1, 2, 3, 4, 5],
-                color=color,
-                cbar=false
+                color=color
             )
         # elseif ci_shape == :ellipse
         #     # remove outliers, as the ellipse is sensitive to them
@@ -724,7 +725,8 @@ function paint_edges!(
             [], [], label=false,
             marker_z=-1:1,
             color=cgrad(edgeColorMap),
-            colorbar=true
+            colorbar=true,
+            colorbar_title="Pearson r"
         )
     end
 end
@@ -933,7 +935,7 @@ function plot_subtractions!(
                 plot_means!(M, p, model, plotconfig, groupRows)
                 plot!(p,
                     [-999], [-999],
-                    label="$(group2) - $(group1) Mean Difference",
+                    label="$(group2)-leaning Edge",
                     seriestype=:scatter,
                     markershape=:hline,
                     markersize=GLOBAL_UNIT_SIZE,
@@ -942,7 +944,7 @@ function plot_subtractions!(
                 )
                 plot!(p,
                     [-999], [-999],
-                    label="$(group1) - $(group2) Mean Difference",
+                    label="$(group1)-leaning Edge",
                     seriestype=:scatter,
                     markershape=:hline,
                     markersize=GLOBAL_UNIT_SIZE,
@@ -1052,21 +1054,35 @@ function plot_units!(
     label = plotconfig.unitLabel
 
     # Optionally, color spectrally
-    if !isnothing(plotconfig.spectralColorBy)
+    if !isnothing(plotconfig.spectralColorBy) && isnothing(plotconfig.groupBy)
         # label = string(plotconfig.spectralColorBy) # TODO show a scale, not one random color
         label = nothing
+        colData = nothing
         if plotconfig.spectralColorBy in Symbol.(names(model.accum))
-            colVals = Vector{Real}(model.accum[displayRows, plotconfig.spectralColorBy])
-            allColVals = colVals = Vector{Real}(model.accum[!, plotconfig.spectralColorBy])
-            colVals = colVals .- minimum(allColVals)
-            colVals /= maximum(allColVals)
-            colors = [HSL(colVal*240, 1, 0.5) for colVal in colVals]
+            colData = model.accum
         elseif plotconfig.spectralColorBy in Symbol.(names(model.metadata))
-            colVals = Vector{Real}(model.metadata[displayRows, plotconfig.spectralColorBy])
-            allColVals = Vector{Real}(model.metadata[!, plotconfig.spectralColorBy])
-            colVals = colVals .- minimum(allColVals)
-            colVals /= maximum(allColVals)
+            colData = model.metadata
+        end
+
+        if !isnothing(colData)
+            colVals = Vector{Real}(colData[displayRows, plotconfig.spectralColorBy])
+            allColVals = Vector{Real}(colData[!, plotconfig.spectralColorBy])
+            colMin = minimum(allColVals)
+            colMax = maximum(allColVals)
+            colVals = colVals .- colMin
+            colVals /= colMax
             colors = [HSL(colVal*240, 1, 0.5) for colVal in colVals]
+
+            if plotconfig.colorbar
+                T = 10
+                plot!(p,
+                    [], [], label=false,
+                    marker_z=colMin:colMax,
+                    color=cgrad([HSL((t - 1)/(T - 1)*240, 1, 0.5) for t in 1:T]),
+                    colorbar=true,
+                    colorbar_title=string(plotconfig.spectralColorBy)
+                )
+            end
         end
     end
     
@@ -1224,19 +1240,41 @@ function plot_spectories!(
     if plotconfig.spectoryBy in Symbol.(names(smoothingData))
         sb = plotconfig.spectoryBy
         sort!(smoothingData, sb)
-        N = round(Int, plotconfig.spectoryPercent * nrow(smoothingData))
-        S = max(1, round(Int, N/2))
-        T = floor(Int, (nrow(smoothingData) - N + 1) / S)
+        sb_min = first(smoothingData[!, sb])
+        sb_max = last(smoothingData[!, sb])
+        T = floor(Int, 2 * (1 / plotconfig.spectoryPercent) - 1)
         for t in 1:T
-            xs = Vector(smoothingData[t*S:(N+t*S-1), :pos_x])
-            ys = Vector(smoothingData[t*S:(N+t*S-1), :pos_y])
-            color = HSL((t - 1)/T*240, 1, 0.5)
-            plot!(p,
+            left = floor(Int, (t - 1) / T * nrow(smoothingData) + 1)
+            right = min(floor(Int, t / T * nrow(smoothingData) + 1), nrow(smoothingData))
+            mid = round(Int, (left+right) / 2)
+            sb_mid = smoothingData[mid, sb]
+            xs = Vector(smoothingData[left:right, :pos_x])
+            ys = Vector(smoothingData[left:right, :pos_y])
+            color = HSL((sb_mid - sb_min)/(sb_max - sb_min)*240, 1, 0.5)
+            plot_kde_without_cbar!(p,
                 kde((xs, ys)),
                 levels=[1],
-                color=color,
-                cbar=false
+                color=color
             )
         end
     end 
+end
+
+# BUGFIX existing contour plots have a cbar by default.
+# That existing cbar conflicts with other cbars we might want to do, eg., one
+# based on the unit points themselves, subtraction network edges, etc
+function plot_kde_without_cbar!(p::Plot, U::BivariateKDE; levels::Vector{<:Real}=[1], color::Colorant=:black)
+    xmin, xmax = first(U.x), last(U.x)
+    ymin, ymax = first(U.y), last(U.y)
+    for level in Contour.levels(contours(1:256, 1:256, U.density', levels))
+        for line in lines(level)
+            tline = map(vertices(line)) do (x, y)
+                a = (x - 1)/256 * (xmax - xmin) + xmin
+                b = (y - 1)/256 * (ymax - ymin) + ymin
+                return (a, b)
+            end
+
+            plot!(p, tline, linecolor=color, label=nothing)
+        end
+    end
 end
