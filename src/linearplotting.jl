@@ -1071,14 +1071,14 @@ function plot_units!(
             colMax = maximum(allColVals)
             colVals = colVals .- colMin
             colVals /= colMax
-            colors = [HSL(colVal*240, 1, 0.5) for colVal in colVals]
+            colors = [HSL(colVal*240 + 120, 1, 0.5) for colVal in colVals]
 
             if plotconfig.colorbar
                 T = 10
                 plot!(p,
                     [], [], label=false,
                     marker_z=colMin:colMax,
-                    color=cgrad([HSL((t - 1)/(T - 1)*240, 1, 0.5) for t in 1:T]),
+                    color=cgrad([HSL((t - 1)/(T - 1)*240 + 120, 1, 0.5) for t in 1:T]),
                     colorbar=true,
                     colorbar_title=string(plotconfig.spectralColorBy)
                 )
@@ -1250,7 +1250,7 @@ function plot_spectories!(
             sb_mid = smoothingData[mid, sb]
             xs = Vector(smoothingData[left:right, :pos_x])
             ys = Vector(smoothingData[left:right, :pos_y])
-            color = HSL((sb_mid - sb_min)/(sb_max - sb_min)*240, 1, 0.5)
+            color = HSL((sb_mid - sb_min)/(sb_max - sb_min)*240 + 120, 1, 0.5)
             plot_kde_without_cbar!(p,
                 kde((xs, ys)),
                 levels=[1],

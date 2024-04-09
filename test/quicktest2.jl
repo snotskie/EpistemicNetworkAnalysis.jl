@@ -49,7 +49,7 @@ model = EpistemicNetworkAnalysis.ENAModel(
     lineNormalize=true,
     dropEmpty=true
 )
-p = EpistemicNetworkAnalysis.plot(model, confidenceShape=:density, trajectoryBy=:Day, spectoryBy=:Day, spectralColorBy=:Day, groupBy=:Fourth, colorbar=true)
+p = EpistemicNetworkAnalysis.plot(model, confidenceShape=:density, spectoryBy=:Day, spectralColorBy=:Day, colorbar=true)
 display(p)
 # sp = plot(p.subplots[1], size=(600,600))
 # display(sp)
