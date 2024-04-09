@@ -1264,17 +1264,10 @@ end
 # That existing cbar conflicts with other cbars we might want to do, eg., one
 # based on the unit points themselves, subtraction network edges, etc
 function plot_kde_without_cbar!(p::Plot, U::BivariateKDE; levels::Vector{<:Real}=[1], color::Colorant=:black)
-    xmin, xmax = first(U.x), last(U.x)
-    ymin, ymax = first(U.y), last(U.y)
-    for level in Contour.levels(contours(1:256, 1:256, U.density', levels))
+    for level in Contour.levels(contours(U.x, U.y, U.density, levels))
         for line in lines(level)
-            tline = map(vertices(line)) do (x, y)
-                a = (x - 1)/256 * (xmax - xmin) + xmin
-                b = (y - 1)/256 * (ymax - ymin) + ymin
-                return (a, b)
-            end
 
-            plot!(p, tline, linecolor=color, label=nothing)
+            plot!(p, vertices(line), linecolor=color, label=nothing)
         end
     end
 end
