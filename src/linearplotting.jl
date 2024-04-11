@@ -61,7 +61,8 @@ function defaultplotkwargs(
         trajectoryBy::Union{Symbol,Nothing}=nothing,
         trajectoryBins::Int=5,
         spectoryBy::Union{Symbol,Nothing}=nothing,
-        spectoryPercent::Real=1/3,
+        spectoryBinPercent::Real=1/3,
+        spectoryBinStep::Real=1/2 * spectoryBinPercent,
         showExtras::Bool=true,
         showNetworks::Bool=true,
         showUnits::Bool=true,
@@ -105,7 +106,8 @@ function defaultplotkwargs(
         trajectoryBy=trajectoryBy,
         trajectoryBins=trajectoryBins,
         spectoryBy=spectoryBy,
-        spectoryPercent=spectoryPercent,
+        spectoryBinPercent=spectoryBinPercent,
+        spectoryBinStep=spectoryBinStep,
         showExtras=showExtras,
         showNetworks=showNetworks,
         showUnits=showUnits,
@@ -175,7 +177,8 @@ end
         trajectoryBy::Union{Symbol,Nothing}=nothing,
         trajectoryBins::Int=5,
         spectoryBy::Union{Symbol,Nothing}=nothing,
-        spectoryPercent::Real=1/3,
+        spectoryBinPercent::Real=1/3,
+        spectoryBinStep::Real=1/2 * spectoryBinPercent,
         showExtras::Bool=true,
         showNetworks::Bool=true,
         showUnits::Bool=true,
@@ -203,7 +206,7 @@ Several optional arguments are available:
 - `negColor`, `posColor`, and `groupColors` together control the colors used in the plot
 - `groupBy` and `innerGroupBy` define which metadata columns to use as grouping variables for the sake of color coding and confidence intervals
 - `spectralColorBy` defines which metadata column to use to color-code units as a spectrum, to show how networks relate to the variable of interest
-- `trajectoryBy` and `trajectoryBins` together define and control how a trajectory path should be overlaid on the plot, to show how the mean network changes along the variable of interest. Similarly, `spectoryBy` and `spectoryPercent` define how a sequence of 1-level densities should be overlaid on the plot, to show how the distribution of networks changes along the variable of interest
+- `trajectoryBy` and `trajectoryBins` together define and control how a trajectory path should be overlaid on the plot, to show how the mean network changes along the variable of interest. Similarly, `spectoryBy`, `spectoryBinPercent`, and `spectoryBinStep` define how a sequence of 1-level densities should be overlaid on the plot, to show how the distribution of networks changes along the variable of interest
 - `showExtras`, `showNetworks`, `showUnits`, and `showMeans` control which plot elements to show or hide. Additionally, `confidenceShape` can be set to `:rect` (default) or `:density` to choose which shape to use around the means
 - `showWarps` controls if edges should be drawn straight (`false`) or "warped" to show their true location in the space (`true`)
 - `fitNodesToCircle` controls if nodes should be shown in their optimized positions for goodness of fit, or at a circular position around the origin
@@ -1249,10 +1252,14 @@ function plot_spectories!(
         sort!(smoothingData, sb)
         sb_min = first(smoothingData[!, sb])
         sb_max = last(smoothingData[!, sb])
-        T = floor(Int, 2 * (1 / plotconfig.spectoryPercent) - 1)
+        N = nrow(smoothingData)
+        T = floor(Int, 1 + (1 - plotconfig.spectoryBinPercent) / plotconfig.spectoryBinStep)
+        # T = floor(Int, 2 * (1 / plotconfig.spectoryBinPercent) - 1)
         for t in 1:T
-            left = floor(Int, (t - 1) / T * nrow(smoothingData) + 1)
-            right = min(floor(Int, t / T * nrow(smoothingData) + 1), nrow(smoothingData))
+            left = max(1, floor(Int, 1 + (t-1) * plotconfig.spectoryBinStep * N))
+            right = min(N, floor(Int, left + plotconfig.spectoryBinPercent * N))
+            # left = floor(Int, (t - 1) / T * N + 1)
+            # right = min(floor(Int, t / T * N + 1), N)
             mid = round(Int, (left+right) / 2)
             sb_mid = smoothingData[mid, sb]
             xs = Vector(smoothingData[left:right, :pos_x])
