@@ -996,6 +996,7 @@ function plot_extras!(
         ))
 
         plot_trajectories!(M, p, model, plotconfig)
+        plot_means!(M, p, model, plotconfig)
         push!(ps, p)
     end
 
@@ -1020,6 +1021,7 @@ function plot_extras!(
         ))
 
         plot_spectories!(M, p, model, plotconfig)
+        plot_means!(M, p, model, plotconfig)
         push!(ps, p)
     end    
 end
