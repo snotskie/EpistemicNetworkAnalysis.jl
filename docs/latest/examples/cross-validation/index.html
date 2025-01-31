@@ -4,7 +4,7 @@ using DataFrames
 using Statistics
 using GLM</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr32"><span class="sgr1">Precompiling</span></span> EpistemicNetworkAnalysis
 <span class="sgr32">  ✓ </span>EpistemicNetworkAnalysis
-  1 dependency successfully precompiled in 3 seconds. 281 already precompiled.</code></pre><p>Second, we&#39;ll load our data and prepare our model config. We&#39;ll be using the <code>FormulaRotation</code> example from the <a href="../../icqe23/">ICQE23</a> workshop:</p><pre><code class="language-julia hljs">data = loadExample(&quot;transitions&quot;)
+  1 dependency successfully precompiled in 4 seconds. 281 already precompiled.</code></pre><p>Second, we&#39;ll load our data and prepare our model config. We&#39;ll be using the <code>FormulaRotation</code> example from the <a href="../../icqe23/">ICQE23</a> workshop:</p><pre><code class="language-julia hljs">data = loadExample(&quot;transitions&quot;)
 
 deriveAnyCode!(data, :BODY, :Changes, :Mood, :Oily, :Dysphoria, :Cry)
 deriveAnyCode!(data, :REFLECT, :Identity, :Longing, :Dream, :Childhood, :Family, :Name, :Letter, :Doubt, :Religion)
@@ -39,8 +39,8 @@ for i in 1:k_folds
     result = testmodel.embedding[1, :Formula_AdjR2]
     push!(results, result)
 end</code></pre><p>Finally, we&#39;ll display the results and their mean:</p><pre><code class="language-julia hljs">println(results)
-println(mean(results))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Real[0.7547207323589584, 0.7909808067230759, 0.7221730916611933, 0.7232721555719497, 0.5938140601727022]
-0.7169921692975759</code></pre><p>Putting it all together, here is a helper function you should be able to drop-in and apply to your own data:</p><pre><code class="language-julia hljs"># Helper
+println(mean(results))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Real[0.6655213544341291, 0.7644013958567976, 0.7098996810410002, 0.7086207187763608, 0.7464904635810053]
+0.7189867227378586</code></pre><p>Putting it all together, here is a helper function you should be able to drop-in and apply to your own data:</p><pre><code class="language-julia hljs"># Helper
 function kfoldcv(wholemodel, k_folds, statistic)
     results = Real[]
     wholemodel.data[!, :Fold] .= rand(1:k_folds, nrow(data))
@@ -73,5 +73,5 @@ wholemodel = ENAModel(
 
 results = kfoldcv(wholemodel, 5, :Formula_AdjR2)
 println(results)
-println(mean(results))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Real[0.7566957247928998, 0.6815275928471195, 0.6923864553008441, 0.7191259703725202, 0.7130988157955573]
-0.7125669118217882</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../functions/">« Helpful Functions</a><a class="docs-footer-nextpage" href="../../icqe23/">ICQE23 Workshop »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Wednesday 10 April 2024 08:50">Wednesday 10 April 2024</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+println(mean(results))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Real[0.5705608556503358, 0.7930295387759307, 0.7425058029486075, 0.6965756628060827, 0.7073925551155811]
+0.7020128830593075</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../functions/">« Helpful Functions</a><a class="docs-footer-nextpage" href="../../icqe23/">ICQE23 Workshop »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Friday 31 January 2025 10:00">Friday 31 January 2025</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
