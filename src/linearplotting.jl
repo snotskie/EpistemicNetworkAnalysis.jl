@@ -566,12 +566,14 @@ function paintSortedNetwork!(
                 y /= s
             end
 
+            align = :left
             angle = atan(y, x) * 180 / pi
             if x < 0
                 angle = atan(-y, -x) * 180 / pi
+                align=:right
             end
             
-            label = text(string(nodeID), :top, default(:xtickfontsize), rotation=angle)
+            label = text(string("  ", nodeID, "  "), align, default(:xtickfontsize), rotation=angle)
         end
 
         if nodeWidths[nodeID] > 0
