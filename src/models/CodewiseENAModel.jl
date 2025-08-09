@@ -65,6 +65,12 @@ function populateENAfields(
         config...
     ) where {R<:AbstractLinearENARotation, M<:AbstractCodewiseENAModel{R}}
 
+    # Step 0. Fix params and warn, if needed
+    if !(:CodewiseCode in units || :CodewiseChorus in units)
+        units = [units..., :CodewiseCode]
+        @warn "Automatically added :CodewiseCode to units. Units is now defined as: $(units)\n\nIf this is not what you intended, please add :CodewiseCode and/or :CodewiseChorus to your units explicitly, as Codewise models require at least one."
+    end
+
     # Step 1. add columns that mark the presense of each chorus of each code
     data = copy(data)
     choruses = Symbol[] # in format of code + strike number

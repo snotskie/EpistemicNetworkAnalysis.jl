@@ -37,7 +37,7 @@ end
 end
 
 # Test that each model/rotation combination runs
-models = [ENAModel, BiplotENAModel, DigraphENAModel, CodewiseENAModel]
+models = [CodewiseENAModel, ENAModel, BiplotENAModel, DigraphENAModel]
 rotations = [
     # expected xaxis label => rotation
     "SVD1" => SVDRotation(),
