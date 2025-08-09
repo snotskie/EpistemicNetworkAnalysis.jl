@@ -295,7 +295,7 @@ end
 """
     statistics(model::AbstractENAModel)
 
-Produce a dataframe containing statistics statistics for each dimension of the model embedding
+Produce a dataframe containing descriptive statistics for each dimension of the model embedding
     
 ## Example
 
