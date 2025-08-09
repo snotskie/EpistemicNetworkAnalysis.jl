@@ -14,25 +14,20 @@
 
         # Optional
         rotation::AbstractLinearENARotation=SVDRotation(),
-        unitFilter::Function=unit->row[:CodewiseUnit] != "prefix", # fixed, cannot change
+        unitFilter::Function=unit->row[:CodewiseCode] != "__prefix__", # fixed, cannot change
         edgeFilter::Function=edge->edge.kind == :count, # fixed, cannot change
         windowSize::Real=1,
         sphereNormalize::Bool=true,
         lineNormalize::Bool=false,
         dropEmpty::Bool=false,
-        recenterEmpty::Bool=false,
-        codewiseUnit=:code
+        recenterEmpty::Bool=false
     )
 
 Construct a biplot model of code-wise counts of code co-occurences. Model will have perfect goodness of fit between `points` and `pointsHat`, will be much simpler than other model types, but unlike `BiplotENAModel` will not lose most information.
 
-`CodewiseENAModel` follows the same argument and field structure as `ENAModel`, except `unitFilter` and `edgeFilter` are in effect ignored, and `codewiseUnit` can be either `:chorus` or `:code`. Note also that the default `windowSize` is `1` instead of `Inf`, to prevent accidentally overloading RAM.
+`CodewiseENAModel` follows the same argument and field structure as `ENAModel`, except `unitFilter` and `edgeFilter` are in effect ignored. Note also that the default `windowSize` is `1` instead of `Inf`, to prevent accidentally overloading RAM.
 
-When `codewiseUnit=:chorus`, a unit of analysis will correspond to a single span of data in which the code in question appears repeatedly over the sliding window.
-
-When `codewiseUnit=:code`, a unit of analysis will correspond to a single code in question, averaged over all its spans as described above.
-
-In either case, a column `:CodewiseUnit` will be added, which should be used in the `units` parameter.
+Two columns, `:CodewiseChorus` and `:CodewiseCode` will be added to `data`, and at least one of these should be included in the `units` parameter.
 """
 CodewiseENAModel
 
@@ -45,21 +40,18 @@ function defaultmodelkwargs(
 
     kwargs = NamedTuple(kwargs)
     super = modelsupertype(M, AbstractCodewiseENAModel)
-    initialdefaults = (
-        codewiseUnit=:code,#comma required
-    )
     parentdefaults = defaultmodelkwargs(super)
-    definitivedefaults = ( # TODO figure out what makes sense here
+    definitivedefaults = (
         edgeFilter=(row)->(
             row[:kind] == :count
         ),
         unitFilter=(row)->(
-            row[:CodewiseUnit] != "prefix"
+            row[:CodewiseCode] != "__prefix__"
         ),
         windowSize=get(prev_config, :windowSize, 1) # allow overriding what BiplotENAModel does
     )
 
-    return merge(initialdefaults, parentdefaults, prev_config, definitivedefaults, kwargs)
+    return merge(parentdefaults, prev_config, definitivedefaults, kwargs)
 end
 
 # override default model field populator
@@ -111,14 +103,14 @@ function populateENAfields(
         code = Symbol(replace(string(chorus), r"[0-9]+$" => ""))
         rows = data[!, chorus] .== 1
         subset = copy(data[rows, :])
-        subset[!, :CodewiseConvo] .= chorus
-        subset[!, :CodewiseUnit] .= config[:codewiseUnit] == :chorus ? chorus : code
+        subset[!, :CodewiseChorus] .= chorus
+        subset[!, :CodewiseCode] .= code
         start = findfirst(==(1), data[!, chorus])
         start -= config[:windowSize]
         if start >= 1
             prefix = copy(data[start:start+config[:windowSize], :])
-            prefix[!, :CodewiseConvo] .= chorus
-            prefix[!, :CodewiseUnit] .= "prefix"
+            prefix[!, :CodewiseChorus] .= chorus
+            prefix[!, :CodewiseCode] .= "__prefix__"
             subset = vcat(prefix, subset)
         end
 
@@ -130,7 +122,7 @@ function populateENAfields(
     end
 
     # Step 3. Let parent do the rest of the work
-    codewise_convos = [:CodewiseConvo]
+    codewise_convos = [:CodewiseChorus]
     super = modelsupertype(M, AbstractCodewiseENAModel)
     return populateENAfields(super, codewise_data, codes, codewise_convos, units, rotation; config...)
 end

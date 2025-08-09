@@ -33,7 +33,7 @@ codes = Symbol.([
     "Shared Language",
 ])
 convos = [:MemoID]
-units = [:Kind, :CodewiseUnit]
+units = [:Kind, :CodewiseCode]
 rotation = EpistemicNetworkAnalysis.MulticlassRotation(:Kind)
 model = EpistemicNetworkAnalysis.CodewiseENAModel(data, codes, convos, units, windowSize=4, rotateBy=rotation)
 
