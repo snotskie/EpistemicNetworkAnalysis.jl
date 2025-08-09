@@ -15,8 +15,8 @@
         # Optional
         rotation::AbstractLinearENARotation=SVDRotation(),
         unitFilter::Function=unit->true,
-        edgeFilter::Function=edge->edge.kind == :count,
-        windowSize::Real=Inf,
+        edgeFilter::Function=edge->edge.kind == :count, # fixed, cannot change
+        windowSize::Real=1, # fixed, cannot change
         sphereNormalize::Bool=true,
         lineNormalize::Bool=false,
         dropEmpty::Bool=false,
@@ -43,7 +43,7 @@ function defaultmodelkwargs(
         edgeFilter=(row)->(
             row[:kind] == :count
         ),
-        windowSize=1
+        windowSize=1 # as a matter of efficiency
     )
 
     return merge(parentdefaults, prev_config, definitivedefaults, kwargs)

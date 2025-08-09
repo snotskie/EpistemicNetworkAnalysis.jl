@@ -1,5 +1,5 @@
 function loadExample(name::AbstractString)
-    options = ["shakespeare", "transitions", "toy"]
+    options = ["shakespeare", "transitions", "toy", "efm"]
     if name in options
         filename = joinpath(dirname(@__FILE__), "..", "data", "$(name).csv")
         return DataFrame(CSV.File(filename, missingstring="#N/A"))
@@ -17,6 +17,7 @@ Load an example dataset as a DataFrame
 
 - `loadExample("shakespeare")`: Loads the [Shakespeare dataset](https://bookdown.org/tan78/intro_to_ena/examples.html), containing data on two plays, "Hamlet" and "Romeo and Juliet"
 - `loadExample("transition")`: Loads the [Telling Stories of Transitions dataset](https://link.springer.com/chapter/10.1007/978-3-030-93859-8_8), containing metadata and codes only, due to the sensitive nature of the underlying text
+- `loadExample("efm")`: Loads the [Doing Evil for Money dataset](https://www.proquest.com/docview/3192476395?pq-origsite=gscholar&fromopenview=true&sourcetype=Dissertations%20&%20Theses)
 - `loadExample("toy")`: Loads a minimal toy example, reproduced below
 
 ```csv

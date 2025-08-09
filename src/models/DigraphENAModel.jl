@@ -44,8 +44,8 @@ function defaultmodelkwargs(
     definitivedefaults = (
         edgeFilter=(row)->(
             row[:kind] == :directed
-        ),
-        windowSize=1
+        ),# comma necessary for NamedTuple
+        # windowSize=1 # was this an error??
     )
 
     return merge(parentdefaults, prev_config, definitivedefaults, kwargs)
