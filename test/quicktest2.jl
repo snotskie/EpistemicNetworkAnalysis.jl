@@ -31,7 +31,9 @@ conversations = []
 units = [:Date]
 
 # Rotation
-rotation = EpistemicNetworkAnalysis.MulticlassRotation(:Third)
+# rotation = EpistemicNetworkAnalysis.MulticlassRotation(:Third)
+# rotation = EpistemicNetworkAnalysis.MulticlassRotation(:Fourth)
+rotation = EpistemicNetworkAnalysis.TopicRotation("HRT", [:SkippedDose, :DoseTracking], [:Happy, :PROGRESS])
 # rotation = EpistemicNetworkAnalysis.FormulaRotation(
 #     LinearModel, @formula(y ~ 1 + 0), 1, nothing
 # )
@@ -45,8 +47,13 @@ model = EpistemicNetworkAnalysis.ENAModel(
     data, codes, conversations, units,
     rotateBy=rotation,
     lineNormalize=true,
-    dropEmpty=true
+    # dropEmpty=true
 )
-p = EpistemicNetworkAnalysis.plot(model, confidenceShape=:ellipse)
-sp = plot(p.subplots[1], size=(600,600))
-display(sp)
+p = EpistemicNetworkAnalysis.plot(model,
+    # x=3, y=4,
+    confidenceShape=:density, spectoryBy=:Day, spectralColorBy=:Day,
+    spectoryBinPercent=1/3, spectoryBinStep=1/6, colorbar=true,
+    showWarps=true)
+display(p)
+# sp = plot(p.subplots[1], size=(600,600))
+# display(sp)

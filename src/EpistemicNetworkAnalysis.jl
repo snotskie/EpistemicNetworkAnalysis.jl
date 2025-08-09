@@ -11,6 +11,9 @@ using Colors
 using Dierckx
 using DataStructures
 using Distributions
+using KernelDensity
+using StatsPlots
+using Contour
 
 ## Data
 using DataFrames
@@ -64,11 +67,13 @@ include("./rotations/TopicRotation.jl")
 include("./models/ENAModel.jl")
 include("./models/DigraphENAModel.jl")
 include("./models/BiplotENAModel.jl")
+include("./models/CodewiseENAModel.jl")
 
 # Exports
 export ENAModel
 export BiplotENAModel
 export DigraphENAModel
+export CodewiseENAModel
 # export NonlinearENAModel
 export plot
 export SVDRotation

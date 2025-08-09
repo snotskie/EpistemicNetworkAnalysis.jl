@@ -245,9 +245,13 @@ function accumulate!(
                     if line[edge.response] > 0
                         model.accum[unit, edge.edgeID] += 1
                     end
-                elseif edge.kind == :echo || edge.kind == :directed
+                elseif edge.kind == :directed
                     if (line[edge.response] > 0 && howrecents[edge.ground] < model.config.windowSize) ||
                         (line[edge.ground] > 0 && line[edge.response] > 0)
+                        model.accum[unit, edge.edgeID] += 1
+                    end
+                elseif edge.kind == :echo
+                    if (line[edge.response] > 0 && howrecents[edge.ground] < model.config.windowSize)
                         model.accum[unit, edge.edgeID] += 1
                     end
                 elseif edge.kind == :undirected

@@ -10,3 +10,4 @@
 .ipython
 Manifest.toml
 test/temp*
+.DS_Store

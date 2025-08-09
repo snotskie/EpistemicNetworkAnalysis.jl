@@ -60,6 +60,9 @@ function defaultplotkwargs(
         spectralColorBy::Union{Symbol,Nothing}=nothing,
         trajectoryBy::Union{Symbol,Nothing}=nothing,
         trajectoryBins::Int=5,
+        spectoryBy::Union{Symbol,Nothing}=nothing,
+        spectoryBinPercent::Real=1/3,
+        spectoryBinStep::Real=1/2 * spectoryBinPercent,
         showExtras::Bool=true,
         showNetworks::Bool=true,
         showUnits::Bool=true,
@@ -102,6 +105,9 @@ function defaultplotkwargs(
         spectralColorBy=spectralColorBy,
         trajectoryBy=trajectoryBy,
         trajectoryBins=trajectoryBins,
+        spectoryBy=spectoryBy,
+        spectoryBinPercent=spectoryBinPercent,
+        spectoryBinStep=spectoryBinStep,
         showExtras=showExtras,
         showNetworks=showNetworks,
         showUnits=showUnits,
@@ -170,6 +176,9 @@ end
         spectralColorBy::Union{Symbol,Nothing}=nothing,
         trajectoryBy::Union{Symbol,Nothing}=nothing,
         trajectoryBins::Int=5,
+        spectoryBy::Union{Symbol,Nothing}=nothing,
+        spectoryBinPercent::Real=1/3,
+        spectoryBinStep::Real=1/2 * spectoryBinPercent,
         showExtras::Bool=true,
         showNetworks::Bool=true,
         showUnits::Bool=true,
@@ -196,9 +205,9 @@ Several optional arguments are available:
 - `titles`, `xlabel`, `ylabel`, `unitLabel`, `leg`, and `alphabet` together control the text that labels the plot
 - `negColor`, `posColor`, and `groupColors` together control the colors used in the plot
 - `groupBy` and `innerGroupBy` define which metadata columns to use as grouping variables for the sake of color coding and confidence intervals
-- `spectralColorBy` defines which metadata column to use to color-code units as a spectrum
-- `trajectoryBy` and `trajectoryBins` together define and control how a trajectory path should be overlaid on the plot
-- `showExtras`, `showNetworks`, `showUnits`, and `showMeans` control which plot elements to show or hide. Additionally, `confidenceShape` can be set to `:rect` (default) or `:ellipse` to choose which shape to use when plotting confidence intervals around the means
+- `spectralColorBy` defines which metadata column to use to color-code units as a spectrum, to show how networks relate to the variable of interest
+- `trajectoryBy` and `trajectoryBins` together define and control how a trajectory path should be overlaid on the plot, to show how the mean network changes along the variable of interest. Similarly, `spectoryBy`, `spectoryBinPercent`, and `spectoryBinStep` define how a sequence of 1-level densities should be overlaid on the plot, to show how the distribution of networks changes along the variable of interest
+- `showExtras`, `showNetworks`, `showUnits`, and `showMeans` control which plot elements to show or hide. Additionally, `confidenceShape` can be set to `:rect` (default) or `:density` to choose which shape to use around the means
 - `showWarps` controls if edges should be drawn straight (`false`) or "warped" to show their true location in the space (`true`)
 - `fitNodesToCircle` controls if nodes should be shown in their optimized positions for goodness of fit, or at a circular position around the origin
 - `showWeakEdges` controls if edges with weak correlations to trends should be shown
@@ -337,6 +346,13 @@ function getGroupColorMap(model::AbstractLinearENAModel, plotconfig::NamedTuple)
     return DefaultDict(colorant"black", groupColors) # in case we don't have enough colors  
 end
 
+function getSpectralColors(vals)
+    # return [HSL(val*240, 1, 0.5) for val in vals]
+    # return [HSL(val*240 + 120, 1, 0.5) for val in vals]
+    # return [HSL(30, 1, val*.6 + .2) for val in vals]
+    return [HSL(200 - val*170, .9, .25 + val*.2) for val in vals]
+end
+
 function plotConfidenceInterval(p, xs, ys, color, shape, label, ci_shape)
 
     # Plot the mean center
@@ -382,75 +398,81 @@ function plotConfidenceInterval(p, xs, ys, color, shape, label, ci_shape)
                 seriestype=:line,
                 linewidth=1,
                 linecolor=color)
-        elseif ci_shape == :ellipse
-            # remove outliers, as the ellipse is sensitive to them
-            q1x = quantile(xs, .25)
-            q3x = quantile(xs, .75)
-            iqrx = q3x - q1x
-            inx = map(xs) do x
-                if x < q1x - 1.5 * iqrx
-                    return false
-                elseif x > q3x + 1.5 * iqrx
-                    return false
-                else
-                    return true
-                end
-            end
-            q1y = quantile(ys, .25)
-            q3y = quantile(ys, .75)
-            iqry = q3y - q1y
-            iny = map(ys) do y
-                if y < q1y - 1.5 * iqry
-                    return false
-                elseif y > q3y + 1.5 * iqry
-                    return false
-                else
-                    return true
-                end
-            end
-            inxy = inx .& iny
-            xs, ys = xs[inxy], ys[inxy]
+        elseif ci_shape == :density
+            plot_kde_without_cbar!(p,
+                kde((xs, ys)),
+                levels=[1, 2, 3, 4, 5],
+                color=color
+            )
+        # elseif ci_shape == :ellipse
+        #     # remove outliers, as the ellipse is sensitive to them
+        #     q1x = quantile(xs, .25)
+        #     q3x = quantile(xs, .75)
+        #     iqrx = q3x - q1x
+        #     inx = map(xs) do x
+        #         if x < q1x - 1.5 * iqrx
+        #             return false
+        #         elseif x > q3x + 1.5 * iqrx
+        #             return false
+        #         else
+        #             return true
+        #         end
+        #     end
+        #     q1y = quantile(ys, .25)
+        #     q3y = quantile(ys, .75)
+        #     iqry = q3y - q1y
+        #     iny = map(ys) do y
+        #         if y < q1y - 1.5 * iqry
+        #             return false
+        #         elseif y > q3y + 1.5 * iqry
+        #             return false
+        #         else
+        #             return true
+        #         end
+        #     end
+        #     inxy = inx .& iny
+        #     xs, ys = xs[inxy], ys[inxy]
 
-            # covariance matrix
-            Σ = cov([xs ys])
-            vals = eigvals(Σ)
-            vecs = eigvecs(Σ)
-            if vals[1] <= vals[2]
-                vals[1], vals[2] = vals[2], vals[1]
-                vecs[:, 1], vecs[:, 2] = vecs[:, 2], vecs[:, 1]
-            end
+        #     # covariance matrix
+        #     Σ = cov([xs ys])
+        #     vals = eigvals(Σ)
+        #     vecs = eigvecs(Σ)
+        #     if vals[1] <= vals[2]
+        #         vals[1], vals[2] = vals[2], vals[1]
+        #         vecs[:, 1], vecs[:, 2] = vecs[:, 2], vecs[:, 1]
+        #     end
 
-            # angle
-            θ = atan(vecs[2,1] / vecs[1,1])
-            if θ < 0
-                θ += 2π
-            end
+        #     # angle
+        #     θ = atan(vecs[2,1] / vecs[1,1])
+        #     if θ < 0
+        #         θ += 2π
+        #     end
 
-            # center
-            cx = mean(xs)
-            cy = mean(ys)
+        #     # center
+        #     cx = mean(xs)
+        #     cy = mean(ys)
 
-            # ellipse points
-            t = range(0, 2π, length=100)
-            confidence = 0.95
-            quant = sqrt(quantile(Chisq(2), confidence))
-            rx = quant * sqrt(vals[1])
-            ry = quant * sqrt(vals[2])
-            xe = rx .* cos.(t)
-            ye = ry .* sin.(t)
-            ellipse = [xe ye] * [cos(θ) sin(θ); -sin(θ) cos(θ)]
-            pxs = cx .+ ellipse[:, 1]
-            pys = cy .+ ellipse[:, 2]
+        #     # ellipse points
+        #     t = range(0, 2π, length=100)
+        #     confidence = 0.95
+        #     quant = sqrt(quantile(Chisq(2), confidence))
+        #     rx = quant * sqrt(vals[1])
+        #     ry = quant * sqrt(vals[2])
+        #     xe = rx .* cos.(t)
+        #     ye = ry .* sin.(t)
+        #     ellipse = [xe ye] * [cos(θ) sin(θ); -sin(θ) cos(θ)]
+        #     pxs = cx .+ ellipse[:, 1]
+        #     pys = cy .+ ellipse[:, 2]
 
-            # plot it
-            Plots.plot!(p, pxs, pys,
-                label=nothing,
-                color=color)
-                # seriestype=:line,
-                # linewidth=1,
-                # linecolor=color)
+        #     # plot it
+        #     Plots.plot!(p, pxs, pys,
+        #         label=nothing,
+        #         color=color)
+        #         # seriestype=:line,
+        #         # linewidth=1,
+        #         # linecolor=color)
         else
-            error("Unrecognized confidenceShape $(ci_shape). Available options are :rect and :ellipse")
+            error("Unrecognized confidenceShape $(ci_shape). Available options are :rect and :density")
         end
     end
 end
@@ -544,12 +566,14 @@ function paintSortedNetwork!(
                 y /= s
             end
 
+            align = :left
             angle = atan(y, x) * 180 / pi
             if x < 0
                 angle = atan(-y, -x) * 180 / pi
+                align=:right
             end
             
-            label = text(string(nodeID), :top, default(:xtickfontsize), rotation=angle)
+            label = text(string("  ", nodeID, "  "), align, default(:xtickfontsize), rotation=angle)
         end
 
         if nodeWidths[nodeID] > 0
@@ -713,7 +737,8 @@ function paint_edges!(
             [], [], label=false,
             marker_z=-1:1,
             color=cgrad(edgeColorMap),
-            colorbar=true
+            colorbar=true,
+            colorbar_title="Pearson r"
         )
     end
 end
@@ -922,7 +947,7 @@ function plot_subtractions!(
                 plot_means!(M, p, model, plotconfig, groupRows)
                 plot!(p,
                     [-999], [-999],
-                    label="$(group2) - $(group1) Mean Difference",
+                    label="$(group2)-leaning Edge",
                     seriestype=:scatter,
                     markershape=:hline,
                     markersize=GLOBAL_UNIT_SIZE,
@@ -931,7 +956,7 @@ function plot_subtractions!(
                 )
                 plot!(p,
                     [-999], [-999],
-                    label="$(group1) - $(group2) Mean Difference",
+                    label="$(group1)-leaning Edge",
                     seriestype=:scatter,
                     markershape=:hline,
                     markersize=GLOBAL_UNIT_SIZE,
@@ -952,31 +977,55 @@ function plot_extras!(
         return
     end
 
-    if isnothing(plotconfig.trajectoryBy)
-        return
+    if !isnothing(plotconfig.trajectoryBy)
+        p = plot(
+            leg=plotconfig.leg,
+            aspect_ratio=:equal,
+            margin=plotconfig.margin,
+            yrotation=90,
+            size=(plotconfig.size, plotconfig.size)
+        )
+
+        letter = DEFAULT_ALPHABET[length(ps)+1]
+        title!(p, "($(letter)) Trajectory by $(plotconfig.trajectoryBy)")
+        plot_network!(M, p, model, NodesOnlyLinearEdgePainter(), plotconfig)
+        plot_units!(M, p, model, merge(
+            plotconfig,
+            (
+                spectralColorBy=plotconfig.trajectoryBy,
+                groupBy=nothing
+            )
+        ))
+
+        plot_trajectories!(M, p, model, plotconfig)
+        plot_means!(M, p, model, plotconfig)
+        push!(ps, p)
     end
 
-    p = plot(
-        leg=plotconfig.leg,
-        aspect_ratio=:equal,
-        margin=plotconfig.margin,
-        yrotation=90,
-        size=(plotconfig.size, plotconfig.size)
-    )
-
-    letter = DEFAULT_ALPHABET[length(ps)+1]
-    title!(p, "($(letter)) Trajectory by $(plotconfig.trajectoryBy)")
-    plot_network!(M, p, model, NodesOnlyLinearEdgePainter(), plotconfig)
-    plot_units!(M, p, model, merge(
-        plotconfig,
-        (
-            spectralColorBy=plotconfig.trajectoryBy,
-            groupBy=nothing
+    if !isnothing(plotconfig.spectoryBy)
+        p = plot(
+            leg=plotconfig.leg,
+            aspect_ratio=:equal,
+            margin=plotconfig.margin,
+            yrotation=90,
+            size=(plotconfig.size, plotconfig.size)
         )
-    ))
 
-    plot_trajectories!(M, p, model, plotconfig)
-    push!(ps, p)
+        letter = DEFAULT_ALPHABET[length(ps)+1]
+        title!(p, "($(letter)) Spectory by $(plotconfig.spectoryBy)")
+        plot_network!(M, p, model, NodesOnlyLinearEdgePainter(), plotconfig)
+        plot_units!(M, p, model, merge(
+            plotconfig,
+            (
+                spectralColorBy=plotconfig.spectoryBy,
+                groupBy=nothing
+            )
+        ))
+
+        plot_spectories!(M, p, model, plotconfig)
+        plot_means!(M, p, model, plotconfig)
+        push!(ps, p)
+    end    
 end
 
 # Plot Elements
@@ -1019,21 +1068,35 @@ function plot_units!(
     label = plotconfig.unitLabel
 
     # Optionally, color spectrally
-    if !isnothing(plotconfig.spectralColorBy)
+    if !isnothing(plotconfig.spectralColorBy) && isnothing(plotconfig.groupBy)
         # label = string(plotconfig.spectralColorBy) # TODO show a scale, not one random color
         label = nothing
+        colData = nothing
         if plotconfig.spectralColorBy in Symbol.(names(model.accum))
-            colVals = Vector{Real}(model.accum[displayRows, plotconfig.spectralColorBy])
-            allColVals = colVals = Vector{Real}(model.accum[!, plotconfig.spectralColorBy])
-            colVals = colVals .- minimum(allColVals)
-            colVals /= maximum(allColVals)
-            colors = [HSL(colVal*240, 1, 0.5) for colVal in colVals]
+            colData = model.accum
         elseif plotconfig.spectralColorBy in Symbol.(names(model.metadata))
-            colVals = Vector{Real}(model.metadata[displayRows, plotconfig.spectralColorBy])
-            allColVals = Vector{Real}(model.metadata[!, plotconfig.spectralColorBy])
-            colVals = colVals .- minimum(allColVals)
-            colVals /= maximum(allColVals)
-            colors = [HSL(colVal*240, 1, 0.5) for colVal in colVals]
+            colData = model.metadata
+        end
+
+        if !isnothing(colData)
+            colVals = Vector{Real}(colData[displayRows, plotconfig.spectralColorBy])
+            allColVals = Vector{Real}(colData[!, plotconfig.spectralColorBy])
+            colMin = minimum(allColVals)
+            colMax = maximum(allColVals)
+            colVals = colVals .- colMin
+            colVals /= colMax
+            colors = getSpectralColors(colVals)
+
+            if plotconfig.colorbar
+                T = 10
+                plot!(p,
+                    [], [], label=false,
+                    marker_z=colMin:colMax,
+                    color=cgrad(getSpectralColors((t - 1)/(T - 1) for t in 1:T)),
+                    colorbar=true,
+                    colorbar_title=string(plotconfig.spectralColorBy)
+                )
+            end
         end
     end
     
@@ -1166,4 +1229,63 @@ function plot_trajectories!(
             )
         end
     end 
+end
+
+function plot_spectories!(
+        ::Type{M},
+        p::Plot,
+        model::AbstractLinearENAModel,
+        plotconfig::NamedTuple,
+        displayRows::BitVector=BitVector(repeat([true], nrow(model.accum)))
+    ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
+
+    if isnothing(plotconfig.spectoryBy)
+        return
+    end
+
+    tempPositions = DataFrame(Dict(
+        :unitID => model.accum.unitID,
+        :pos_x => [fixX(model.points[plotconfig.x, unitID], plotconfig) for unitID in model.accum.unitID],
+        :pos_y => [fixY(model.points[plotconfig.y, unitID], plotconfig) for unitID in model.accum.unitID]
+    ))
+
+    smoothingData = innerjoin(model.accum[displayRows, :], model.metadata[displayRows, :], on=:unitID)
+    smoothingData = innerjoin(smoothingData, tempPositions, on=:unitID)
+    if plotconfig.spectoryBy in Symbol.(names(smoothingData))
+        sb = plotconfig.spectoryBy
+        sort!(smoothingData, sb)
+        sb_min = first(smoothingData[!, sb])
+        sb_max = last(smoothingData[!, sb])
+        N = nrow(smoothingData)
+        T = floor(Int, 1 + (1 - plotconfig.spectoryBinPercent) / plotconfig.spectoryBinStep)
+        # T = floor(Int, 2 * (1 / plotconfig.spectoryBinPercent) - 1)
+        for t in 1:T
+            left = max(1, floor(Int, 1 + (t-1) * plotconfig.spectoryBinStep * N))
+            right = min(N, floor(Int, left + plotconfig.spectoryBinPercent * N))
+            # left = floor(Int, (t - 1) / T * N + 1)
+            # right = min(floor(Int, t / T * N + 1), N)
+            mid = round(Int, (left+right) / 2)
+            sb_mid = smoothingData[mid, sb]
+            xs = Vector(smoothingData[left:right, :pos_x])
+            ys = Vector(smoothingData[left:right, :pos_y])
+            color = first(getSpectralColors([(sb_mid - sb_min)/(sb_max - sb_min)]))
+            plot_kde_without_cbar!(p,
+                kde((xs, ys)),
+                levels=[1],
+                color=color
+            )
+        end
+    end 
+end
+
+# BUGFIX existing contour plots have a cbar by default.
+# That existing cbar conflicts with other cbars we might want to do, eg., one
+# based on the unit points themselves, subtraction network edges, etc
+function plot_kde_without_cbar!(p::Plot, U::BivariateKDE; levels::Vector{<:Real}=[1], color::Colorant=:black)
+    for level in Contour.levels(contours(U.x, U.y, U.density, levels))
+        for line in lines(level)
+
+            plot!(p, vertices(line), linecolor=color, label=nothing)
+        end
+    end
 end

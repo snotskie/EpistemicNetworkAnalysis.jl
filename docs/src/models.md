@@ -21,3 +21,9 @@ EpistemicNetworkAnalysis.DigraphENAModel
 ```@docs
 EpistemicNetworkAnalysis.BiplotENAModel
 ```
+
+## CodewiseENAModel
+
+```@docs
+EpistemicNetworkAnalysis.CodewiseENAModel
+```

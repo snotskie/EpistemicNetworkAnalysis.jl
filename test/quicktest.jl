@@ -4,6 +4,7 @@
 using DataFrames
 using GLM
 using Serialization
+using Plots
 include("../src/EpistemicNetworkAnalysis.jl")
 
 # data = EpistemicNetworkAnalysis.loadExample("toy")
@@ -88,14 +89,18 @@ modeldes = deserialize("test/temp.ena")
 
 p = EpistemicNetworkAnalysis.plot(
     model2,
+    confidenceShape=:density,
+    fitNodesToCircle=true,
     # showWeakEdges=false,
-    # zoom=.6,
+    zoom=.8,
     # trajectoryBy=:Act,
     # trajectoryBy=:rand,
     # groupBy=group,
     # x=3,
     # y=4,
 )
+
+savefig(p, "test/temp.png")
 
 #=
 TODO:
