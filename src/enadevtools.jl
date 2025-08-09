@@ -153,6 +153,10 @@ function constructENA(
         )...
     )
 
+    if !isfinite(model.config.windowSize)
+        @warn "The windowSize for this model is Infinity (a \"whole conversation\" model).\n\nIf this is what you intended, you may ignore this warning.\n\nOtherwise, please set an appropriate windowSize. For example: ENAModel(data, codes, conversations, units, windowSize= ... )\n\nThe appropriate windowSize can only be determined empirically by a human: How many lines worth of context do you need, on average, to interpret utterances in your data well enough to answer your research questions?"
+    end
+
     accumulate!(M, model)
     substantiate!(M, model)
     approximate!(M, model)
