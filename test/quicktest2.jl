@@ -47,9 +47,13 @@ model = EpistemicNetworkAnalysis.ENAModel(
     data, codes, conversations, units,
     rotateBy=rotation,
     lineNormalize=true,
-    dropEmpty=true
+    # dropEmpty=true
 )
-p = EpistemicNetworkAnalysis.plot(model, confidenceShape=:density, spectoryBy=:Day, spectralColorBy=:Day, spectoryBinPercent=1/3, spectoryBinStep=1/6, colorbar=true)
+p = EpistemicNetworkAnalysis.plot(model,
+    # x=3, y=4,
+    confidenceShape=:density, spectoryBy=:Day, spectralColorBy=:Day,
+    spectoryBinPercent=1/3, spectoryBinStep=1/6, colorbar=true,
+    showWarps=true)
 display(p)
 # sp = plot(p.subplots[1], size=(600,600))
 # display(sp)
