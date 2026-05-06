@@ -58,10 +58,14 @@ rotations = [
 ]
 
 for M in models
+    if M == CodewiseENAModel
+        units = [:Play, :CodewiseCode]
+    end
     for (label, rotation) in rotations
         myENA = M(
             data, codes, conversations, units,
-            rotateBy=rotation
+            rotateBy=rotation,
+            windowSize=10
         )
 
         @testset "$(nameof(M)){$(nameof(typeof(rotation)))} runs" begin
@@ -125,7 +129,8 @@ for M in models
         @testset "$(nameof(M)){$(nameof(typeof(rotation)))} trains" begin
             trainedENA = M(
                 data, codes, conversations, units;
-                rotateBy=TrainedRotation(myENA)
+                rotateBy=TrainedRotation(myENA),
+                windowSize=10
             )
 
             tp = plot(trainedENA)
