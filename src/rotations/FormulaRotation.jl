@@ -74,14 +74,14 @@ function FormulaRotation(
 
     for i in 1:4:length(args)
         push!(regression_models, args[i+0])
-        push!(coef_indexes, args[i+1])
-        if args[i+2] isa Term # BUGFIX
-            push!(formulas, [args[i+2]])
+        if args[i+1] isa Term # BUGFIX
+            push!(formulas, [args[i+1]])
         else
-            push!(formulas, args[i+2])
+            push!(formulas, args[i+1])
         end
+        
+        push!(coef_indexes, args[i+2])
         push!(contrasts, args[i+3])
-        i += 4
     end
 
     return FormulaRotation(regression_models, formulas, coef_indexes, contrasts)
