@@ -34,4 +34,4 @@ UMAP = "c4f8c510-2410-5be4-91d7-4fbaeb39457e"
 XLSX = "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
 
 [compat]
-julia = "1.8"
+julia = "1.12"

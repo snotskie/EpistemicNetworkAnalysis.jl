@@ -28,11 +28,11 @@ codes = [
    :Women
 ]
 # group = :Play
-rotation = EpistemicNetworkAnalysis.MeansRotation(
-    :Play, "Romeo and Juliet", "Hamlet",
-    # :Act, 1, 5,
-    # moderated=true
-)
+# rotation = EpistemicNetworkAnalysis.MeansRotation(
+#     :Play, "Romeo and Juliet", "Hamlet",
+#     # :Act, 1, 5,
+#     # moderated=true
+# )
 
 # rotation = EpistemicNetworkAnalysis.LDARotation(
 #     :Play
@@ -44,11 +44,14 @@ rotation = EpistemicNetworkAnalysis.MeansRotation(
 #     :Act
 # )
 
-# rotation = EpistemicNetworkAnalysis.TopicRotation(
-#     "Women-Death vs. Honor",
-#     [:Women, :Death],
-#     [:Honor]
-# )
+rotation = EpistemicNetworkAnalysis.TopicRotation(
+    "Women-Death vs. Honor",
+    # [:Women, :Death],
+    [],
+    # [],
+    [:Honor],
+    [:Men, :Love]
+)
 
 # rotation = EpistemicNetworkAnalysis.FormulaRotation(
 #     LinearModel, @formula(y ~ 1 + rand), 2, nothing
@@ -58,27 +61,28 @@ model = EpistemicNetworkAnalysis.ENAModel(
     data, codes, conversations, units,
     windowSize=4,
     rotateBy=rotation,
+    sphereNorm=false,
     # recenterEmpty=true,
     # unitFilter=row->row.Act in [1, 2, 5],
-    dropEmpty=true,
+    # dropEmpty=true,
 )
 
-model2 = EpistemicNetworkAnalysis.ENAModel(
-    data, codes, conversations, units,
-    windowSize=10,
-    rotateBy=EpistemicNetworkAnalysis.TrainedRotation(model),
-    # recenterEmpty=true,
-    # rotateBy=rotation,
-    # unitFilter=row->row.Act in [1, 2, 5],
-    dropEmpty=true,
-)
+# model2 = EpistemicNetworkAnalysis.ENAModel(
+#     data, codes, conversations, units,
+#     windowSize=10,
+#     rotateBy=EpistemicNetworkAnalysis.TrainedRotation(model),
+#     # recenterEmpty=true,
+#     # rotateBy=rotation,
+#     # unitFilter=row->row.Act in [1, 2, 5],
+#     dropEmpty=true,
+# )
 
-@show(EpistemicNetworkAnalysis.statistics(model2))
-@show(model2)
-EpistemicNetworkAnalysis.to_xlsx("test/temp.xlsx", model2)
-serialize("test/temp.ena", model)
-modeldes = deserialize("test/temp.ena")
-@show(modeldes)
+# @show(EpistemicNetworkAnalysis.statistics(model2))
+# @show(model2)
+# EpistemicNetworkAnalysis.to_xlsx("test/temp.xlsx", model2)
+# serialize("test/temp.ena", model)
+# modeldes = deserialize("test/temp.ena")
+# @show(modeldes)
 
 # modelxlsx = EpistemicNetworkAnalysis.from_xlsx("test/temp.xlsx")
 # @show(modelxlsx)
@@ -88,11 +92,12 @@ modeldes = deserialize("test/temp.ena")
 # model2 = EpistemicNetworkAnalysis.ENAModel(model, rotateBy=rotation)
 
 p = EpistemicNetworkAnalysis.plot(
-    model2,
-    confidenceShape=:density,
-    fitNodesToCircle=true,
+    model,
+    # model2,
+    # confidenceShape=:density,
+    # fitNodesToCircle=true,
     # showWeakEdges=false,
-    zoom=.8,
+    zoom=.7,
     # trajectoryBy=:Act,
     # trajectoryBy=:rand,
     # groupBy=group,

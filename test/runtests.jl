@@ -5,6 +5,8 @@ using GLM
 using Plots
 using LinearAlgebra
 
+function run()
+
 ENV["JULIA_DEBUG"] = EpistemicNetworkAnalysis
 
 data = loadExample("shakespeare")
@@ -49,6 +51,10 @@ rotations = [
     ),
     "Play" => MeansRotation(:Play, "Romeo and Juliet", "Hamlet"),
     "Gender" => TopicRotation("Gender", [:Women], [:Men]),
+    "Gender2" => TopicRotation("Gender2", [:Women], [:Men], []),
+    "Death" => TopicRotation("Gender3", [:Women], [:Men], [:Death]),
+    "OffTopic1" => TopicRotation("Gender4", [:Women], [:Men], [:Death, :Honor]),
+    "OffTopic1" => TopicRotation("Gender4", [:Women], [:Men], [:Death, :Honor, :Love]),
     "Play" => MeansRotation(:Play, "Romeo and Juliet", "Hamlet", :Act, 1, 5, moderated=false),
     "Play" => MeansRotation(:Play, "Romeo and Juliet", "Hamlet", :Act, 1, 5),
     "LDA1" => LDARotation(:Play),
@@ -167,3 +173,7 @@ for M in models
         end
     end
 end
+
+end
+
+run()
