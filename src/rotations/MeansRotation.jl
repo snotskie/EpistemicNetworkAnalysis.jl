@@ -61,13 +61,12 @@ function MeansRotation(
     f1 = @formula(y ~ 1)
     f1 = FormulaTerm(f1.lhs, f1.rhs + Term(Symbol(string("MCFactored_", groupVar1))))
 
-    for i in 1:4:length(args)
+    for i in 1:3:length(args)
         push!(groupVars, args[i+0])
         push!(controlGroups, args[i+1])
         push!(treatmentGroups, args[i+2])
         fterm = Term(Symbol(string("MCFactored_", args[i+0])))
         f1 = FormulaTerm(f1.lhs, f1.rhs + fterm)
-        i += 4
     end
 
     if moderated
