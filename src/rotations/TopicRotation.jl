@@ -87,8 +87,6 @@ function rotate!(
         return nodeID in model.rotation.treatmentNodes
     end
 
-    @show controlRows
-    @show treatmentRows
     for edgeID in edgeIDs
         if sum(controlRows) > 0
             muControl = mean(model.nodes[controlRows, edgeID])
