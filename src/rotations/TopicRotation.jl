@@ -70,10 +70,17 @@ function rotate!(
             # Prevent SVD from adding more dimensions than are possible
             numSVDDims = min(size(svd, 1), length(edgeIDs))
             @debug numSVDDims
-            embedding = similar(model.embedding, numSVDDims+1)
+            embedding = similar(model.embedding, numSVDDims+length(model.rotation.offTopicNodes)+1)
             embedding[1:numSVDDims, edgeIDs] = svd[1:numSVDDims, :]
             embedding[1:numSVDDims, :label] = ["OffTopic$(i)" for i in 1:numSVDDims]
             embedding[1:numSVDDims, :eigen_value] = eigvals(pca)[1:numSVDDims]
+            for i in 1:length(model.rotation.offTopicNodes)
+                embedding[i+numSVDDims, :label] = string(model.rotation.offTopicNodes[i])
+                for edgeID in edgeIDs
+                    muOffTopic = mean(model.nodes[offTopicRows, edgeID])
+                    embedding[i+numSVDDims, edgeID] = muOffTopic
+                end
+            end
         end
     end
 
@@ -130,7 +137,7 @@ function defaultplotkwargs(
         x = 2
         y = 1
     elseif length(model.rotation.offTopicNodes) > 1
-        x = 1 + length(filter(label -> startswith(label, "OffTopic"), model.embedding.label))
+        x = 1 + length(filter(label -> startswith(label, "OffTopic"), model.embedding.label)) + length(model.rotation.offTopicNodes)
         y = 1
     end
 

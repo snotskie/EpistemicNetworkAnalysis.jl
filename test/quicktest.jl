@@ -46,11 +46,11 @@ codes = [
 
 rotation = EpistemicNetworkAnalysis.TopicRotation(
     "Women-Death vs. Honor",
-    # [:Women, :Death],
-    [],
+    [:Women],
     # [],
-    [:Honor],
-    [:Men, :Love]
+    # [],
+    [:Love],
+    [:Men, :Love, :Death]
 )
 
 # rotation = EpistemicNetworkAnalysis.FormulaRotation(
