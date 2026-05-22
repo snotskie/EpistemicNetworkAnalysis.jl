@@ -26,6 +26,10 @@ Models using an `LDARotation` will run the following statistical tests:
 """
 LDARotation
 
+function LDARotation(groupVar::Any)
+    return LDARotation(Symbol(groupVar))
+end
+
 function rotate!(
         ::Type{M}, model::AbstractLinearENAModel
     ) where {R<:AbstractLDARotation, M<:AbstractLinearENAModel{R}}

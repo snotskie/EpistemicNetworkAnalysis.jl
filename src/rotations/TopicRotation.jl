@@ -10,8 +10,8 @@ end
     TopicRotation(
         topicName::AbstractString,
         controlNodes::Array{Symbol},
-        treatmentNodes::Array{Symbol}
-        offTopicNodes::Array{Symbol}=[]
+        treatmentNodes::Array{Symbol};
+        offTopic::Array{Symbol}=[]
     )
 
 Define a rotation that places its x-axis through the mean of `controlNodes` on the left and the mean of `treatmentNodes` on the right, ie., through an *a priori* defined topic
@@ -29,11 +29,26 @@ TopicRotation
 
 function TopicRotation(
         topicName::AbstractString,
-        controlNodes::Array{Symbol},
-        treatmentNodes::Array{Symbol}
+        controlNodes::Array{<:Any},
+        treatmentNodes::Array{<:Any}=[];
+        offTopic::Array{<:Any}=[]
     )
 
-    return TopicRotation(topicName, controlNodes, treatmentNodes, [])
+    if length(treatmentNodes) == 0
+        return TopicRotation(
+            topicName,
+            Symbol[],
+            convert(Array{Symbol}, Symbol.(controlNodes)),
+            convert(Array{Symbol}, Symbol.(offTopic))
+        )
+    else
+        return TopicRotation(
+            topicName,
+            convert(Array{Symbol}, Symbol.(controlNodes)),
+            convert(Array{Symbol}, Symbol.(treatmentNodes)),
+            convert(Array{Symbol}, Symbol.(offTopic))
+        )
+    end
 end
 
 function rotate!(

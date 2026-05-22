@@ -50,17 +50,22 @@ rotations = [
         nothing
     ),
     "Play" => MeansRotation(:Play, "Romeo and Juliet", "Hamlet"),
+    "Play" => MeansRotation("Play", "Romeo and Juliet", "Hamlet"),
+    "Men" => TopicRotation("Men", [:Men]),
     "Gender" => TopicRotation("Gender", [:Women], [:Men]),
-    "Gender2" => TopicRotation("Gender2", [:Women], [:Men], []),
-    "Death" => TopicRotation("Gender3", [:Women], [:Men], [:Death]),
-    "OffTopic1" => TopicRotation("Gender4", [:Women], [:Men], [:Death, :Honor]),
-    "OffTopic1" => TopicRotation("Gender4", [:Women], [:Men], [:Death, :Honor, :Love]),
+    "Gender2" => TopicRotation("Gender2", [:Women], [:Men], offTopic=[]),
+    "Death" => TopicRotation("Gender3", [:Women], [:Men], offTopic=[:Death]),
+    "OffTopic1" => TopicRotation("Gender4", [:Women], [:Men], offTopic=[:Death, :Honor]),
+    "OffTopic1" => TopicRotation("Gender5", [:Women], [:Men], offTopic=[:Death, :Honor, :Love]),
     "Play" => MeansRotation(:Play, "Romeo and Juliet", "Hamlet", :Act, 1, 5, moderated=false),
     "Play" => MeansRotation(:Play, "Romeo and Juliet", "Hamlet", :Act, 1, 5),
+    "Play" => MeansRotation("Play", "Romeo and Juliet", "Hamlet", "Act", 1, 5),
     "LDA1" => LDARotation(:Play),
     "LDA1" => LDARotation(:Act),
+    "LDA1" => LDARotation("Act"),
     "MCMR1" => MulticlassRotation(:Play),
-    "MCMR1" => MulticlassRotation(:Act)
+    "MCMR1" => MulticlassRotation(:Act),
+    "MCMR1" => MulticlassRotation("Act"),
 ]
 
 for M in models

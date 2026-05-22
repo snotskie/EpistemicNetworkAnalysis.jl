@@ -26,6 +26,10 @@ Models using an `MulticlassRotation` will run the following statistical tests:
 """
 MulticlassRotation
 
+function MulticlassRotation(groupVar::Any)
+    return MulticlassRotation(Symbol(groupVar))
+end
+
 function rotate!(
         ::Type{M}, model::AbstractLinearENAModel
     ) where {R<:AbstractMulticlassRotation, M<:AbstractLinearENAModel{R}}

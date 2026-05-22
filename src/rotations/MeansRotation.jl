@@ -21,7 +21,7 @@ end
         args...;
 
         # Optional, whether to moderate the interactions between group dimensions
-        moderated=false
+        moderated::Bool=false
     )
 
 Define a rotation for comparing pairs of groups, by maximizing the variance between pairs
@@ -46,23 +46,23 @@ Models using a `MeansRotation` will run the following statistical tests:
 MeansRotation
 
 function MeansRotation(
-        groupVar1::Symbol,
+        groupVar1::Any,
         controlGroup1::Any,
         treatmentGroup1::Any,
         args...;
-        moderated=false
+        moderated::Bool=false
     )
 
     @assert length(args) % 3 == 0 "MeansRotation expects a multiple of 3 arguments"
 
-    groupVars = Symbol[groupVar1]
+    groupVars = Symbol[Symbol(groupVar1)]
     controlGroups = Any[controlGroup1]
     treatmentGroups = Any[treatmentGroup1]
     f1 = @formula(y ~ 1)
     f1 = FormulaTerm(f1.lhs, f1.rhs + Term(Symbol(string("MCFactored_", groupVar1))))
 
     for i in 1:3:length(args)
-        push!(groupVars, args[i+0])
+        push!(groupVars, Symbol(args[i+0]))
         push!(controlGroups, args[i+1])
         push!(treatmentGroups, args[i+2])
         fterm = Term(Symbol(string("MCFactored_", args[i+0])))
