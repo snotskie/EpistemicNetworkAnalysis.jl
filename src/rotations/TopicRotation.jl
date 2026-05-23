@@ -50,7 +50,7 @@ function rotate!(
         ::Type{M}, model::AbstractLinearENAModel
     ) where {R<:AbstractTopicRotation, M<:AbstractLinearENAModel{R}}
 
-    offTopicNodes = setdiff(Symbol.(model.nodes.nodeID), model.rotation.controlNodes, model.rotation.treatmentNodes)
+    offTopicNodes = setdiff(Symbol.(model.nodes.nodeID), Symbol.(model.rotation.controlNodes), Symbol.(model.rotation.treatmentNodes))
     # if length(offTopicNodes) > 0 && (model.config.sphereNormalize || model.config.lineNormalize)
     #     @warn """
     #     A TopicRotation was used for a normalized model that has off topic codes.
