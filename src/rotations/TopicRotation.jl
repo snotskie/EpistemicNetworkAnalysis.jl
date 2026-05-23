@@ -3,15 +3,13 @@ struct TopicRotation <: AbstractTopicRotation
     topicName::AbstractString
     controlNodes::Array{Symbol}
     treatmentNodes::Array{Symbol}
-    offTopicNodes::Array{Symbol}
 end
 
 """
     TopicRotation(
         topicName::AbstractString,
         controlNodes::Array{Symbol},
-        treatmentNodes::Array{Symbol};
-        offTopic::Array{Symbol}=[]
+        treatmentNodes::Array{Symbol}
     )
 
 Define a rotation that places its x-axis through the mean of `controlNodes` on the left and the mean of `treatmentNodes` on the right, ie., through an *a priori* defined topic
@@ -29,42 +27,43 @@ TopicRotation
 
 function TopicRotation(
         topicName::AbstractString,
-        controlNodes::Array{<:Any},
-        treatmentNodes::Array{<:Any}=[];
-        offTopic::Array{<:Any}=[]
+        treatmentNodes::Array{<:Any}
     )
 
-    if length(treatmentNodes) == 0
-        return TopicRotation(
-            topicName,
-            Symbol[],
-            convert(Array{Symbol}, Symbol.(controlNodes)),
-            convert(Array{Symbol}, Symbol.(offTopic))
-        )
-    else
-        return TopicRotation(
-            topicName,
-            convert(Array{Symbol}, Symbol.(controlNodes)),
-            convert(Array{Symbol}, Symbol.(treatmentNodes)),
-            convert(Array{Symbol}, Symbol.(offTopic))
-        )
-    end
+    return TopicRotation(
+        topicName,
+        Symbol[],
+        convert(Array{Symbol}, Symbol.(treatmentNodes))
+    )
 end
 
 function rotate!(
         ::Type{M}, model::AbstractLinearENAModel
     ) where {R<:AbstractTopicRotation, M<:AbstractLinearENAModel{R}}
 
+    offTopicNodes = setdiff(Symbol.(model.nodes.nodeID), model.rotation.controlNodes, model.rotation.treatmentNodes)
+    # if length(offTopicNodes) > 0 && (model.config.sphereNormalize || model.config.lineNormalize)
+    #     @warn """
+    #     A TopicRotation was used for a normalized model that has off topic codes.
+            
+    #     If you are using this model to test a causal hypothesis, be aware that normalization makes all codes conditionally dependent on one another.
+
+    #     WITHOUT normalization, TopicRotation can be used to test if the discourse context changes the AMOUNT of talk related to the specified topic. Off topic conversation does NOT change the result.
+
+    #     WITH normalization, TopicRotation can be used to test if the discourse context changes the FOCUS of the whole conversation to be closer to the specified topic. Off topic conversation DOES change the result.
+    #     """
+    # end
+
     edgeIDs = model.edges.edgeID
     embedding = similar(model.embedding, 1)
-    if length(model.rotation.offTopicNodes) > 0
+    if length(offTopicNodes) > 0
         offTopicRows = map(model.nodes.nodeID) do nodeID
-            return nodeID in model.rotation.offTopicNodes
+            return nodeID in offTopicNodes
         end
 
-        if length(model.rotation.offTopicNodes) == 1
+        if length(offTopicNodes) == 1
             embedding = similar(model.embedding, 2)
-            embedding[1, :label] = string(model.rotation.offTopicNodes[1])
+            embedding[1, :label] = string(offTopicNodes[1])
             for edgeID in edgeIDs
                 muOffTopic = mean(model.nodes[offTopicRows, edgeID])
                 embedding[1, edgeID] = muOffTopic
@@ -145,10 +144,11 @@ function defaultplotkwargs(
         kwargs...
     ) where {R<:AbstractTopicRotation, M<:AbstractLinearENAModel{R}}
 
-    if length(model.rotation.offTopicNodes) == 1
+    offTopicNodes = setdiff(Symbol.(model.nodes.nodeID), model.rotation.controlNodes, model.rotation.treatmentNodes)
+    if length(offTopicNodes) == 1
         x = 2
         y = 1
-    elseif length(model.rotation.offTopicNodes) > 1
+    elseif length(offTopicNodes) > 1
         x = 1 + length(filter(label -> startswith(label, "OffTopic"), model.embedding.label))
         y = 1
     end

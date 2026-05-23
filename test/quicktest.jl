@@ -5,6 +5,7 @@ using DataFrames
 using GLM
 using Serialization
 using Plots
+using HypothesisTests
 include("../src/EpistemicNetworkAnalysis.jl")
 
 # data = EpistemicNetworkAnalysis.loadExample("toy")
@@ -49,8 +50,8 @@ rotation = EpistemicNetworkAnalysis.TopicRotation(
     [:Women],
     # [],
     # [],
-    [:Love],
-    [:Men, :Love, :Death]
+    [:Men],
+    # [:Men, :Love, :Death]
 )
 
 # rotation = EpistemicNetworkAnalysis.FormulaRotation(
@@ -61,11 +62,23 @@ model = EpistemicNetworkAnalysis.ENAModel(
     data, codes, conversations, units,
     windowSize=4,
     rotateBy=rotation,
-    sphereNorm=false,
+    sphereNormalize=false,
     # recenterEmpty=true,
     # unitFilter=row->row.Act in [1, 2, 5],
     # dropEmpty=true,
 )
+
+# model2 = EpistemicNetworkAnalysis.ENAModel(
+#     data, codes, conversations, units,
+#     windowSize=4,
+#     rotateBy=rotation,
+#     sphereNormalize=false,
+#     # recenterEmpty=true,
+#     # unitFilter=row->row.Act in [1, 2, 5],
+#     # dropEmpty=true,
+# )
+
+# @show sum((Vector(model.points[1, :]) .- Vector(model2.points[1, :]))) / length(Vector(model2.points[1, :]))
 
 # model2 = EpistemicNetworkAnalysis.ENAModel(
 #     data, codes, conversations, units,
@@ -97,10 +110,10 @@ p = EpistemicNetworkAnalysis.plot(
     # confidenceShape=:density,
     # fitNodesToCircle=true,
     # showWeakEdges=false,
-    zoom=.7,
+    zoom=3,
     # trajectoryBy=:Act,
     # trajectoryBy=:rand,
-    # groupBy=group,
+    groupBy=:Play,
     # x=3,
     # y=4,
 )
