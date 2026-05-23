@@ -3,6 +3,27 @@ struct TopicRotation <: AbstractTopicRotation
     topicName::AbstractString
     controlNodes::Array{Symbol}
     treatmentNodes::Array{Symbol}
+    function TopicRotation(
+            topicName::AbstractString,
+            controlNodes::Array{<:Any},
+            treatmentNodes::Array{<:Any}=[]
+        )
+
+        @assert length(controlNodes) + length(treatmentNodes) > 0 "At least one coded required for TopicRotation"
+        if length(treatmentNodes) == 0
+            return new(
+                topicName,
+                Symbol[],
+                convert(Array{Symbol}, Symbol.(controlNodes))
+            )
+        else
+            return new(
+                topicName,
+                convert(Array{Symbol}, Symbol.(controlNodes)),
+                convert(Array{Symbol}, Symbol.(treatmentNodes))
+            )
+        end
+    end
 end
 
 """
@@ -24,18 +45,6 @@ rotation = TopicRotation(
 ```
 """
 TopicRotation
-
-function TopicRotation(
-        topicName::AbstractString,
-        treatmentNodes::Array{<:Any}
-    )
-
-    return TopicRotation(
-        topicName,
-        Symbol[],
-        convert(Array{Symbol}, Symbol.(treatmentNodes))
-    )
-end
 
 function rotate!(
         ::Type{M}, model::AbstractLinearENAModel

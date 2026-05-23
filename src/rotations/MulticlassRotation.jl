@@ -1,6 +1,9 @@
 abstract type AbstractMulticlassRotation <: AbstractGroupDifferenceRotation end
 struct MulticlassRotation <: AbstractMulticlassRotation
     groupVar::Symbol
+    function MulticlassRotation(groupVar::Any)
+        return new(Symbol(groupVar))
+    end
 end
 
 """
@@ -25,10 +28,6 @@ Models using an `MulticlassRotation` will run the following statistical tests:
 - `KruskalWallisTest` for each dimension
 """
 MulticlassRotation
-
-function MulticlassRotation(groupVar::Any)
-    return MulticlassRotation(Symbol(groupVar))
-end
 
 function rotate!(
         ::Type{M}, model::AbstractLinearENAModel

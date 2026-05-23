@@ -1,6 +1,9 @@
 abstract type AbstractLDARotation <: AbstractGroupDifferenceRotation end
 struct LDARotation <: AbstractLDARotation
     groupVar::Symbol
+    function LDARotation(groupVar::Any)
+        return new(Symbol(groupVar))
+    end
 end
 
 """
@@ -25,10 +28,6 @@ Models using an `LDARotation` will run the following statistical tests:
 - `KruskalWallisTest` for each dimension
 """
 LDARotation
-
-function LDARotation(groupVar::Any)
-    return LDARotation(Symbol(groupVar))
-end
 
 function rotate!(
         ::Type{M}, model::AbstractLinearENAModel
