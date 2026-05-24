@@ -114,7 +114,7 @@ p = EpistemicNetworkAnalysis.plot(
     # trajectoryBy=:Act,
     # trajectoryBy=:rand,
     groupBy=:Play,
-    # x=3,
+    x=3,
     # y=4,
 )
 
