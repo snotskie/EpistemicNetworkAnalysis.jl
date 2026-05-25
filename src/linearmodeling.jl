@@ -275,11 +275,42 @@ function accumulate!(
     # normalize each unit, if requested
     edgeIDs = model.edges.edgeID
     if model.config.sphereNormalize || model.config.lineNormalize
-        for i in 1:nrow(model.accum)
-            vector = Vector{Float64}(model.accum[i, edgeIDs])
-            s = sqrt(sum(vector .^ 2))
-            if s != 0
-                model.accum[i, edgeIDs] = vector / s
+        if model.rotation isa AbstractTopicRotation
+            # In the special case of a TopicRotation, symmetric decompose the sphere normed vectors
+            # so that the topic and offtopic halves have the same length, yet add up to
+            # the same total vector as original (within small precision error)
+            topicNodes = Symbol.(union(model.rotation.controlNodes, model.rotation.treatmentNodes))
+            offTopicNodes = setdiff(Symbol.(model.nodes.nodeID), topicNodes)
+            topicEdges = [
+                edge.edgeID
+                for edge in eachrow(model.edges)
+                if Symbol(edge.ground) in topicNodes || Symbol(edge.response) in topicNodes
+            ]
+            offTopicEdges = setdiff(model.edges.edgeID, topicEdges)
+            for i in 1:nrow(model.accum)
+                vector = Vector{Float64}(model.accum[i, topicEdges])
+                s = sqrt(sum(vector .^ 2))
+                if s != 0
+                    model.accum[i, topicEdges] = vector / s / sqrt(2)
+                end
+
+                vector = Vector{Float64}(model.accum[i, offTopicEdges])
+                s = sqrt(sum(vector .^ 2))
+                if s != 0
+                    model.accum[i, offTopicEdges] = vector / s / sqrt(2)
+                end
+
+                vector = Vector{Float64}(model.accum[i, edgeIDs])
+                s = sqrt(sum(vector .^ 2))
+                @assert s ≈ 1 || s ≈ 0 || s ≈ 1/sqrt(2)
+            end
+        else
+            for i in 1:nrow(model.accum)
+                vector = Vector{Float64}(model.accum[i, edgeIDs])
+                s = sqrt(sum(vector .^ 2))
+                if s != 0
+                    model.accum[i, edgeIDs] = vector / s
+                end
             end
         end
 

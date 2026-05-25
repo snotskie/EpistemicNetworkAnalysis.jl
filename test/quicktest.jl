@@ -62,7 +62,7 @@ model = EpistemicNetworkAnalysis.ENAModel(
     data, codes, conversations, units,
     windowSize=4,
     rotateBy=rotation,
-    sphereNormalize=false,
+    sphereNormalize=true,
     # recenterEmpty=true,
     # unitFilter=row->row.Act in [1, 2, 5],
     # dropEmpty=true,
@@ -110,12 +110,12 @@ p = EpistemicNetworkAnalysis.plot(
     # confidenceShape=:density,
     # fitNodesToCircle=true,
     # showWeakEdges=false,
-    zoom=3,
+    # zoom=3,
     # trajectoryBy=:Act,
     # trajectoryBy=:rand,
     groupBy=:Play,
-    x=3,
-    # y=4,
+    # x=3,
+    # y=5,
 )
 
 savefig(p, "test/temp.png")
