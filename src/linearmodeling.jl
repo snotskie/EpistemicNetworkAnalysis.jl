@@ -283,7 +283,8 @@ function accumulate!(
         if model.rotation isa AbstractTrainedRotation
             trainmodel = model.rotation.trainmodel
         end
-        if trainmodel.rotation isa AbstractTopicRotation
+        dirty = false
+        if trainmodel.rotation isa AbstractTopicRotation && trainmodel.rotation.symmetricNormalization
             topicNodes = Symbol.(union(trainmodel.rotation.controlNodes, trainmodel.rotation.treatmentNodes))
             offTopicNodes = setdiff(Symbol.(model.nodes.nodeID), topicNodes)
             topicEdges = [
@@ -293,6 +294,7 @@ function accumulate!(
             ]
             offTopicEdges = setdiff(model.edges.edgeID, topicEdges)
             if length(topicEdges) > 0 && length(offTopicEdges) > 0
+                dirty = true
                 for i in 1:nrow(model.accum)
                     vector = Vector{Float64}(model.accum[i, topicEdges])
                     s = sqrt(sum(vector .^ 2))
@@ -313,11 +315,13 @@ function accumulate!(
             end
         end
 
-        for i in 1:nrow(model.accum)
-            vector = Vector{Float64}(model.accum[i, edgeIDs])
-            s = sqrt(sum(vector .^ 2))
-            if s != 0
-                model.accum[i, edgeIDs] = vector / s
+        if !dirty
+            for i in 1:nrow(model.accum)
+                vector = Vector{Float64}(model.accum[i, edgeIDs])
+                s = sqrt(sum(vector .^ 2))
+                if s != 0
+                    model.accum[i, edgeIDs] = vector / s
+                end
             end
         end
 

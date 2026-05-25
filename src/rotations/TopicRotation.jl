@@ -3,10 +3,12 @@ struct TopicRotation <: AbstractTopicRotation
     topicName::AbstractString
     controlNodes::Array{Symbol}
     treatmentNodes::Array{Symbol}
+    symmetricNormalization::Bool
     function TopicRotation(
             topicName::AbstractString,
             controlNodes::Array{<:Any},
-            treatmentNodes::Array{<:Any}=[]
+            treatmentNodes::Array{<:Any}=[];
+            symmetricNormalization::Bool=true
         )
 
         @assert length(controlNodes) + length(treatmentNodes) > 0 "At least one coded required for TopicRotation"
@@ -14,13 +16,15 @@ struct TopicRotation <: AbstractTopicRotation
             return new(
                 topicName,
                 Symbol[],
-                convert(Array{Symbol}, Symbol.(controlNodes))
+                convert(Array{Symbol}, Symbol.(controlNodes)),
+                symmetricNormalization
             )
         else
             return new(
                 topicName,
                 convert(Array{Symbol}, Symbol.(controlNodes)),
-                convert(Array{Symbol}, Symbol.(treatmentNodes))
+                convert(Array{Symbol}, Symbol.(treatmentNodes)),
+                symmetricNormalization
             )
         end
     end
@@ -30,7 +34,8 @@ end
     TopicRotation(
         topicName::AbstractString,
         controlNodes::Array{Symbol},
-        treatmentNodes::Array{Symbol}
+        treatmentNodes::Array{Symbol};
+        symmetricNormalization::Bool=true
     )
 
 Define a rotation that places its x-axis through the mean of `controlNodes` on the left and the mean of `treatmentNodes` on the right, ie., through an *a priori* defined topic
@@ -51,18 +56,6 @@ function rotate!(
     ) where {R<:AbstractTopicRotation, M<:AbstractLinearENAModel{R}}
 
     offTopicNodes = setdiff(Symbol.(model.nodes.nodeID), Symbol.(model.rotation.controlNodes), Symbol.(model.rotation.treatmentNodes))
-    # if length(offTopicNodes) > 0 && (model.config.sphereNormalize || model.config.lineNormalize)
-    #     @warn """
-    #     A TopicRotation was used for a normalized model that has off topic codes.
-            
-    #     If you are using this model to test a causal hypothesis, be aware that normalization makes all codes conditionally dependent on one another.
-
-    #     WITHOUT normalization, TopicRotation can be used to test if the discourse context changes the AMOUNT of talk related to the specified topic. Off topic conversation does NOT change the result.
-
-    #     WITH normalization, TopicRotation can be used to test if the discourse context changes the FOCUS of the whole conversation to be closer to the specified topic. Off topic conversation DOES change the result.
-    #     """
-    # end
-
     edgeIDs = model.edges.edgeID
     embedding = similar(model.embedding, 1)
     if length(offTopicNodes) > 0
