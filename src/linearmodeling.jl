@@ -275,11 +275,16 @@ function accumulate!(
     # normalize each unit, if requested
     edgeIDs = model.edges.edgeID
     if model.config.sphereNormalize || model.config.lineNormalize
-        if model.rotation isa AbstractTopicRotation
-            # In the special case of a TopicRotation, symmetric decompose the sphere normed vectors
-            # so that the topic and offtopic halves have the same length, yet add up to
-            # the same total vector as original (within small precision error)
-            topicNodes = Symbol.(union(model.rotation.controlNodes, model.rotation.treatmentNodes))
+        trainmodel = model
+
+        # In the special case of a TopicRotation, symmetric decompose the sphere normed vectors
+        # so that the topic and offtopic halves have the same length, yet add up to
+        # the same total vector as original (within small precision error)
+        if model.rotation isa AbstractTrainedRotation
+            trainmodel = model.rotation.trainmodel
+        end
+        if trainmodel.rotation isa AbstractTopicRotation
+            topicNodes = Symbol.(union(trainmodel.rotation.controlNodes, trainmodel.rotation.treatmentNodes))
             offTopicNodes = setdiff(Symbol.(model.nodes.nodeID), topicNodes)
             topicEdges = [
                 edge.edgeID
@@ -287,30 +292,32 @@ function accumulate!(
                 if Symbol(edge.ground) in topicNodes || Symbol(edge.response) in topicNodes
             ]
             offTopicEdges = setdiff(model.edges.edgeID, topicEdges)
-            for i in 1:nrow(model.accum)
-                vector = Vector{Float64}(model.accum[i, topicEdges])
-                s = sqrt(sum(vector .^ 2))
-                if s != 0
-                    model.accum[i, topicEdges] = vector / s / sqrt(2)
-                end
+            if length(topicEdges) > 0 && length(offTopicEdges) > 0
+                for i in 1:nrow(model.accum)
+                    vector = Vector{Float64}(model.accum[i, topicEdges])
+                    s = sqrt(sum(vector .^ 2))
+                    if s != 0
+                        model.accum[i, topicEdges] = vector / s / sqrt(2)
+                    end
 
-                vector = Vector{Float64}(model.accum[i, offTopicEdges])
-                s = sqrt(sum(vector .^ 2))
-                if s != 0
-                    model.accum[i, offTopicEdges] = vector / s / sqrt(2)
-                end
+                    vector = Vector{Float64}(model.accum[i, offTopicEdges])
+                    s = sqrt(sum(vector .^ 2))
+                    if s != 0
+                        model.accum[i, offTopicEdges] = vector / s / sqrt(2)
+                    end
 
-                vector = Vector{Float64}(model.accum[i, edgeIDs])
-                s = sqrt(sum(vector .^ 2))
-                @assert s ≈ 1 || s ≈ 0 || s ≈ 1/sqrt(2)
+                    vector = Vector{Float64}(model.accum[i, edgeIDs])
+                    s = sqrt(sum(vector .^ 2))
+                    @assert s ≈ 1 || s ≈ 0 || s ≈ 1/sqrt(2)
+                end
             end
-        else
-            for i in 1:nrow(model.accum)
-                vector = Vector{Float64}(model.accum[i, edgeIDs])
-                s = sqrt(sum(vector .^ 2))
-                if s != 0
-                    model.accum[i, edgeIDs] = vector / s
-                end
+        end
+
+        for i in 1:nrow(model.accum)
+            vector = Vector{Float64}(model.accum[i, edgeIDs])
+            s = sqrt(sum(vector .^ 2))
+            if s != 0
+                model.accum[i, edgeIDs] = vector / s
             end
         end
 

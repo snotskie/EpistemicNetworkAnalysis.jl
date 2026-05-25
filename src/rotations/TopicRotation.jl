@@ -148,15 +148,8 @@ end
 function defaultplotkwargs(
         ::Type{M},
         model::AbstractLinearENAModel;
-        x::Int=begin
-            offTopicNodes = setdiff(Symbol.(model.nodes.nodeID), model.rotation.controlNodes, model.rotation.treatmentNodes)
-            if length(offTopicNodes) == 1
-                2
-            elseif length(offTopicNodes) > 1
-                1 + length(filter(label -> startswith(label, "OffTopic"), model.embedding.label))
-            end
-        end,
-        y::Int=1,
+        x::Int=1 + length(filter(label -> startswith(label, "OffTopic"), model.embedding.label)),
+        y::Int=length(filter(label -> startswith(label, "OffTopic"), model.embedding.label)) > 0 ? 1 : 2,
         kwargs...
     ) where {R<:AbstractTopicRotation, M<:AbstractLinearENAModel{R}}
     kwargs = NamedTuple(kwargs)
