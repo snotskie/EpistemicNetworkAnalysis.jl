@@ -108,7 +108,22 @@ to_xlsx("example.xlsx", model)
 """
 ENAModel
 
-# override default model constructor kwargs
+# # override default model constructor kwargs
+function defaultedgefilter(
+        ::Type{M},
+        data::DataFrame,
+        codes::Array{Symbol,1},
+        conversations::Array{Symbol,1},
+        units::Array{Symbol,1},
+        rotation::AbstractLinearENARotation,
+        config::NamedTuple
+    ) where {R<:AbstractLinearENARotation, M<:AbstractPlainENAModel{R}}
+    return (row)->(
+        row[:kind] == :undirected
+    )
+end
+
+# required boilerplate for rerotation to function properly
 function defaultmodelkwargs(
         ::Type{M};
         prev_config::NamedTuple=NamedTuple(),
@@ -118,12 +133,7 @@ function defaultmodelkwargs(
     kwargs = NamedTuple(kwargs)
     super = modelsupertype(M, AbstractPlainENAModel)
     parentdefaults = defaultmodelkwargs(super)
-    definitivedefaults = (
-        edgeFilter=(row)->(
-            row[:kind] == :undirected
-        ),# comma necessary for NamedTuple
-    )
-
+    definitivedefaults = NamedTuple()
     return merge(parentdefaults, prev_config, definitivedefaults, kwargs)
 end
 

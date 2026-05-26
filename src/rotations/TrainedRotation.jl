@@ -80,6 +80,26 @@ function test!(
     test!(CM, model.rotation.trainmodel, model)
 end
 
+# override default edge filter
+function defaultedgefilter(
+        ::Type{M},
+        data::DataFrame,
+        codes::Array{Symbol,1},
+        conversations::Array{Symbol,1},
+        units::Array{Symbol,1},
+        rotation::AbstractTrainedRotation,
+        config::NamedTuple
+    ) where {R<:AbstractTrainedRotation, M<:Union{
+        AbstractPlainENAModel{R},
+        AbstractDigraphENAModel{R},
+        AbstractBiplotENAModel{R},
+        AbstractCodewiseENAModel{R}
+    }}
+    (row)->(
+       row[:edgeID] in rotation.trainmodel.edges.edgeID
+    )
+end
+
 function defaultplotkwargs(
         ::Type{M},
         model::AbstractLinearENAModel;

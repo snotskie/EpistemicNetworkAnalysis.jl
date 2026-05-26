@@ -32,6 +32,32 @@ Two columns, `:CodewiseChorus` and `:CodewiseCode` will be added to `data`, and 
 CodewiseENAModel
 
 # override default model constructor kwargs
+function defaultunitfilter(
+        ::Type{M},
+        data::DataFrame,
+        codes::Array{Symbol,1},
+        conversations::Array{Symbol,1},
+        units::Array{Symbol,1},
+        rotation::AbstractLinearENARotation,
+        config::NamedTuple
+    ) where {R<:AbstractLinearENARotation, M<:AbstractCodewiseENAModel{R}}
+    return (row)->(
+        row[:CodewiseCode] != "__prefix__"
+    )
+end
+function defaultedgefilter(
+        ::Type{M},
+        data::DataFrame,
+        codes::Array{Symbol,1},
+        conversations::Array{Symbol,1},
+        units::Array{Symbol,1},
+        rotation::AbstractLinearENARotation,
+        config::NamedTuple
+    ) where {R<:AbstractLinearENARotation, M<:AbstractCodewiseENAModel{R}}
+    return (row)->(
+        row[:kind] == :count
+    )
+end
 function defaultmodelkwargs(
         ::Type{M};
         prev_config::NamedTuple=NamedTuple(),
@@ -42,13 +68,7 @@ function defaultmodelkwargs(
     super = modelsupertype(M, AbstractCodewiseENAModel)
     parentdefaults = defaultmodelkwargs(super)
     definitivedefaults = (
-        edgeFilter=(row)->(
-            row[:kind] == :count
-        ),
-        unitFilter=(row)->(
-            row[:CodewiseCode] != "__prefix__"
-        ),
-        windowSize=get(prev_config, :windowSize, 1) # allow overriding what BiplotENAModel does
+        windowSize=get(prev_config, :windowSize, 1), # allow overriding what BiplotENAModel does
     )
 
     return merge(parentdefaults, prev_config, definitivedefaults, kwargs)

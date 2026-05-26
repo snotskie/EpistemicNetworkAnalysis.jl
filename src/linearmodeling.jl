@@ -19,11 +19,33 @@ function addPointsToModelFromDim(model, i)
 end
 
 # Implementation
+function defaultunitfilter(
+        ::Type{M},
+        data::DataFrame,
+        codes::Array{Symbol,1},
+        conversations::Array{Symbol,1},
+        units::Array{Symbol,1},
+        rotation::AbstractLinearENARotation,
+        config::NamedTuple
+    ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
+    return (x) -> true
+end
+function defaultedgefilter(
+        ::Type{M},
+        data::DataFrame,
+        codes::Array{Symbol,1},
+        conversations::Array{Symbol,1},
+        units::Array{Symbol,1},
+        rotation::AbstractLinearENARotation,
+        config::NamedTuple
+    ) where {R<:AbstractLinearENARotation, M<:AbstractLinearENAModel{R}}
+    return (x) -> true
+end
 function defaultmodelkwargs(
         ::Type{M};
         prev_config::NamedTuple=NamedTuple(),
-        unitFilter::Function=x->true,
-        edgeFilter::Function=x->true,
+        unitFilter::Function=defaultunitfilter,
+        edgeFilter::Function=defaultedgefilter,
         windowSize::Real=Inf,
         sphereNormalize::Bool=true,
         lineNormalize::Bool=false,
@@ -129,7 +151,8 @@ function populateENAfields(
     end
 
     # edges: filter out unused combinations
-    filter!(config.edgeFilter, edges)
+    edgeFilter = config.edgeFilter(M, data, codes, conversations, units, rotation, NamedTuple(config))
+    filter!(edgeFilter, edges)
     edgeIDs = edges.edgeID
 
     # nodes: zero'd starting point
@@ -153,7 +176,8 @@ function populateENAfields(
     tempAccum = combine(first, groupby(data, :unitID))
 
     # accum, accumHat, metadata: filter unused units
-    filter!(config.unitFilter, tempAccum)
+    unitFilter = config.unitFilter(M, data, codes, conversations, units, rotation, NamedTuple(config))
+    filter!(unitFilter, tempAccum)
 
     # accum, accumHat, metadata: placeholder zeros for all unit/edge pairs
     tempValues = DataFrame(Dict(
@@ -280,50 +304,50 @@ function accumulate!(
         # In the special case of a TopicRotation, symmetric decompose the sphere normed vectors
         # so that the topic and offtopic halves have the same length, yet add up to
         # the same total vector as original (within small precision error)
-        if model.rotation isa AbstractTrainedRotation
-            trainmodel = model.rotation.trainmodel
-        end
-        dirty = false
-        if trainmodel.rotation isa AbstractTopicRotation && trainmodel.rotation.symmetricNormalization
-            topicNodes = Symbol.(union(trainmodel.rotation.controlNodes, trainmodel.rotation.treatmentNodes))
-            offTopicNodes = setdiff(Symbol.(model.nodes.nodeID), topicNodes)
-            topicEdges = [
-                edge.edgeID
-                for edge in eachrow(model.edges)
-                if Symbol(edge.ground) in topicNodes || Symbol(edge.response) in topicNodes
-            ]
-            offTopicEdges = setdiff(model.edges.edgeID, topicEdges)
-            if length(topicEdges) > 0 && length(offTopicEdges) > 0
-                dirty = true
-                for i in 1:nrow(model.accum)
-                    vector = Vector{Float64}(model.accum[i, topicEdges])
-                    s = sqrt(sum(vector .^ 2))
-                    if s != 0
-                        model.accum[i, topicEdges] = vector / s / sqrt(2)
-                    end
+        # if model.rotation isa AbstractTrainedRotation
+        #     trainmodel = model.rotation.trainmodel
+        # end
+        # dirty = false
+        # if trainmodel.rotation isa AbstractTopicRotation && trainmodel.rotation.symmetricNormalization
+        #     topicNodes = Symbol.(union(trainmodel.rotation.controlNodes, trainmodel.rotation.treatmentNodes))
+        #     offTopicNodes = setdiff(Symbol.(model.nodes.nodeID), topicNodes)
+        #     topicEdges = [
+        #         edge.edgeID
+        #         for edge in eachrow(model.edges)
+        #         if Symbol(edge.ground) in topicNodes || Symbol(edge.response) in topicNodes
+        #     ]
+        #     offTopicEdges = setdiff(model.edges.edgeID, topicEdges)
+        #     if length(topicEdges) > 0 && length(offTopicEdges) > 0
+        #         dirty = true
+        #         for i in 1:nrow(model.accum)
+        #             vector = Vector{Float64}(model.accum[i, topicEdges])
+        #             s = sqrt(sum(vector .^ 2))
+        #             if s != 0
+        #                 model.accum[i, topicEdges] = vector / s / sqrt(2)
+        #             end
 
-                    vector = Vector{Float64}(model.accum[i, offTopicEdges])
-                    s = sqrt(sum(vector .^ 2))
-                    if s != 0
-                        model.accum[i, offTopicEdges] = vector / s / sqrt(2)
-                    end
+        #             vector = Vector{Float64}(model.accum[i, offTopicEdges])
+        #             s = sqrt(sum(vector .^ 2))
+        #             if s != 0
+        #                 model.accum[i, offTopicEdges] = vector / s / sqrt(2)
+        #             end
 
-                    vector = Vector{Float64}(model.accum[i, edgeIDs])
-                    s = sqrt(sum(vector .^ 2))
-                    @assert s ≈ 1 || s ≈ 0 || s ≈ 1/sqrt(2)
-                end
+        #             vector = Vector{Float64}(model.accum[i, edgeIDs])
+        #             s = sqrt(sum(vector .^ 2))
+        #             @assert s ≈ 1 || s ≈ 0 || s ≈ 1/sqrt(2)
+        #         end
+        #     end
+        # end
+
+        # if !dirty
+        for i in 1:nrow(model.accum)
+            vector = Vector{Float64}(model.accum[i, edgeIDs])
+            s = sqrt(sum(vector .^ 2))
+            if s != 0
+                model.accum[i, edgeIDs] = vector / s
             end
         end
-
-        if !dirty
-            for i in 1:nrow(model.accum)
-                vector = Vector{Float64}(model.accum[i, edgeIDs])
-                s = sqrt(sum(vector .^ 2))
-                if s != 0
-                    model.accum[i, edgeIDs] = vector / s
-                end
-            end
-        end
+        # end
 
         if model.config.lineNormalize
             # fulcrum = ones(length(edgeIDs)) ./ sqrt(length(edgeIDs)) # unit length in the direction of 1
@@ -554,13 +578,15 @@ function rotate!(
     # BUGFIX https://github.com/snotskie/EpistemicNetworkAnalysis.jl/issues/56#issuecomment-1910540698
     # Prevent SVD from adding more dimensions than are possible
     numSVDDims = min(size(svd, 1), length(edgeIDs) - numExistingDims)
-    df = similar(model.embedding, numSVDDims)
-    df[!, edgeIDs] = svd[1:numSVDDims, :]
-    df.label = ["SVD$(i)" for i in 1:nrow(df)]
-    df.eigen_value = eigvals(pca)[1:numSVDDims]
-    append!(model.embedding, df)
-    for i in (numExistingDims+1):nrow(model.embedding)
-        addPointsToModelFromDim(model, i)
+    if numSVDDims > 0 # prevent negative case that can occur in Topic Rotation
+        df = similar(model.embedding, numSVDDims)
+        df[!, edgeIDs] = svd[1:numSVDDims, :]
+        df.label = ["SVD$(i)" for i in 1:nrow(df)]
+        df.eigen_value = eigvals(pca)[1:numSVDDims]
+        append!(model.embedding, df)
+        for i in (numExistingDims+1):nrow(model.embedding)
+            addPointsToModelFromDim(model, i)
+        end
     end
 
     # ensure all values are defined in all dimensions

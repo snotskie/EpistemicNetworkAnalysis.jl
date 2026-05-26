@@ -32,6 +32,21 @@ Ensure that `edgeFilter` only includes `:directed` edges.
 DigraphENAModel
 
 # override default model constructor kwargs
+function defaultedgefilter(
+        ::Type{M},
+        data::DataFrame,
+        codes::Array{Symbol,1},
+        conversations::Array{Symbol,1},
+        units::Array{Symbol,1},
+        rotation::AbstractLinearENARotation,
+        config::NamedTuple
+    ) where {R<:AbstractLinearENARotation, M<:AbstractDigraphENAModel{R}}
+    return (row)->(
+        row[:kind] == :directed
+    )
+end
+
+# required boilerplate for rerotation to function properly
 function defaultmodelkwargs(
         ::Type{M};
         prev_config::NamedTuple=NamedTuple(),
@@ -39,17 +54,30 @@ function defaultmodelkwargs(
     ) where {R<:AbstractLinearENARotation, M<:AbstractDigraphENAModel{R}}
 
     kwargs = NamedTuple(kwargs)
-    super = modelsupertype(M, AbstractDigraphENAModel)
+    super = modelsupertype(M, AbstractPlainENAModel)
     parentdefaults = defaultmodelkwargs(super)
-    definitivedefaults = (
-        edgeFilter=(row)->(
-            row[:kind] == :directed
-        ),# comma necessary for NamedTuple
-        # windowSize=1 # was this an error??
-    )
-
+    definitivedefaults = NamedTuple()
     return merge(parentdefaults, prev_config, definitivedefaults, kwargs)
 end
+
+# function defaultmodelkwargs(
+#         ::Type{M};
+#         prev_config::NamedTuple=NamedTuple(),
+#         kwargs...
+#     ) where {R<:AbstractLinearENARotation, M<:AbstractDigraphENAModel{R}}
+
+#     kwargs = NamedTuple(kwargs)
+#     super = modelsupertype(M, AbstractDigraphENAModel)
+#     parentdefaults = defaultmodelkwargs(super)
+#     definitivedefaults = (
+#         edgeFilter=(row)->(
+#             row[:kind] == :directed
+#         ),# comma necessary for NamedTuple
+#         # windowSize=1 # was this an error??
+#     )
+
+#     return merge(parentdefaults, prev_config, definitivedefaults, kwargs)
+# end
 
 function substantiate!(
         ::Type{M}, model::AbstractLinearENAModel

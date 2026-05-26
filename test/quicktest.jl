@@ -47,12 +47,12 @@ codes = [
 
 rotation = EpistemicNetworkAnalysis.TopicRotation(
     "Women-Death vs. Honor",
-    codes
-    # [:Women],
+    # codes
+    [:Women],
     # [],
     # [],
-    # [:Men],
-    # [:Men, :Love, :Death]
+    # [:Men, :Honor],
+    [:Men]
 )
 
 # rotation = EpistemicNetworkAnalysis.FormulaRotation(
@@ -115,6 +115,7 @@ p = EpistemicNetworkAnalysis.plot(
     # trajectoryBy=:Act,
     # trajectoryBy=:rand,
     groupBy=:Play,
+    zoom=0.5,
     # x=3,
     # y=5,
 )

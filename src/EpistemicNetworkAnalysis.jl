@@ -53,6 +53,12 @@ include("./linearplotting.jl")
 include("./lineartesting.jl")
 include("./utils.jl")
 
+# Models
+include("./models/ENAModel.jl")
+include("./models/DigraphENAModel.jl")
+include("./models/BiplotENAModel.jl")
+include("./models/CodewiseENAModel.jl")
+
 # Rotations
 include("./rotations/TrainedRotation.jl")
 include("./rotations/SVDRotation.jl")
@@ -62,12 +68,6 @@ include("./rotations/AbstractGroupDifferenceRotation.jl")
 include("./rotations/LDARotation.jl")
 include("./rotations/MulticlassRotation.jl")
 include("./rotations/TopicRotation.jl")
-
-# Models
-include("./models/ENAModel.jl")
-include("./models/DigraphENAModel.jl")
-include("./models/BiplotENAModel.jl")
-include("./models/CodewiseENAModel.jl")
 
 # Exports
 export ENAModel

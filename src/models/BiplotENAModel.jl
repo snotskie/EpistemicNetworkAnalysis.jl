@@ -30,6 +30,19 @@ Construct a biplot model of unit-wise counts of code occurences, without measuri
 BiplotENAModel
 
 # override default model constructor kwargs
+function defaultedgefilter(
+        ::Type{M},
+        data::DataFrame,
+        codes::Array{Symbol,1},
+        conversations::Array{Symbol,1},
+        units::Array{Symbol,1},
+        rotation::AbstractLinearENARotation,
+        config::NamedTuple
+    ) where {R<:AbstractLinearENARotation, M<:AbstractBiplotENAModel{R}}
+    return (row)->(
+        row[:kind] == :count
+    )
+end
 function defaultmodelkwargs(
         ::Type{M};
         prev_config::NamedTuple=NamedTuple(),
@@ -40,10 +53,7 @@ function defaultmodelkwargs(
     super = modelsupertype(M, AbstractBiplotENAModel)
     parentdefaults = defaultmodelkwargs(super)
     definitivedefaults = (
-        edgeFilter=(row)->(
-            row[:kind] == :count
-        ),
-        windowSize=1 # as a matter of efficiency
+        windowSize=1, # as a matter of efficiency
     )
 
     return merge(parentdefaults, prev_config, definitivedefaults, kwargs)

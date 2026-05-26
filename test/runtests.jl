@@ -51,10 +51,10 @@ rotations = [
     ),
     "Play" => MeansRotation(:Play, "Romeo and Juliet", "Hamlet"),
     "Play" => MeansRotation("Play", "Romeo and Juliet", "Hamlet"),
-    "OffTopic1" => TopicRotation("Men", ["Men"]),
-    "OffTopic1" => TopicRotation("Men", [:Men]),
-    "OffTopic1" => TopicRotation("Gender", [:Women], [:Men]),
-    "Death" => TopicRotation("Gender2", [:Women, :Love], [:Men, :Honor]),
+    # "Men" => TopicRotation("Men", ["Men"]),
+    # "Men2" => TopicRotation("Men2", [:Men]),
+    "Gender" => TopicRotation("Gender", [:Women], [:Men]),
+    "Gender2" => TopicRotation("Gender2", [:Women, :Love], [:Men, :Honor]),
     "Gender3" => TopicRotation("Gender3", [:Women, :Love], [:Men, :Death, :Honor]),
     "Play" => MeansRotation(:Play, "Romeo and Juliet", "Hamlet", :Act, 1, 5, moderated=false),
     "Play" => MeansRotation(:Play, "Romeo and Juliet", "Hamlet", :Act, 1, 5),
@@ -88,6 +88,34 @@ for M in models
 
         @testset "$(nameof(M)){$(nameof(typeof(rotation)))} has not too many dimensions" begin
             @test nrow(myENA.embedding) <= nrow(myENA.edges)
+        end
+
+        @testset "$(nameof(M)){$(nameof(typeof(rotation)))} has the correct default edge types" begin
+            if M == ENAModel
+                @test all(
+                    edge.kind == :undirected
+                    for edge in eachrow(myENA.edges)
+                )
+            elseif M == DigraphENAModel
+                @test all(
+                    edge.kind == :directed
+                    for edge in eachrow(myENA.edges)
+                )
+            elseif M in [BiplotENAModel, CodewiseENAModel]
+                @test all(
+                    edge.kind == :count
+                    for edge in eachrow(myENA.edges)
+                )
+            end
+        end
+
+        if rotation isa TopicRotation
+            @testset "$(nameof(M)){$(nameof(typeof(rotation)))} has the correct default edge mask" begin
+                @test all(
+                    0 < length(intersect(Symbol.([edge.ground, edge.response]), union(Symbol.(myENA.rotation.controlNodes), Symbol.(myENA.rotation.treatmentNodes))))
+                    for edge in eachrow(myENA.edges)
+                )
+            end
         end
 
         total_variance_explained = sum(myENA.embedding.variance_explained)
