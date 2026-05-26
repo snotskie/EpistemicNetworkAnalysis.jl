@@ -150,6 +150,7 @@ function defaultedgefilter(
     edgeFilter = defaultedgefilter(super, data, codes, conversations, units, rotation, config)
     return (row)->(
         edgeFilter(row) && (
+            row[:kind] == :count || # for Biplot
             Symbol(row[:ground]  ) in Symbol.(rotation.controlNodes  ) ||
             Symbol(row[:ground]  ) in Symbol.(rotation.treatmentNodes) ||
             Symbol(row[:response]) in Symbol.(rotation.controlNodes  ) ||

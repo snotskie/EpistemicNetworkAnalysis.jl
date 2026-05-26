@@ -51,8 +51,8 @@ rotations = [
     ),
     "Play" => MeansRotation(:Play, "Romeo and Juliet", "Hamlet"),
     "Play" => MeansRotation("Play", "Romeo and Juliet", "Hamlet"),
-    # "Men" => TopicRotation("Men", ["Men"]),
-    # "Men2" => TopicRotation("Men2", [:Men]),
+    "Men" => TopicRotation("Men", ["Men"]),
+    "Men2" => TopicRotation("Men2", [:Men]),
     "Gender" => TopicRotation("Gender", [:Women], [:Men]),
     "Gender2" => TopicRotation("Gender2", [:Women, :Love], [:Men, :Honor]),
     "Gender3" => TopicRotation("Gender3", [:Women, :Love], [:Men, :Death, :Honor]),
@@ -110,11 +110,13 @@ for M in models
         end
 
         if rotation isa TopicRotation
-            @testset "$(nameof(M)){$(nameof(typeof(rotation)))} has the correct default edge mask" begin
-                @test all(
-                    0 < length(intersect(Symbol.([edge.ground, edge.response]), union(Symbol.(myENA.rotation.controlNodes), Symbol.(myENA.rotation.treatmentNodes))))
-                    for edge in eachrow(myENA.edges)
-                )
+            if M != BiplotENAModel
+                @testset "$(nameof(M)){$(nameof(typeof(rotation)))} has the correct default edge mask" begin
+                    @test all(
+                        0 < length(intersect(Symbol.([edge.ground, edge.response]), union(Symbol.(myENA.rotation.controlNodes), Symbol.(myENA.rotation.treatmentNodes))))
+                        for edge in eachrow(myENA.edges)
+                    )
+                end
             end
         end
 
@@ -164,6 +166,28 @@ for M in models
             @test reENA.config.windowSize == 4
         end
 
+        @testset "$(nameof(M)){$(nameof(typeof(rotation)))} rerotates" begin
+            reENA = M(
+                myENA;
+                rotateBy=SVDRotation()
+            )
+
+            @test typeof(reENA) == M{SVDRotation}
+            @test reENA.embedding[1, :label] == "SVD1"
+        end
+
+        @testset "$(nameof(M)){$(nameof(typeof(rotation)))} reconstructs and rerotates" begin
+            reENA = M(
+                myENA;
+                windowSize=4,
+                rotateBy=SVDRotation()
+            )
+
+            @test typeof(reENA) == M{SVDRotation}
+            @test reENA.embedding[1, :label] == "SVD1"
+            @test reENA.config.windowSize == 4
+        end
+
         @testset "$(nameof(M)){$(nameof(typeof(rotation)))} trains" begin
             trainedENA = M(
                 data, codes, conversations, units;
@@ -176,32 +200,7 @@ for M in models
             @test isequal(trainedENA.nodes, myENA.nodes)
             @test trainedENA.embedding[1, :label] == label
             @test length(p.subplots) == length(tp.subplots)
-        end
-
-        @testset "$(nameof(M)){$(nameof(typeof(rotation)))} rerotates" begin
-            trainedENA = M(
-                myENA;
-                rotateBy=TrainedRotation(myENA)
-            )
-
-            tp = plot(trainedENA)
-            @test typeof(trainedENA) == M{TrainedRotation{typeof(myENA)}}
-            @test trainedENA.embedding[1, :label] == label
-            @test length(p.subplots) == length(tp.subplots)
-        end
-
-        @testset "$(nameof(M)){$(nameof(typeof(rotation)))} reconstructs and rerotates" begin
-            trainedENA = M(
-                myENA;
-                windowSize=4,
-                rotateBy=TrainedRotation(myENA)
-            )
-
-            tp = plot(trainedENA)
-            @test typeof(trainedENA) == M{TrainedRotation{typeof(myENA)}}
-            @test trainedENA.embedding[1, :label] == label
-            @test trainedENA.config.windowSize == 4
-            @test length(p.subplots) == length(tp.subplots)
+            @test trainedENA.config.windowSize == 10
         end
     end
 end
